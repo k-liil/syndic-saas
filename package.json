@@ -2,25 +2,47 @@
   "name": "syndic-mvp",
   "version": "0.1.0",
   "private": true,
+  "description": "This is a [Next.js](https://nextjs.org) project bootstrapped with [`create-next-app`](https://nextjs.org/docs/app/api-reference/cli/create-next-app).",
+  "license": "ISC",
+  "author": "",
+  "main": "index.js",
   "scripts": {
     "dev": "next dev",
     "build": "next build",
     "start": "next start",
-    "lint": "eslint"
+    "lint": "eslint",
+    "seed": "prisma db seed",
+    "prisma:migrate": "prisma migrate dev",
+    "prisma:generate": "prisma generate",
+    "prisma:format": "prisma format"
+  },
+  "prisma": {
+    "seed": "tsx prisma/seed.ts"
   },
   "dependencies": {
+    "@auth/prisma-adapter": "^2.11.1",
+    "@prisma/client": "^6.19.2",
+    "bcryptjs": "^3.0.3",
+    "lucide-react": "^0.575.0",
     "next": "16.1.6",
+    "next-auth": "^4.24.13",
+    "papaparse": "^5.5.3",
     "react": "19.2.3",
-    "react-dom": "19.2.3"
+    "react-dom": "19.2.3",
+    "recharts": "^3.8.0"
   },
   "devDependencies": {
     "@tailwindcss/postcss": "^4",
     "@types/node": "^20",
+    "@types/papaparse": "^5.5.2",
     "@types/react": "^19",
     "@types/react-dom": "^19",
     "eslint": "^9",
     "eslint-config-next": "16.1.6",
-    "tailwindcss": "^4",
+    "postcss": "^8.5.6",
+    "prisma": "^6.19.2",
+    "tailwindcss": "^4.2.0",
+    "tsx": "^4.21.0",
     "typescript": "^5"
   }
 }
