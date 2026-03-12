@@ -23,15 +23,20 @@ function toISODate(d: Date) {
 }
 
 export async function GET(req: Request) {
+  const gate = await requireAdmin();
+  if (!gate.ok) {
+    return NextResponse.json({ error: gate.error }, { status: gate.status });
+  }
+
   const { searchParams } = new URL(req.url);
 
-  const page = Number(searchParams.get("page") ?? 1);
-  const pageSize = Number(searchParams.get("pageSize") ?? 50);
+  const page = Math.max(1, Number(searchParams.get("page") ?? 1));
+  const pageSize = Math.min(100, Math.max(1, Number(searchParams.get("pageSize") ?? 50)));
 
-  const type = searchParams.get("type");
-  const buildingId = searchParams.get("buildingId");
-  const ownerId = searchParams.get("ownerId");
-  const q = searchParams.get("q");
+  const type = asString(searchParams.get("type")).trim();
+  const buildingId = asString(searchParams.get("buildingId")).trim();
+  const ownerId = asString(searchParams.get("ownerId")).trim();
+  const q = asString(searchParams.get("q")).trim();
 
   const skip = (page - 1) * pageSize;
 
@@ -43,27 +48,41 @@ export async function GET(req: Request) {
 
   if (q) {
     where.OR = [
-      { receiptNumber: { contains: q, mode: "insensitive" } },
-      { reference: { contains: q, mode: "insensitive" } },
+      { note: { contains: q, mode: "insensitive" } },
+      { bankName: { contains: q, mode: "insensitive" } },
+      { bankRef: { contains: q, mode: "insensitive" } },
+      { owner: { name: { contains: q, mode: "insensitive" } } },
+      { owner: { cin: { contains: q, mode: "insensitive" } } },
+      { building: { name: { contains: q, mode: "insensitive" } } },
+      { unit: { lotNumber: { contains: q, mode: "insensitive" } } },
+      { unit: { reference: { contains: q, mode: "insensitive" } } },
     ];
   }
 
   const [items, total] = await prisma.$transaction([
     prisma.receipt.findMany({
       where,
-      orderBy: [
-        { date: "desc" },
-        { receiptNumber: "desc" }
-      ],
       skip,
       take: pageSize,
-      include: {
-        building: true,
-        owner: true,
-        unit: true
-      }
+      orderBy: [{ date: "desc" }, { receiptNumber: "desc" }],
+      select: {
+        id: true,
+        receiptNumber: true,
+        date: true,
+        amount: true,
+        method: true,
+        note: true,
+        bankName: true,
+        bankRef: true,
+        unallocatedAmount: true,
+        owner: { select: { id: true, name: true, cin: true } },
+        building: { select: { id: true, name: true } },
+        unit: {
+          select: { id: true, lotNumber: true, reference: true, type: true },
+        },
+      },
     }),
-    prisma.receipt.count({ where })
+    prisma.receipt.count({ where }),
   ]);
 
   return NextResponse.json({
@@ -72,8 +91,8 @@ export async function GET(req: Request) {
       page,
       pageSize,
       total,
-      totalPages: Math.ceil(total / pageSize)
-    }
+      totalPages: Math.max(1, Math.ceil(total / pageSize)),
+    },
   });
 }
 
