@@ -433,11 +433,18 @@ if (input) input.value = "";
     setBanks(Array.isArray(data) ? data.filter((b: any) => b.isActive) : []);
   }
 
-  useEffect(() => {
-    loadReceipts();
-    loadBanks();
-    loadSettings();
-  }, [page]);
+useEffect(() => {
+  loadReceipts();
+}, [page]);
+
+useEffect(() => {
+  loadBanks();
+  loadSettings();
+}, []);
+
+useEffect(() => {
+  setPage(1);
+}, [methodFilter]);
 
   async function searchUnits(q: string) {
     setQuery(q);
