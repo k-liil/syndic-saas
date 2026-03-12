@@ -180,6 +180,10 @@ model Receipt {
   @@index([unitId])
   @@index([date])
   @@index([receiptNumber])
+  @@index([type, date, receiptNumber])
+@@index([buildingId, type, date])
+@@index([ownerId, type, date])
+@@index([method, type, date])
 }
 
 model ReceiptAllocation {
