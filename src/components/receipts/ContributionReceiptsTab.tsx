@@ -53,6 +53,9 @@ function fmtReceiptNumber(
 export function ContributionReceiptsTab() {
   const [receipts, setReceipts] = useState<Receipt[]>([]);
 
+  const [page, setPage] = useState(1);
+const [pageSize] = useState(50);
+const [totalPages, setTotalPages] = useState(1);
   const [open, setOpen] = useState(false);
   const [busy, setBusy] = useState(false);
 
@@ -127,11 +130,16 @@ const [importPercent, setImportPercent] = useState(0);
     unallocatedAmount: number;
   }>(null);
 
-  async function loadReceipts() {
-    const res = await fetch("/api/receipts", { cache: "no-store" });
-    const data = await res.json().catch(() => []);
-    setReceipts(Array.isArray(data) ? data : []);
-  }
+async function loadReceipts() {
+  const res = await fetch(
+    `/api/receipts?page=${page}&pageSize=${pageSize}&type=CONTRIBUTION`
+  );
+
+  const data = await res.json();
+
+  setReceipts(data.items);
+  setTotalPages(data.pagination.totalPages);
+}
 
 async function deleteSelected() {
 
@@ -429,7 +437,7 @@ if (input) input.value = "";
     loadReceipts();
     loadBanks();
     loadSettings();
-  }, []);
+  }, [page]);
 
   async function searchUnits(q: string) {
     setQuery(q);
@@ -799,6 +807,26 @@ if (input) input.value = "";
             ))}
         </tbody>
       </Table>
+
+<div className="flex gap-2 mt-4">
+  <button
+    disabled={page === 1}
+    onClick={() => setPage(page - 1)}
+  >
+    Previous
+  </button>
+
+  <span>
+    Page {page} / {totalPages}
+  </span>
+
+  <button
+    disabled={page === totalPages}
+    onClick={() => setPage(page + 1)}
+  >
+    Next
+  </button>
+</div>
 
       <Modal
         open={open}

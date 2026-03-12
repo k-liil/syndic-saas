@@ -22,43 +22,59 @@ function toISODate(d: Date) {
   return new Date(d).toISOString();
 }
 
-export async function GET() {
-  const gate = await requireAdmin();
-  if (!gate.ok) {
-    return NextResponse.json({ error: gate.error }, { status: gate.status });
+export async function GET(req: Request) {
+  const { searchParams } = new URL(req.url);
+
+  const page = Number(searchParams.get("page") ?? 1);
+  const pageSize = Number(searchParams.get("pageSize") ?? 50);
+
+  const type = searchParams.get("type");
+  const buildingId = searchParams.get("buildingId");
+  const ownerId = searchParams.get("ownerId");
+  const q = searchParams.get("q");
+
+  const skip = (page - 1) * pageSize;
+
+  const where: any = {};
+
+  if (type) where.type = type;
+  if (buildingId) where.buildingId = buildingId;
+  if (ownerId) where.ownerId = ownerId;
+
+  if (q) {
+    where.OR = [
+      { receiptNumber: { contains: q, mode: "insensitive" } },
+      { reference: { contains: q, mode: "insensitive" } },
+    ];
   }
 
-  const items = await prisma.receipt.findMany({
-  take: 200,
-    orderBy: [
-  { date: "desc" },
-  { receiptNumber: "desc" },
-],
-    take: 200,
-    select: {
-      id: true,
-      receiptNumber: true,
-      date: true,
-      amount: true,
-      method: true,
-      note: true,
-      bankName: true,
-      bankRef: true,
-      unallocatedAmount: true,
-      owner: { select: { id: true, name: true, cin: true } },
-      building: { select: { id: true, name: true } },
-      unit: {
-        select: {
-          id: true,
-          lotNumber: true,
-          reference: true,
-          type: true,
-        },
-      },
-    },
-  });
+  const [items, total] = await prisma.$transaction([
+    prisma.receipt.findMany({
+      where,
+      orderBy: [
+        { date: "desc" },
+        { receiptNumber: "desc" }
+      ],
+      skip,
+      take: pageSize,
+      include: {
+        building: true,
+        owner: true,
+        unit: true
+      }
+    }),
+    prisma.receipt.count({ where })
+  ]);
 
-  return NextResponse.json(items);
+  return NextResponse.json({
+    items,
+    pagination: {
+      page,
+      pageSize,
+      total,
+      totalPages: Math.ceil(total / pageSize)
+    }
+  });
 }
 
 export async function POST(req: Request) {

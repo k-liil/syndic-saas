@@ -6,10 +6,8 @@ function asString(v: unknown) {
   return typeof v === "string" ? v : "";
 }
 
-export async function GET() {
-
+export async function GET(req: Request) {
   const gate = await requireAdmin();
-
   if (!gate.ok) {
     return NextResponse.json(
       { error: gate.error },
@@ -17,14 +15,52 @@ export async function GET() {
     );
   }
 
-  const items = await prisma.otherReceipt.findMany({
-    orderBy: [
-      { date: "desc" },
-      { receiptNumber: "desc" }
-    ]
-  });
+  const { searchParams } = new URL(req.url);
 
-  return NextResponse.json(items);
+  const page = Math.max(1, Number(searchParams.get("page") ?? 1));
+  const pageSize = Math.min(100, Math.max(1, Number(searchParams.get("pageSize") ?? 50)));
+  const type = asString(searchParams.get("type")).trim();
+  const q = asString(searchParams.get("q")).trim();
+
+  const skip = (page - 1) * pageSize;
+
+  const where: any = {};
+
+  if (type) {
+    where.type = type;
+  }
+
+  if (q) {
+    where.OR = [
+      { description: { contains: q, mode: "insensitive" } },
+      { note: { contains: q, mode: "insensitive" } },
+      { bankName: { contains: q, mode: "insensitive" } },
+      { bankRef: { contains: q, mode: "insensitive" } },
+    ];
+  }
+
+  const [items, total] = await prisma.$transaction([
+    prisma.otherReceipt.findMany({
+      where,
+      orderBy: [
+        { date: "desc" },
+        { receiptNumber: "desc" },
+      ],
+      skip,
+      take: pageSize,
+    }),
+    prisma.otherReceipt.count({ where }),
+  ]);
+
+  return NextResponse.json({
+    items,
+    pagination: {
+      page,
+      pageSize,
+      total,
+      totalPages: Math.max(1, Math.ceil(total / pageSize)),
+    },
+  });
 }
 
 export async function POST(req: Request) {

@@ -26,18 +26,25 @@ function fmtDate(d: string) {
 
 export function OtherReceiptsTab() {
   const [items, setItems] = useState<OtherReceipt[]>([]);
+  const [page, setPage] = useState(1);
+const [pageSize] = useState(50);
+const [totalPages, setTotalPages] = useState(1);
   const [open, setOpen] = useState(false);
   const [editing, setEditing] = useState<OtherReceipt | null>(null);
 
-  async function load() {
-    const res = await fetch("/api/other-receipts", { cache: "no-store" });
-    const data = await res.json().catch(() => []);
-    setItems(Array.isArray(data) ? data : []);
-  }
+async function load() {
+  const res = await fetch(
+    `/api/receipts?page=${page}&pageSize=${pageSize}&type=OTHER`,
+    { cache: "no-store" }
+  );
+  const data = await res.json().catch(() => null);
+  setItems(Array.isArray(data?.items) ? data.items : []);
+  setTotalPages(Number(data?.pagination?.totalPages ?? 1));
+}
 
   useEffect(() => {
     load();
-  }, []);
+  }, [page]);
 
   async function remove(id: string) {
     const ok = window.confirm("Supprimer cette autre recette ?");
@@ -114,7 +121,25 @@ export function OtherReceiptsTab() {
           ))}
         </tbody>
       </Table>
+<div className="flex gap-2 mt-4">
+  <button
+    disabled={page === 1}
+    onClick={() => setPage(page - 1)}
+  >
+    Previous
+  </button>
 
+  <span>
+    Page {page} / {totalPages}
+  </span>
+
+  <button
+    disabled={page === totalPages}
+    onClick={() => setPage(page + 1)}
+  >
+    Next
+  </button>
+</div>
       <OtherReceiptModal
         open={open}
         receipt={editing}
