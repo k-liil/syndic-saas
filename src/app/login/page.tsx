@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useState } from "react";
+import { Suspense, useEffect, useState } from "react";
 import { signIn } from "next-auth/react";
 import { useSearchParams } from "next/navigation";
 import { ArrowRight, Building2, LockKeyhole, Mail, ShieldCheck } from "lucide-react";
@@ -39,7 +39,7 @@ function GoogleIcon() {
   );
 }
 
-export default function LoginPage() {
+function LoginPageContent() {
   const sp = useSearchParams();
   const next = sp.get("next") || "/dashboard";
   const error = sp.get("error");
@@ -228,5 +228,23 @@ export default function LoginPage() {
         </section>
       </div>
     </div>
+  );
+}
+
+export default function LoginPage() {
+  return (
+    <Suspense
+      fallback={
+        <div className="ambient-grid min-h-screen">
+          <div className="mx-auto flex min-h-screen w-full max-w-7xl items-center justify-center px-6 py-8">
+            <div className="glass-panel w-full max-w-md rounded-[36px] p-8 text-center text-slate-600">
+              Chargement...
+            </div>
+          </div>
+        </div>
+      }
+    >
+      <LoginPageContent />
+    </Suspense>
   );
 }
