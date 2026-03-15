@@ -318,8 +318,8 @@ export default function DashboardPage() {
                     boxShadow: "0 12px 30px rgba(15,23,42,0.08)",
                     background: "#ffffff",
                   }}
-                  formatter={(value: number, name: string) => [
-                    `${Number(value).toLocaleString("fr-FR")} MAD`,
+                  formatter={(value, name) => [
+                    `${Number(value ?? 0).toLocaleString("fr-FR")} MAD`,
                     name === "encaisses" ? "Encaisse" : "Depense",
                   ]}
                 />
