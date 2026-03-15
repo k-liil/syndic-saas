@@ -38,27 +38,21 @@ export async function POST(req: Request) {
       select: { id: true, monthlyDueAmount: true },
     });
 
-    const toCreate = units
-      .map((u) => {
-        const amount = u.monthlyDueAmount ?? null;
-        if (!amount || amount <= 0) return null;
+    const toCreate = units.flatMap((u) => {
+      const amount = u.monthlyDueAmount;
+      if (!amount || Number(amount) <= 0) return [];
 
-        return {
+      return [
+        {
           unitId: u.id,
           organizationId: gate.organizationId,
           period,
           amountDue: amount,
           paidAmount: 0,
           status: DueStatus.UNPAID,
-        };
-      })
-      .filter(Boolean) as Array<{
-      unitId: string;
-      period: Date;
-      amountDue: number;
-      paidAmount: number;
-      status: DueStatus;
-    }>;
+        },
+      ];
+    });
 
     const created = await prisma.monthlyDue.createMany({
       data: toCreate,
