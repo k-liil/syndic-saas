@@ -419,7 +419,7 @@ export default function DashboardPage() {
                       />
                     ))}
                   </Pie>
-                  <Tooltip formatter={(value: number) => `${value} coproprietaires`} />
+                  <Tooltip formatter={(value) => `${Number(value ?? 0)} coproprietaires`} />
                 </PieChart>
               </ResponsiveContainer>
 
