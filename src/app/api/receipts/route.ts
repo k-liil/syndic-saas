@@ -1,7 +1,7 @@
 import { NextResponse } from "next/server";
 import { prisma } from "@/lib/prisma";
 import { requireAdmin } from "@/lib/authz";
-import { DueStatus } from "@prisma/client";
+import { DueStatus, PaymentMethod, ReceiptType } from "@prisma/client";
 
 function firstDayOfMonth(d: Date) {
   return new Date(Date.UTC(d.getUTCFullYear(), d.getUTCMonth(), 1));
@@ -32,7 +32,7 @@ export async function GET(req: Request) {
   const page = Math.max(1, Number(searchParams.get("page") ?? 1));
   const pageSize = Math.min(100, Math.max(1, Number(searchParams.get("pageSize") ?? 50)));
 
-  const type = asString(searchParams.get("type")).trim();
+  const rawType = asString(searchParams.get("type")).trim();
   const rawYear = searchParams.get("year");
   const year = rawYear ? Number(rawYear) : null;
   const buildingId = asString(searchParams.get("buildingId")).trim();
@@ -46,7 +46,9 @@ export async function GET(req: Request) {
     organizationId: gate.organizationId,
   };
 
-if (type) where.type = type;
+if (Object.values(ReceiptType).includes(rawType as ReceiptType)) {
+  where.type = rawType as ReceiptType;
+}
 if (year && Number.isFinite(year)) {
   where.date = {
     gte: new Date(Date.UTC(year, 0, 1)),
@@ -170,7 +172,9 @@ export async function POST(req: Request) {
     const date = body.date ? new Date(body.date) : new Date();
 
     const note = asString(body.note).trim();
-    const type = asString(body.type) || "CONTRIBUTION";
+    const type = Object.values(ReceiptType).includes(asString(body.type) as ReceiptType)
+      ? (asString(body.type) as ReceiptType)
+      : ReceiptType.CONTRIBUTION;
 
     const bankName = asString(body.bankName).trim();
     const checkNumber = asString(body.checkNumber).trim();
@@ -179,7 +183,7 @@ export async function POST(req: Request) {
       return NextResponse.json({ error: "Invalid receipt payload" }, { status: 400 });
     }
 
-    if (!["CASH", "TRANSFER", "CHECK"].includes(method)) {
+    if (!Object.values(PaymentMethod).includes(method as PaymentMethod)) {
       return NextResponse.json({ error: "Invalid method" }, { status: 400 });
     }
 
@@ -304,7 +308,7 @@ await tx.fiscalYear.upsert({
           buildingId: unit.buildingId,
           unitId: unit.id,
           amount,
-          method: method as any,
+          method: method as PaymentMethod,
           date,
           note: note || null,
           bankName: bankName || null,
