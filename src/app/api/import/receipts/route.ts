@@ -165,7 +165,7 @@ export async function POST(req: Request) {
   const validRows: Array<{
     row: Row;
     rowNo: number;
-    unit: (typeof units)[number];
+    unit: (typeof units)[number] & { buildingId: string };
     ownership: { unitId: string; ownerId: string };
     amount: number;
     receiptDate: Date;
@@ -225,7 +225,10 @@ export async function POST(req: Request) {
     validRows.push({
       row,
       rowNo,
-      unit,
+      unit: {
+        ...unit,
+        buildingId: unit.buildingId,
+      },
       ownership,
       amount,
       receiptDate,
