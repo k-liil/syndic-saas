@@ -465,8 +465,11 @@ export default function DashboardPage() {
                     ))}
                   </Pie>
                   <Tooltip
-                    formatter={(value: number, _name, item: { payload?: { amount?: number } }) => {
-                      const amount = Number(item?.payload?.amount ?? value ?? 0);
+                    formatter={(value, _name, item) => {
+                      const payload = item && typeof item === "object" && "payload" in item
+                        ? (item.payload as { amount?: number } | undefined)
+                        : undefined;
+                      const amount = Number(payload?.amount ?? value ?? 0);
                       const percent =
                         totalExpensesAmount > 0
                           ? Math.round((amount / totalExpensesAmount) * 100)
