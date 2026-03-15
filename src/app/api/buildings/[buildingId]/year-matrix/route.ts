@@ -46,7 +46,15 @@ export async function GET(
 
 // 1) Owners de l’immeuble
 const owners = await prisma.owner.findMany({
-  where: { buildingId },
+  where: {
+    ownerships: {
+      some: {
+        unit: {
+          buildingId,
+        },
+      },
+    },
+  },
   select: { id: true, name: true },
   orderBy: { name: "asc" },
 });
