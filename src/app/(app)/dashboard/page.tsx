@@ -1,7 +1,7 @@
 "use client";
 
 import Link from "next/link";
-import { useEffect, useMemo, useState } from "react";
+import { Suspense, useEffect, useMemo, useState } from "react";
 import { useSearchParams } from "next/navigation";
 import {
   AlertTriangle,
@@ -128,7 +128,7 @@ function KpiCard({
   );
 }
 
-export default function DashboardPage() {
+function DashboardPageContent() {
   const searchParams = useSearchParams();
   const year = searchParams.get("year");
   const hasYear = Boolean(year);
@@ -541,5 +541,21 @@ export default function DashboardPage() {
         </div>
       </section>
     </div>
+  );
+}
+
+export default function DashboardPage() {
+  return (
+    <Suspense
+      fallback={
+        <div className="space-y-6">
+          <div className="border border-slate-200 bg-white p-8 text-center text-sm text-slate-500 shadow-[0_8px_20px_rgba(15,23,42,0.04)]">
+            Chargement du tableau de bord...
+          </div>
+        </div>
+      }
+    >
+      <DashboardPageContent />
+    </Suspense>
   );
 }
