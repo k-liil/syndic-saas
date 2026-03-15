@@ -1,6 +1,7 @@
 import { NextResponse } from "next/server";
 import { prisma } from "@/lib/prisma";
-import { DueStatus } from "@prisma/client";
+import { DueStatus, ReceiptType } from "@prisma/client";
+import { requireAdmin } from "@/lib/authz";
 
 function firstDayOfMonth(d: Date) {
   return new Date(Date.UTC(d.getUTCFullYear(), d.getUTCMonth(), 1, 0, 0, 0));
@@ -11,6 +12,11 @@ export async function GET(
   ctx: { params: Promise<{ ownerId: string }> }
 ) {
   try {
+    const gate = await requireAdmin();
+    if (!gate.ok) {
+      return NextResponse.json({ error: gate.error }, { status: gate.status });
+    }
+
     const { ownerId } = await ctx.params;
 
     if (!ownerId || typeof ownerId !== "string") {
@@ -18,8 +24,8 @@ export async function GET(
     }
 
     const owner = await prisma.owner.findUnique({
-      where: { id: ownerId },
-      select: { id: true, name: true, buildingId: true },
+      where: { id: ownerId, organizationId: gate.organizationId },
+      select: { id: true, name: true },
     });
 
     if (!owner) {
@@ -27,7 +33,10 @@ export async function GET(
     }
 
     const dues = await prisma.monthlyDue.findMany({
-      where: { unit: { ownerships: { some: { ownerId } } } },
+      where: {
+        organizationId: gate.organizationId,
+        unit: { ownerships: { some: { ownerId } } },
+      },
       orderBy: { period: "asc" },
       select: {
         id: true,
@@ -61,11 +70,16 @@ export async function GET(
       0
     );
 
-    const payments = await prisma.payment.findMany({
-      where: { ownerId },
+    const payments = await prisma.receipt.findMany({
+      where: {
+        organizationId: gate.organizationId,
+        ownerId,
+        type: ReceiptType.CONTRIBUTION,
+      },
       orderBy: { date: "desc" },
       select: {
         id: true,
+        receiptNumber: true,
         date: true,
         method: true,
         amount: true,
