@@ -2,7 +2,7 @@
 
 import { useEffect, useState } from "react";
 import { useSearchParams } from "next/navigation";
-import { Table, THead, TR, TH, TD } from "@/components/ui/table";
+import { Table, THead, TR, TH, TD } from "@/components/ui/Table";
 import { OtherReceiptModal } from "./OtherReceiptModal";
 import { Modal } from "@/components/ui/Modal";
 
