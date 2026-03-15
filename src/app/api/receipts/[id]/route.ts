@@ -216,8 +216,8 @@ export async function DELETE(
       });
 
       for (const alloc of allocations) {
-
-        const newPaid = alloc.due.paidAmount - alloc.amount;
+        const newPaid = Number(alloc.due.paidAmount) - Number(alloc.amount);
+        const amountDue = Number(alloc.due.amountDue);
 
         await tx.monthlyDue.update({
           where: { id: alloc.dueId },
@@ -226,7 +226,7 @@ export async function DELETE(
             status:
               newPaid <= 0
                 ? DueStatus.UNPAID
-                : newPaid < alloc.due.amountDue
+                : newPaid < amountDue
                 ? DueStatus.PARTIAL
                 : DueStatus.PAID,
           },
