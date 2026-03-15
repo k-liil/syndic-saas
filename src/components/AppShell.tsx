@@ -5,7 +5,7 @@ import { PropertyYearSwitcher } from "@/components/PropertyYearSwitcher";
 import { useSession, signOut } from "next-auth/react";
 import { LogIn, LogOut, User } from "lucide-react";
 import Link from "next/link";
-import { useEffect, useRef, useState } from "react";
+import { Suspense, useEffect, useRef, useState } from "react";
 
 export function AppShell({
   children,
@@ -69,7 +69,15 @@ export function AppShell({
           <header className="sticky top-0 z-20 border-b border-slate-200/60 bg-white/60 backdrop-blur-xl">
             <div className="flex items-center justify-between gap-4 px-4 py-4 sm:px-6 lg:px-8">
               <div className="min-w-0">
-                <PropertyYearSwitcher brandName={brandName} />
+                <Suspense
+                  fallback={
+                    <div className="rounded-full border border-slate-200 bg-white px-4 py-2 text-sm text-slate-500 shadow-sm">
+                      Chargement...
+                    </div>
+                  }
+                >
+                  <PropertyYearSwitcher brandName={brandName} />
+                </Suspense>
               </div>
 
               <div className="relative" ref={ref}>
