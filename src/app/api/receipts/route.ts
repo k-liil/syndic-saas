@@ -296,7 +296,7 @@ await tx.fiscalYear.upsert({
   },
 });
 
-      const fee = unit.monthlyDueAmount ?? null;
+      const fee = unit.monthlyDueAmount != null ? Number(unit.monthlyDueAmount) : null;
       const MAX_FUTURE_MONTHS = 240;
 
       const receipt = await tx.receipt.create({
