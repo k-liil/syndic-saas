@@ -14,8 +14,8 @@ export async function GET(
 
   const { id } = await params;
 
-  const item = await prisma.receipt.findUnique({
-    where: { id },
+  const item = await prisma.receipt.findFirst({
+    where: { id, organizationId: gate.organizationId },
     select: {
       id: true,
       receiptNumber: true,
@@ -143,6 +143,15 @@ const note =
       );
     }
 
+    const existing = await prisma.receipt.findFirst({
+      where: { id, organizationId: gate.organizationId },
+      select: { id: true },
+    });
+
+    if (!existing) {
+      return NextResponse.json({ error: "Receipt not found" }, { status: 404 });
+    }
+
     const updated = await prisma.receipt.update({
       where: { id },
 data: {
@@ -189,9 +198,20 @@ export async function DELETE(
 
   try {
     await prisma.$transaction(async (tx) => {
+      const receipt = await tx.receipt.findFirst({
+        where: { id, organizationId: gate.organizationId },
+        select: { id: true },
+      });
+
+      if (!receipt) {
+        throw new Error("Receipt not found");
+      }
 
       const allocations = await tx.receiptAllocation.findMany({
-        where: { receiptId: id },
+        where: {
+          receiptId: id,
+          receipt: { organizationId: gate.organizationId },
+        },
         include: { due: true },
       });
 

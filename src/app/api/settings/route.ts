@@ -1,16 +1,33 @@
 import { NextResponse } from "next/server";
 import { prisma } from "@/lib/prisma";
 import { requireAdmin } from "@/lib/authz";
+import { getOrganizationForUser, syncOrganizationName } from "@/lib/organization";
 
-async function getSingleton() {
-  const existing = await prisma.appSettings.findFirst();
+async function getSingleton(organizationId: string) {
+  const existing = await prisma.appSettings.findFirst({
+    where: { organizationId },
+  });
   if (existing) return existing;
-  return prisma.appSettings.create({ data: {} });
+  return prisma.appSettings.create({
+    data: {
+      organizationId,
+    },
+  });
 }
 
 export async function GET() {
-  const s = await getSingleton();
-  return NextResponse.json(s);
+  const gate = await requireAdmin();
+  if (!gate.ok) {
+    return NextResponse.json({ error: gate.error }, { status: gate.status });
+  }
+
+  const s = await getSingleton(gate.organizationId);
+  const organization = await getOrganizationForUser((gate.session.user as any)?.id);
+
+  return NextResponse.json({
+    ...s,
+    organization,
+  });
 }
 
 export async function PUT(req: Request) {
@@ -22,7 +39,7 @@ export async function PUT(req: Request) {
 
     const body = await req.json();
 
-    const current = await getSingleton();
+    const current = await getSingleton(gate.organizationId);
 
     const updated = await prisma.appSettings.update({
       where: { id: current.id },
@@ -73,10 +90,29 @@ export async function PUT(req: Request) {
           typeof body.paymentPrefix === "string"
             ? body.paymentPrefix
             : current.paymentPrefix,
+
+        openingCashBalance:
+          Number.isFinite(Number(body.openingCashBalance))
+            ? Number(body.openingCashBalance)
+            : current.openingCashBalance,
+
+        openingBankBalance:
+          Number.isFinite(Number(body.openingBankBalance))
+            ? Number(body.openingBankBalance)
+            : current.openingBankBalance,
       },
     });
 
-    return NextResponse.json(updated);
+    if (typeof body.brandName === "string" && body.brandName.trim()) {
+      await syncOrganizationName(gate.organizationId, body.brandName.trim());
+    }
+
+    const organization = await getOrganizationForUser((gate.session.user as any)?.id);
+
+    return NextResponse.json({
+      ...updated,
+      organization,
+    });
   } catch (e: any) {
     console.error("PUT /api/settings failed:", e);
     return NextResponse.json(

@@ -18,6 +18,15 @@ export async function PUT(
 
   const { id } = await params;
 
+  const existing = await prisma.otherReceipt.findFirst({
+    where: { id, organizationId: gate.organizationId },
+    select: { id: true },
+  });
+
+  if (!existing) {
+    return NextResponse.json({ error: "NOT_FOUND" }, { status: 404 });
+  }
+
   const body = await req.json();
 
   const updated = await prisma.otherReceipt.update({
@@ -53,9 +62,16 @@ export async function DELETE(
 
   const { id } = await params;
 
-  await prisma.otherReceipt.delete({
-    where: { id }
+  const existing = await prisma.otherReceipt.findFirst({
+    where: { id, organizationId: gate.organizationId },
+    select: { id: true },
   });
+
+  if (!existing) {
+    return NextResponse.json({ error: "NOT_FOUND" }, { status: 404 });
+  }
+
+  await prisma.otherReceipt.delete({ where: { id } });
 
   return NextResponse.json({ ok: true });
 }

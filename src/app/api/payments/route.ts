@@ -4,6 +4,11 @@ import { requireAdmin } from "@/lib/authz";
 import { ensureFiscalYear } from "@/lib/fiscalYear";
 
 export async function GET(req: Request) {
+  const gate = await requireAdmin();
+  if (!gate.ok) {
+    return NextResponse.json({ error: gate.error }, { status: gate.status });
+  }
+
   const { searchParams } = new URL(req.url);
   const yearParam = searchParams.get("year");
   const year = yearParam ? Number(yearParam) : null;
@@ -21,12 +26,13 @@ export async function GET(req: Request) {
       where:
         startDate && endDate
           ? {
+              organizationId: gate.organizationId,
               date: {
                 gte: startDate,
                 lt: endDate,
               },
             }
-          : undefined,
+          : { organizationId: gate.organizationId },
       orderBy: [{ date: "desc" }, { paymentNumber: "desc" }],
       include: {
         supplier: true,
@@ -35,16 +41,16 @@ export async function GET(req: Request) {
     }),
 
     prisma.supplier.findMany({
-      where: { isActive: true },
+      where: { organizationId: gate.organizationId, isActive: true },
       orderBy: { name: "asc" },
     }),
 
     prisma.internalBank.findMany({
-      where: { isActive: true },
+      where: { organizationId: gate.organizationId, isActive: true },
       orderBy: { name: "asc" },
     }),
 
-    prisma.appSettings.findFirst(),
+    prisma.appSettings.findFirst({ where: { organizationId: gate.organizationId } }),
   ]);
 
   return NextResponse.json({
@@ -72,7 +78,11 @@ export async function POST(req: Request) {
         ? body.categoryId
         : null;
 
-    const amount = Number(body.amount ?? 0);
+    const amount = Number(
+  String(body.amount ?? "0")
+    .replace(/\s/g, "")
+    .replace(",", ".")
+);
 
     if (!supplierId) {
       return NextResponse.json(
@@ -88,11 +98,34 @@ export async function POST(req: Request) {
       );
     }
 
-    const settings = await prisma.appSettings.findFirst();
+    const supplier = await prisma.supplier.findFirst({
+      where: { id: supplierId, organizationId: gate.organizationId },
+      select: { id: true },
+    });
+
+    if (!supplier) {
+      return NextResponse.json({ error: "SUPPLIER_NOT_FOUND" }, { status: 404 });
+    }
+
+    if (categoryId) {
+      const category = await prisma.paymentCategory.findFirst({
+        where: { id: categoryId, organizationId: gate.organizationId },
+        select: { id: true },
+      });
+
+      if (!category) {
+        return NextResponse.json({ error: "CATEGORY_NOT_FOUND" }, { status: 404 });
+      }
+    }
+
+    const settings = await prisma.appSettings.findFirst({
+      where: { organizationId: gate.organizationId },
+    });
 
     const paymentStartNumber = settings?.paymentStartNumber ?? 1;
 
     const lastPayment = await prisma.payment.findFirst({
+      where: { organizationId: gate.organizationId },
       orderBy: { paymentNumber: "desc" },
       select: { paymentNumber: true },
     });
@@ -109,10 +142,11 @@ export async function POST(req: Request) {
 
 
 const paymentDate = body.date ? new Date(body.date) : new Date();
-await ensureFiscalYear(prisma, paymentDate);
+await ensureFiscalYear(prisma, gate.organizationId, paymentDate);
 
 const payment = await prisma.payment.create({
   data: {
+    organizationId: gate.organizationId,
     supplierId,
     categoryId,
     method: body.method ?? "CASH",
@@ -160,9 +194,16 @@ export async function DELETE(req: Request) {
     );
   }
 
-  await prisma.payment.delete({
-    where: { id },
+  const existing = await prisma.payment.findFirst({
+    where: { id, organizationId: gate.organizationId },
+    select: { id: true },
   });
+
+  if (!existing) {
+    return NextResponse.json({ error: "PAYMENT_NOT_FOUND" }, { status: 404 });
+  }
+
+  await prisma.payment.delete({ where: { id } });
 
   return NextResponse.json({ ok: true });
 }
@@ -197,7 +238,38 @@ export async function PUT(req: Request) {
       ? body.categoryId
       : null;
 
-  const amount = Number(body.amount ?? 0);
+  const amount = Number(
+  String(body.amount ?? "0")
+    .replace(/\s/g, "")
+    .replace(",", ".")
+);
+
+console.log("BODY AMOUNT:", body.amount);
+console.log("PARSED AMOUNT:", amount);
+
+  const method =
+  typeof body.method === "string" ? body.method : "CASH";
+
+if (!["CASH", "TRANSFER", "CHECK", "DEBIT"].includes(method)) {
+  return NextResponse.json(
+    { error: "INVALID_METHOD" },
+    { status: 400 }
+  );
+}
+
+if (method !== "CASH" && !body.bankName) {
+  return NextResponse.json(
+    { error: "BANK_REQUIRED" },
+    { status: 400 }
+  );
+}
+
+if (method === "CHECK" && !body.bankRef) {
+  return NextResponse.json(
+    { error: "CHECK_REF_REQUIRED" },
+    { status: 400 }
+  );
+}
 
   if (!supplierId) {
     return NextResponse.json(
@@ -213,6 +285,13 @@ export async function PUT(req: Request) {
     );
   }
 
+  if (!["CASH", "TRANSFER", "CHECK", "DEBIT"].includes(body.method ?? "CASH")) {
+  return NextResponse.json(
+    { error: "INVALID_METHOD" },
+    { status: 400 }
+  );
+}
+
   if (body.method !== "CASH" && !body.bankName) {
     return NextResponse.json(
       { error: "BANK_REQUIRED" },
@@ -227,12 +306,41 @@ export async function PUT(req: Request) {
     );
   }
 
+  const supplier = await prisma.supplier.findFirst({
+    where: { id: supplierId, organizationId: gate.organizationId },
+    select: { id: true },
+  });
+
+  if (!supplier) {
+    return NextResponse.json({ error: "SUPPLIER_NOT_FOUND" }, { status: 404 });
+  }
+
+  if (categoryId) {
+    const category = await prisma.paymentCategory.findFirst({
+      where: { id: categoryId, organizationId: gate.organizationId },
+      select: { id: true },
+    });
+
+    if (!category) {
+      return NextResponse.json({ error: "CATEGORY_NOT_FOUND" }, { status: 404 });
+    }
+  }
+
+  const existing = await prisma.payment.findFirst({
+    where: { id, organizationId: gate.organizationId },
+    select: { id: true },
+  });
+
+  if (!existing) {
+    return NextResponse.json({ error: "PAYMENT_NOT_FOUND" }, { status: 404 });
+  }
+
   const payment = await prisma.payment.update({
     where: { id },
     data: {
       supplierId,
       categoryId,
-      method: body.method ?? "CASH",
+      method,
       amount,
       note: typeof body.note === "string" ? body.note : null,
       bankName: typeof body.bankName === "string" ? body.bankName : null,

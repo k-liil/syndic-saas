@@ -4,7 +4,33 @@ generator client {
 
 datasource db {
   provider = "postgresql"
-  url      = env("DIRECT_URL")
+  url      = env("DATABASE_URL")
+  directUrl = env("DIRECT_URL")
+}
+
+model Organization {
+  id        String   @id @default(cuid())
+  name      String
+  slug      String   @unique
+  isActive  Boolean  @default(true)
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  users             User[]
+  owners            Owner[]
+  buildings         Building[]
+  units             Unit[]
+  ownerships        Ownership[]
+  monthlyDues       MonthlyDue[]
+  payments          Payment[]
+  receipts          Receipt[]
+  otherReceipts     OtherReceipt[]
+  settings          AppSettings[]
+  fiscalYears       FiscalYear[]
+  internalBanks     InternalBank[]
+  suppliers         Supplier[]
+  paymentCategories PaymentCategory[]
+  importJobs        ImportJob[]
 }
 
 enum UserRole {
@@ -28,11 +54,14 @@ enum PaymentMethod {
   CASH
   TRANSFER
   CHECK
+  DEBIT
 }
 
 model Owner {
   id        String   @id @default(uuid())
-  cin       String?  @unique
+  organizationId String
+  organization   Organization @relation(fields: [organizationId], references: [id])
+  cin       String?
   name      String
   email     String?
   phone     String?
@@ -40,6 +69,9 @@ model Owner {
 
   receipts   Receipt[]
   ownerships Ownership[]
+
+  @@unique([organizationId, cin])
+  @@index([organizationId])
 }
 
 enum ReceiptType {
@@ -50,17 +82,23 @@ enum ReceiptType {
 
 model Building {
   id        String   @id @default(uuid())
+  organizationId String
+  organization   Organization @relation(fields: [organizationId], references: [id])
   name      String
   address   String?
   createdAt DateTime @default(now())
 
   units    Unit[]
   receipts Receipt[]
+
+  @@index([organizationId])
 }
 
 model Unit {
   id        String   @id @default(uuid())
-  lotNumber String?  @unique
+  organizationId String
+  organization   Organization @relation(fields: [organizationId], references: [id])
+  lotNumber String?
   reference String
   type      UnitType
   isActive  Boolean  @default(true)
@@ -69,7 +107,7 @@ model Unit {
   buildingId String?
   building   Building? @relation(fields: [buildingId], references: [id])
 
-  monthlyDueAmount Int?
+  monthlyDueAmount Decimal? @db.Decimal(10,2)
   dues             MonthlyDue[]
 
   parentUnitId String?
@@ -79,13 +117,17 @@ model Unit {
   ownerships Ownership[]
   receipts   Receipt[]
 
+  @@unique([organizationId, lotNumber])
   @@index([buildingId])
+  @@index([organizationId])
   @@index([parentUnitId])
   @@index([lotNumber])
 }
 
 model Ownership {
   id        String    @id @default(uuid())
+  organizationId String
+  organization   Organization @relation(fields: [organizationId], references: [id])
   ownerId   String
   unitId    String
   startDate DateTime  @default(now())
@@ -94,18 +136,21 @@ model Ownership {
   owner Owner @relation(fields: [ownerId], references: [id])
   unit  Unit  @relation(fields: [unitId], references: [id])
 
+  @@index([organizationId])
   @@index([ownerId])
   @@index([unitId])
 }
 
 model MonthlyDue {
   id     String @id @default(uuid())
+  organizationId String
+  organization   Organization @relation(fields: [organizationId], references: [id])
   unitId String
   unit   Unit   @relation(fields: [unitId], references: [id])
 
   period     DateTime
-  amountDue  Int
-  paidAmount Int       @default(0)
+  amountDue  Decimal @db.Decimal(10,2)
+  paidAmount Decimal @db.Decimal(10,2)       @default(0)
   status     DueStatus @default(UNPAID)
 
   createdAt DateTime @default(now())
@@ -113,7 +158,8 @@ model MonthlyDue {
 
   receiptAllocations ReceiptAllocation[]
 
-  @@unique([unitId, period])
+  @@unique([organizationId, unitId, period])
+  @@index([organizationId])
   @@index([period])
   @@index([status])
 }
@@ -121,7 +167,9 @@ model MonthlyDue {
 model Payment {
   id String @id @default(uuid())
 
-  paymentNumber Int @unique @default(autoincrement())
+  organizationId String
+  organization   Organization @relation(fields: [organizationId], references: [id])
+  paymentNumber Int @default(autoincrement())
 
   supplierId String
   supplier   Supplier @relation(fields: [supplierId], references: [id])
@@ -131,7 +179,7 @@ model Payment {
 
   date   DateTime      @default(now())
   method PaymentMethod
-  amount Int
+  amount Decimal @db.Decimal(10,2)
   note   String?
 
   bankName String?
@@ -139,6 +187,8 @@ model Payment {
 
   createdAt DateTime @default(now())
 
+  @@unique([organizationId, paymentNumber])
+  @@index([organizationId])
   @@index([supplierId])
   @@index([categoryId])
   @@index([date])
@@ -148,7 +198,9 @@ model Payment {
 model Receipt {
   id String @id @default(uuid())
 
-  receiptNumber Int         @unique
+  organizationId String
+  organization   Organization @relation(fields: [organizationId], references: [id])
+  receiptNumber Int
   type          ReceiptType @default(CONTRIBUTION)
 
   buildingId String
@@ -163,7 +215,7 @@ model Receipt {
   date DateTime @default(now())
 
   method PaymentMethod
-  amount Int
+  amount Decimal @db.Decimal(10,2)
   note   String?
 
   bankName String?
@@ -175,6 +227,8 @@ model Receipt {
 
   createdAt DateTime @default(now())
 
+  @@unique([organizationId, receiptNumber])
+  @@index([organizationId])
   @@index([buildingId])
   @@index([ownerId])
   @@index([unitId])
@@ -195,7 +249,7 @@ model ReceiptAllocation {
   dueId String
   due   MonthlyDue @relation(fields: [dueId], references: [id])
 
-  amount Int
+  amount Decimal @db.Decimal(10,2)
 
   @@index([receiptId])
   @@index([dueId])
@@ -203,6 +257,8 @@ model ReceiptAllocation {
 
 model User {
   id            String    @id @default(cuid())
+  organizationId String
+  organization   Organization @relation(fields: [organizationId], references: [id])
   name          String?
   email         String    @unique
   emailVerified DateTime?
@@ -217,6 +273,8 @@ model User {
 
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
+
+  @@index([organizationId])
 }
 
 model Account {
@@ -260,6 +318,8 @@ model VerificationToken {
 
 model AppSettings {
   id         String @id @default(uuid())
+  organizationId String
+  organization   Organization @relation(fields: [organizationId], references: [id])
   brandName  String @default("Syndic")
   brandColor String @default("#4f46e5")
 
@@ -279,10 +339,15 @@ model AppSettings {
 
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
+
+  @@unique([organizationId])
+  @@index([organizationId])
 }
 
 model FiscalYear {
   id String @id @default(uuid())
+  organizationId String
+  organization   Organization @relation(fields: [organizationId], references: [id])
 
   year Int
 
@@ -291,20 +356,27 @@ model FiscalYear {
 
   createdAt DateTime @default(now())
 
-  @@unique([year])
+  @@unique([organizationId, year])
+  @@index([organizationId])
   @@index([year])
 }
 
 model InternalBank {
   id        String   @id @default(cuid())
+  organizationId String
+  organization   Organization @relation(fields: [organizationId], references: [id])
   name      String
   isActive  Boolean  @default(true)
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
+
+  @@index([organizationId])
 }
 
 model Supplier {
   id       String  @id @default(cuid())
+  organizationId String
+  organization   Organization @relation(fields: [organizationId], references: [id])
   name     String
   phone    String?
   email    String?
@@ -316,10 +388,14 @@ model Supplier {
 
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
+
+  @@index([organizationId])
 }
 
 model PaymentCategory {
   id       String  @id @default(cuid())
+  organizationId String
+  organization   Organization @relation(fields: [organizationId], references: [id])
   name     String
   note     String?
   isActive Boolean @default(true)
@@ -328,12 +404,16 @@ model PaymentCategory {
 
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
+
+  @@index([organizationId])
 }
 
 model OtherReceipt {
   id String @id @default(uuid())
 
-  receiptNumber Int @unique
+  organizationId String
+  organization   Organization @relation(fields: [organizationId], references: [id])
+  receiptNumber Int
 
   type ReceiptType
 
@@ -343,7 +423,7 @@ model OtherReceipt {
 
   method PaymentMethod
 
-  amount Int
+  amount Decimal @db.Decimal(10,2)
 
   bankName String?
   bankRef  String?
@@ -352,15 +432,22 @@ model OtherReceipt {
 
   createdAt DateTime @default(now())
 
+  @@unique([organizationId, receiptNumber])
+  @@index([organizationId])
   @@index([date])
   @@index([receiptNumber])
 }
 
 model ImportJob {
   id        String   @id @default(uuid())
+  organizationId String
+  organization   Organization @relation(fields: [organizationId], references: [id])
   type      String
   totalRows Int
   processed Int      @default(0)
   status    String   @default("running") // running | done | error
   createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  @@index([organizationId])
 }

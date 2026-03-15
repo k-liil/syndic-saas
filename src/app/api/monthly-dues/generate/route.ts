@@ -1,6 +1,7 @@
 import { NextResponse } from "next/server";
 import { prisma } from "@/lib/prisma";
 import { UnitType, DueStatus } from "@prisma/client";
+import { requireAdmin } from "@/lib/authz";
 
 function firstDayOfMonth(d: Date) {
   return new Date(Date.UTC(d.getUTCFullYear(), d.getUTCMonth(), 1, 0, 0, 0));
@@ -8,6 +9,11 @@ function firstDayOfMonth(d: Date) {
 
 export async function POST(req: Request) {
   try {
+    const gate = await requireAdmin();
+    if (!gate.ok) {
+      return NextResponse.json({ error: gate.error }, { status: gate.status });
+    }
+
     const body = await req.json();
     const buildingId = body.buildingId as string;
     const periodInput = body.period ? new Date(body.period) : new Date();
@@ -24,6 +30,7 @@ export async function POST(req: Request) {
     // - On exclut COMMERCIAL (si tu veux l’inclure un jour, ce sera un switch)
     const units = await prisma.unit.findMany({
       where: {
+        organizationId: gate.organizationId,
         buildingId,
         isActive: true,
         type: { in: [UnitType.APARTMENT, UnitType.GARAGE] },
@@ -38,6 +45,7 @@ export async function POST(req: Request) {
 
         return {
           unitId: u.id,
+          organizationId: gate.organizationId,
           period,
           amountDue: amount,
           paidAmount: 0,

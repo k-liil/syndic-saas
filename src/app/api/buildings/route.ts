@@ -3,7 +3,13 @@ import { prisma } from "@/lib/prisma";
 import { requireAdmin } from "@/lib/authz";
 
 export async function GET() {
+  const gate = await requireAdmin();
+  if (!gate.ok) {
+    return NextResponse.json({ error: gate.error }, { status: gate.status });
+  }
+
   const items = await prisma.building.findMany({
+    where: { organizationId: gate.organizationId },
     orderBy: { createdAt: "desc" },
   });
 
@@ -21,6 +27,7 @@ export async function POST(req: Request) {
 
   const created = await prisma.building.create({
     data: {
+      organizationId: gate.organizationId,
       name: body.name,
       address: body.address ?? null,
     },
@@ -41,6 +48,14 @@ export async function DELETE(req: Request) {
 
     if (!id) {
       return NextResponse.json({ error: "Missing id" }, { status: 400 });
+    }
+
+    const existing = await prisma.building.findFirst({
+      where: { id, organizationId: gate.organizationId },
+      select: { id: true },
+    });
+    if (!existing) {
+      return NextResponse.json({ error: "BUILDING_NOT_FOUND" }, { status: 404 });
     }
 
     await prisma.building.delete({ where: { id } });
@@ -72,6 +87,15 @@ export async function PATCH(req: Request) {
 
     if (!id) return NextResponse.json({ error: "Missing id" }, { status: 400 });
     if (!name) return NextResponse.json({ error: "Missing name" }, { status: 400 });
+
+    const existing = await prisma.building.findFirst({
+      where: { id, organizationId: gate.organizationId },
+      select: { id: true },
+    });
+
+    if (!existing) {
+      return NextResponse.json({ error: "BUILDING_NOT_FOUND" }, { status: 404 });
+    }
 
     const updated = await prisma.building.update({
       where: { id },

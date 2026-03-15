@@ -36,6 +36,7 @@ export async function POST(req: Request) {
 
       const job = await prisma.importJob.create({
         data: {
+          organizationId: gate.organizationId,
           type: "units",
           totalRows,
           processed: 0,
@@ -66,11 +67,12 @@ export async function POST(req: Request) {
       where: { id: jobId },
     });
 
-    if (!job) {
+    if (!job || job.organizationId !== gate.organizationId) {
       return NextResponse.json({ error: "Job introuvable" }, { status: 404 });
     }
 
     const buildings = await prisma.building.findMany({
+      where: { organizationId: gate.organizationId },
       select: { id: true, name: true },
     });
 
@@ -80,6 +82,7 @@ export async function POST(req: Request) {
     }
 
     const existingUnits = await prisma.unit.findMany({
+      where: { organizationId: gate.organizationId },
       select: { lotNumber: true },
     });
 
@@ -141,6 +144,7 @@ export async function POST(req: Request) {
 
         await prisma.unit.create({
           data: {
+            organizationId: gate.organizationId,
             lotNumber: r.lotNumber,
             reference: r.reference?.trim() || `Lot ${r.lotNumber}`,
             type: r.type,

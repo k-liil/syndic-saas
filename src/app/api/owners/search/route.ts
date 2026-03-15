@@ -1,7 +1,12 @@
 import { NextResponse } from "next/server";
 import { prisma } from "@/lib/prisma";
+import { requireAdmin } from "@/lib/authz";
 
 export async function GET(req: Request) {
+  const gate = await requireAdmin();
+  if (!gate.ok) {
+    return NextResponse.json({ error: gate.error }, { status: gate.status });
+  }
 
   const { searchParams } = new URL(req.url);
   const q = (searchParams.get("q") ?? "").trim();
@@ -12,6 +17,7 @@ export async function GET(req: Request) {
 
   const owners = await prisma.owner.findMany({
     where: {
+      organizationId: gate.organizationId,
       name: {
         contains: q,
         mode: "insensitive",
@@ -20,6 +26,7 @@ export async function GET(req: Request) {
     include: {
       ownerships: {
         where: {
+          organizationId: gate.organizationId,
           endDate: null,
         },
         include: {

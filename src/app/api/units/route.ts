@@ -3,16 +3,21 @@ import { prisma } from "@/lib/prisma";
 import { requireAdmin } from "@/lib/authz";
 
 export async function GET(req: Request) {
+  const gate = await requireAdmin();
+  if (!gate.ok) {
+    return NextResponse.json({ error: gate.error }, { status: gate.status });
+  }
+
   const { searchParams } = new URL(req.url);
   const type = searchParams.get("type");
 
   const where =
     type && ["APARTMENT", "GARAGE", "COMMERCIAL"].includes(type)
-      ? { type: type as "APARTMENT" | "GARAGE" | "COMMERCIAL" }
-      : undefined;
+      ? { organizationId: gate.organizationId, type: type as "APARTMENT" | "GARAGE" | "COMMERCIAL" }
+      : { organizationId: gate.organizationId };
 
   const items = await prisma.unit.findMany({
-    ...(where ? { where } : {}),
+    where,
     include: { building: true },
   });
 
@@ -87,10 +92,12 @@ const lotNumber =
     return NextResponse.json({ error: "buildingId is required for APARTMENT" }, { status: 400 });
   }
 
-const existingLot = await prisma.unit.findUnique({
-  where: { lotNumber },
+const existingLot = lotNumber
+  ? await prisma.unit.findFirst({
+  where: { lotNumber, organizationId: gate.organizationId },
   select: { id: true },
-});
+})
+  : null;
 
 if (existingLot) {
   return NextResponse.json({ error: "lotNumber already exists" }, { status: 409 });
@@ -99,6 +106,7 @@ if (existingLot) {
 
   const created = await prisma.unit.create({
     data: {
+      organizationId: gate.organizationId,
       lotNumber,
       reference,
       type,

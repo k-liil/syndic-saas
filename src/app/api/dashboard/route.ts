@@ -1,7 +1,31 @@
 import { NextResponse } from "next/server";
 import { prisma } from "@/lib/prisma";
+import { requireAdmin } from "@/lib/authz";
+
+function toNumber(value: unknown): number {
+  if (value == null) return 0;
+
+  if (typeof value === "number") return value;
+  if (typeof value === "string") return Number(value) || 0;
+
+  if (
+    typeof value === "object" &&
+    value !== null &&
+    "toNumber" in value &&
+    typeof (value as { toNumber: () => number }).toNumber === "function"
+  ) {
+    return (value as { toNumber: () => number }).toNumber();
+  }
+
+  return Number(value) || 0;
+}
 
 export async function GET(req: Request) {
+  const gate = await requireAdmin();
+  if (!gate.ok) {
+    return NextResponse.json({ error: gate.error }, { status: gate.status });
+  }
+
   const { searchParams } = new URL(req.url);
 const yearParam = searchParams.get("year");
 
@@ -43,6 +67,7 @@ if (yearParam) {
   ] = await Promise.all([
     prisma.receipt.findMany({
       where: {
+        organizationId: gate.organizationId,
         date: {
           gte: startDate,
           lt: endDate,
@@ -57,6 +82,7 @@ if (yearParam) {
 
     prisma.payment.findMany({
       where: {
+        organizationId: gate.organizationId,
         date: {
           gte: startDate,
           lt: endDate,
@@ -69,13 +95,14 @@ if (yearParam) {
       },
     }),
 
-    prisma.appSettings.findFirst(),
+    prisma.appSettings.findFirst({ where: { organizationId: gate.organizationId } }),
 
-    prisma.owner.count(),
+    prisma.owner.count({ where: { organizationId: gate.organizationId } }),
 
     prisma.receipt.groupBy({
       by: ["ownerId"],
       where: {
+        organizationId: gate.organizationId,
         date: {
           gte: startDate,
           lt: endDate,
@@ -89,6 +116,7 @@ if (yearParam) {
         amount: true,
       },
       where: {
+        organizationId: gate.organizationId,
         date: {
           gte: startDate,
           lt: endDate,
@@ -103,33 +131,37 @@ if (yearParam) {
   let receiptsCash = 0;
   let receiptsBank = 0;
 
-  for (const r of receipts) {
-    const month = new Date(r.date).getMonth();
-    receiptsByMonth[month] += r.amount;
+for (const r of receipts) {
+  const month = new Date(r.date).getMonth();
+  const amount = toNumber(r.amount);
 
-    if (r.method === "CASH") {
-      receiptsCash += r.amount;
-    } else {
-      receiptsBank += r.amount;
-    }
+  receiptsByMonth[month] += amount;
+
+  if (r.method === "CASH") {
+    receiptsCash += amount;
+  } else {
+    receiptsBank += amount;
   }
+}
 
   let paymentsCash = 0;
   let paymentsBank = 0;
 
-  for (const p of payments) {
-    const month = new Date(p.date).getMonth();
-    paymentsByMonth[month] += p.amount;
+for (const p of payments) {
+  const month = new Date(p.date).getMonth();
+  const amount = toNumber(p.amount);
 
-    if (p.method === "CASH") {
-      paymentsCash += p.amount;
-    } else {
-      paymentsBank += p.amount;
-    }
+  paymentsByMonth[month] += amount;
+
+  if (p.method === "CASH") {
+    paymentsCash += amount;
+  } else {
+    paymentsBank += amount;
   }
+}
 
-  const openingCash = settings?.openingCashBalance ?? 0;
-  const openingBank = settings?.openingBankBalance ?? 0;
+const openingCash = toNumber(settings?.openingCashBalance);
+const openingBank = toNumber(settings?.openingBankBalance);
 
   const cashBalance = openingCash + receiptsCash - paymentsCash;
   const bankBalance = openingBank + receiptsBank - paymentsBank;
@@ -151,6 +183,7 @@ const categoryIds = expensesByCategory
 const categories = categoryIds.length
   ? await prisma.paymentCategory.findMany({
       where: {
+        organizationId: gate.organizationId,
         id: { in: categoryIds },
       },
       select: {
@@ -163,20 +196,23 @@ const categories = categoryIds.length
 const expensesByCategoryFormatted = expensesByCategory.map((c) => ({
   categoryName:
     categories.find((cat) => cat.id === c.categoryId)?.name ?? "Sans catégorie",
-  amount: c._sum.amount ?? 0,
+  amount: toNumber(c._sum.amount),
 }));
 
-  return NextResponse.json({
-    year,
-    totalReceipts,
-    totalPayments,
-    cashBalance,
-    bankBalance,
-    receiptsByMonth,
-    paymentsByMonth,
-    collectionRate,
-    ownersCount,
-    paidOwnersCount,
-    expensesByCategory: expensesByCategoryFormatted,
-  });
+return NextResponse.json({
+  year,
+  totalReceipts: Number(totalReceipts),
+  totalPayments: Number(totalPayments),
+  cashBalance: Number(cashBalance),
+  bankBalance: Number(bankBalance),
+  receiptsByMonth: receiptsByMonth.map(Number),
+  paymentsByMonth: paymentsByMonth.map(Number),
+  collectionRate: Number(collectionRate),
+  ownersCount,
+  paidOwnersCount,
+  expensesByCategory: expensesByCategoryFormatted.map((e) => ({
+    ...e,
+    amount: Number(e.amount),
+  })),
+});
 }

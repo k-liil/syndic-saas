@@ -3,7 +3,13 @@ import { prisma } from "@/lib/prisma";
 import { requireAdmin } from "@/lib/authz";
 
 export async function GET() {
+  const gate = await requireAdmin();
+  if (!gate.ok) {
+    return NextResponse.json({ error: gate.error }, { status: gate.status });
+  }
+
   const suppliers = await prisma.supplier.findMany({
+    where: { organizationId: gate.organizationId },
     orderBy: { name: "asc" },
   });
 
@@ -30,6 +36,7 @@ export async function POST(req: Request) {
     }
 const existing = await prisma.supplier.findFirst({
   where: {
+    organizationId: gate.organizationId,
     name: {
       equals: name,
       mode: "insensitive",
@@ -45,6 +52,7 @@ if (existing) {
 }
     const supplier = await prisma.supplier.create({
       data: {
+        organizationId: gate.organizationId,
         name,
         phone: typeof body.phone === "string" ? body.phone : null,
         email: typeof body.email === "string" ? body.email : null,
@@ -77,6 +85,18 @@ export async function PUT(req: Request) {
       return NextResponse.json(
         { error: "ID_REQUIRED" },
         { status: 400 }
+      );
+    }
+
+    const existing = await prisma.supplier.findFirst({
+      where: { id: body.id, organizationId: gate.organizationId },
+      select: { id: true },
+    });
+
+    if (!existing) {
+      return NextResponse.json(
+        { error: "SUPPLIER_NOT_FOUND" },
+        { status: 404 }
       );
     }
 

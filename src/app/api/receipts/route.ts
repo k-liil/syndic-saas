@@ -2,7 +2,6 @@ import { NextResponse } from "next/server";
 import { prisma } from "@/lib/prisma";
 import { requireAdmin } from "@/lib/authz";
 import { DueStatus } from "@prisma/client";
-import { ensureFiscalYear } from "@/lib/fiscalYear";
 
 function firstDayOfMonth(d: Date) {
   return new Date(Date.UTC(d.getUTCFullYear(), d.getUTCMonth(), 1));
@@ -34,17 +33,29 @@ export async function GET(req: Request) {
   const pageSize = Math.min(100, Math.max(1, Number(searchParams.get("pageSize") ?? 50)));
 
   const type = asString(searchParams.get("type")).trim();
+  const rawYear = searchParams.get("year");
+  const year = rawYear ? Number(rawYear) : null;
   const buildingId = asString(searchParams.get("buildingId")).trim();
   const ownerId = asString(searchParams.get("ownerId")).trim();
   const q = asString(searchParams.get("q")).trim();
+  const method = asString(searchParams.get("method")).trim();
 
   const skip = (page - 1) * pageSize;
 
-  const where: any = {};
+  const where: any = {
+    organizationId: gate.organizationId,
+  };
 
-  if (type) where.type = type;
-  if (buildingId) where.buildingId = buildingId;
-  if (ownerId) where.ownerId = ownerId;
+if (type) where.type = type;
+if (year && Number.isFinite(year)) {
+  where.date = {
+    gte: new Date(Date.UTC(year, 0, 1)),
+    lt: new Date(Date.UTC(year + 1, 0, 1)),
+  };
+}
+if (buildingId) where.buildingId = buildingId;
+if (ownerId) where.ownerId = ownerId;
+if (method) where.method = method;
 
   if (q) {
     where.OR = [
@@ -59,7 +70,8 @@ export async function GET(req: Request) {
     ];
   }
 
-  const [items, total] = await prisma.$transaction([
+const [items, total, totalAllAgg, totalCashAgg, totalTransferAgg, totalCheckAgg] =
+  await prisma.$transaction([
     prisma.receipt.findMany({
       where,
       skip,
@@ -83,7 +95,52 @@ export async function GET(req: Request) {
       },
     }),
     prisma.receipt.count({ where }),
+    prisma.receipt.aggregate({
+      where,
+      _sum: { amount: true },
+    }),
+    prisma.receipt.aggregate({
+      where: {
+        ...where,
+        method: "CASH",
+      },
+      _sum: { amount: true },
+    }),
+    prisma.receipt.aggregate({
+      where: {
+        ...where,
+        method: "TRANSFER",
+      },
+      _sum: { amount: true },
+    }),
+    prisma.receipt.aggregate({
+      where: {
+        ...where,
+        method: "CHECK",
+      },
+      _sum: { amount: true },
+    }),
   ]);
+
+return NextResponse.json({
+  items: items.map((item) => ({
+    ...item,
+    amount: Number(item.amount ?? 0),
+    unallocatedAmount: Number(item.unallocatedAmount ?? 0),
+  })),
+  pagination: {
+    page,
+    pageSize,
+    total,
+    totalPages: Math.max(1, Math.ceil(total / pageSize)),
+  },
+  totals: {
+    all: Number(totalAllAgg._sum.amount ?? 0),
+    cash: Number(totalCashAgg._sum.amount ?? 0),
+    transfer: Number(totalTransferAgg._sum.amount ?? 0),
+    check: Number(totalCheckAgg._sum.amount ?? 0),
+  },
+});
 
   return NextResponse.json({
     items,
@@ -142,9 +199,10 @@ export async function POST(req: Request) {
 
     const result = await prisma.$transaction(async (tx) => {
       const unit = unitId
-        ? await tx.unit.findUnique({
-            where: { id: unitId },
+        ? await tx.unit.findFirst({
+            where: { id: unitId, organizationId: gate.organizationId },
             select: {
+              organizationId: true,
               id: true,
               lotNumber: true,
               buildingId: true,
@@ -152,9 +210,10 @@ export async function POST(req: Request) {
               reference: true,
             },
           })
-        : await tx.unit.findUnique({
-            where: { lotNumber },
+        : await tx.unit.findFirst({
+            where: { lotNumber, organizationId: gate.organizationId },
             select: {
+              organizationId: true,
               id: true,
               lotNumber: true,
               buildingId: true,
@@ -173,6 +232,7 @@ export async function POST(req: Request) {
 
       const ownership = await tx.ownership.findFirst({
         where: {
+          organizationId: gate.organizationId,
           unitId: unit.id,
           endDate: null,
         },
@@ -187,12 +247,15 @@ export async function POST(req: Request) {
 
       const ownerId = ownership.ownerId;
 
-      const settings = await tx.appSettings.findFirst();
+      const settings = await tx.appSettings.findFirst({
+        where: { organizationId: gate.organizationId },
+      });
       const startYear = settings?.startYear ?? 2026;
       const startMonth = settings?.startMonth ?? 1;
       const receiptStartNumber = settings?.receiptStartNumber ?? 1;
 
       const lastReceipt = await tx.receipt.findFirst({
+        where: { organizationId: gate.organizationId },
         orderBy: { receiptNumber: "desc" },
         select: { receiptNumber: true },
       });
@@ -214,9 +277,15 @@ export async function POST(req: Request) {
 const fiscalYear = date.getUTCFullYear();
 
 await tx.fiscalYear.upsert({
-  where: { year: fiscalYear },
+  where: {
+    organizationId_year: {
+      organizationId: gate.organizationId,
+      year: fiscalYear,
+    },
+  },
   update: {},
   create: {
+    organizationId: gate.organizationId,
     year: fiscalYear,
     startsAt: new Date(Date.UTC(fiscalYear, 0, 1)),
     endsAt: new Date(Date.UTC(fiscalYear, 11, 31)),
@@ -228,6 +297,7 @@ await tx.fiscalYear.upsert({
 
       const receipt = await tx.receipt.create({
         data: {
+          organizationId: gate.organizationId,
           receiptNumber: nextNumber,
           type,
           ownerId,
@@ -253,6 +323,7 @@ await tx.fiscalYear.upsert({
         await tx.monthlyDue.createMany({
           data: [
             {
+              organizationId: gate.organizationId,
               unitId: unit.id,
               period,
               amountDue: fee,
@@ -278,6 +349,7 @@ await tx.fiscalYear.upsert({
       while (remaining > 0 && futureOffset <= MAX_FUTURE_MONTHS) {
         const dues = await tx.monthlyDue.findMany({
           where: {
+            organizationId: gate.organizationId,
             unitId: unit.id,
             status: { in: [DueStatus.UNPAID, DueStatus.PARTIAL] },
             period: { gte: startPeriod },

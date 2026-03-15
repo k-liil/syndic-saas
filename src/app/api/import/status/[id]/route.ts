@@ -13,8 +13,8 @@ export async function GET(
 
   const { id } = await params;
 
-  const job = await prisma.importJob.findUnique({
-    where: { id },
+  const job = await prisma.importJob.findFirst({
+    where: { id, organizationId: gate.organizationId },
   });
 
   if (!job) {

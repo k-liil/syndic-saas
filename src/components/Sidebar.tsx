@@ -3,51 +3,45 @@
 import Link from "next/link";
 import { usePathname } from "next/navigation";
 import {
-  LayoutDashboard,
-  CalendarRange,
   Banknote,
-  Calculator,
-  Sparkles,
-  Settings,
   Building2,
-  Users,
+  CalendarRange,
+  Calculator,
   Home,
-  Link2,
+  LayoutDashboard,
   Receipt,
-  Truck,
-  Tag,
+  Settings,
+  Sparkles,
+  Users,
 } from "lucide-react";
 
 type Item = { title: string; href: string; icon: React.ElementType };
 
-const dashboard: Item[] = [{ title: "Tableau de bord", href: "/dashboard", icon: LayoutDashboard }];
-
-// Ancien "OPÉRATIONS" (Vue annuelle + Générer cotisations) => devient "SUIVI"
-const suivi: Item[] = [
-  { title: "Vue annuelle", href: "/ops/year-view", icon: CalendarRange },
-  { title: "Générer cotisations", href: "/ops/dues_generate", icon: Sparkles },
+const dashboard: Item[] = [
+  { title: "Tableau de bord", href: "/dashboard", icon: LayoutDashboard },
 ];
 
-// Ancien "FINANCES" => devient "OPÉRATIONS" (Recettes/Dépenses/Comptabilité)
+const suivi: Item[] = [
+  { title: "Vue annuelle", href: "/ops/contributions/year", icon: CalendarRange },
+  { title: "Generer cotisations", href: "/ops/dues_generate", icon: Sparkles },
+];
+
 const operations: Item[] = [
   { title: "Recettes", href: "/ops/receipts", icon: Banknote },
   { title: "Paiements", href: "/ops/payments", icon: Receipt },
-  { title: "Comptabilité", href: "/ops/accounting", icon: Calculator },
+  { title: "Comptabilite", href: "/ops/accounting", icon: Calculator },
 ];
 
 const gestion: Item[] = [
   { title: "Immeubles", href: "/setup/buildings", icon: Building2 },
   { title: "Lots", href: "/setup/units", icon: Home },
-  { title: "Copropriétaires", href: "/setup/owners", icon: Users },
-  { title: "Affectations", href: "/setup/ownerships", icon: Link2 },
-  { title: "Fournisseurs", href: "/setup/suppliers", icon: Truck },
-  { title: "Catégories dépenses", href: "/setup/payment-categories", icon: Tag },
-  { title: "Paramètres", href: "/setup/settings", icon: Settings },
+  { title: "Coproprietaires", href: "/setup/owners", icon: Users },
+  { title: "Parametres", href: "/setup/settings", icon: Settings },
 ];
 
 function SectionTitle({ children }: { children: React.ReactNode }) {
   return (
-    <div className="mt-5 px-3 py-2 text-[11px] font-semibold uppercase tracking-wider text-zinc-500">
+    <div className="px-3 pb-1.5 pt-3 text-[10px] font-semibold uppercase tracking-[0.16em] text-slate-400">
       {children}
     </div>
   );
@@ -68,25 +62,28 @@ function NavItem({
     <Link
       href={href}
       className={[
-        "group relative flex items-center gap-3 rounded-lg px-3 py-2 text-sm transition",
-        active ? "bg-zinc-50 text-zinc-900" : "text-zinc-700 hover:bg-zinc-50",
+        "group relative flex items-center gap-2.5 rounded-xl px-3 py-2 text-[13px] transition",
+        active
+          ? "bg-white text-slate-950 shadow-sm"
+          : "text-slate-600 hover:bg-white hover:text-slate-950",
       ].join(" ")}
     >
       <span
         className={[
-          "absolute left-0 top-0 h-full w-[3px] rounded-l-lg opacity-0",
-          active ? "opacity-100" : "group-hover:opacity-30",
+          "flex h-8 w-8 items-center justify-center rounded-xl transition",
+          active
+            ? "bg-sky-50 text-sky-600"
+            : "bg-slate-100 text-slate-500 group-hover:bg-slate-100 group-hover:text-slate-800",
         ].join(" ")}
-        style={{ backgroundColor: "var(--brand)" }}
-      />
-      <Icon size={18} className={active ? "text-[color:var(--brand)]" : "text-zinc-500"} />
+      >
+        <Icon size={16} />
+      </span>
       <span className="font-medium">{title}</span>
     </Link>
   );
 }
 
 function isActivePath(pathname: string, href: string) {
-  // actif si exactement la route ou si on est dans un sous-chemin
   if (pathname === href) return true;
   if (href !== "/" && pathname.startsWith(href + "/")) return true;
   return false;
@@ -97,61 +94,57 @@ export function Sidebar() {
 
   return (
     <aside className="flex h-full flex-col">
-      <div className="px-2 py-3">
-        <nav className="space-y-1">
-          {dashboard.map((i) => (
+      <div className="space-y-0.5">
+        <nav className="space-y-0.5">
+          {dashboard.map((item) => (
             <NavItem
-              key={i.href}
-              href={i.href}
-              title={i.title}
-              Icon={i.icon}
-              active={isActivePath(pathname, i.href)}
+              key={item.href}
+              href={item.href}
+              title={item.title}
+              Icon={item.icon}
+              active={isActivePath(pathname, item.href)}
             />
           ))}
         </nav>
 
         <SectionTitle>Suivi</SectionTitle>
-        <nav className="space-y-1">
-          {suivi.map((i) => (
+        <nav className="space-y-0.5">
+          {suivi.map((item) => (
             <NavItem
-              key={i.href}
-              href={i.href}
-              title={i.title}
-              Icon={i.icon}
-              active={isActivePath(pathname, i.href)}
+              key={item.href}
+              href={item.href}
+              title={item.title}
+              Icon={item.icon}
+              active={isActivePath(pathname, item.href)}
             />
           ))}
         </nav>
 
-        <SectionTitle>Opérations</SectionTitle>
-        <nav className="space-y-1">
-          {operations.map((i) => (
+        <SectionTitle>Operations</SectionTitle>
+        <nav className="space-y-0.5">
+          {operations.map((item) => (
             <NavItem
-              key={i.href}
-              href={i.href}
-              title={i.title}
-              Icon={i.icon}
-              active={isActivePath(pathname, i.href)}
+              key={item.href}
+              href={item.href}
+              title={item.title}
+              Icon={item.icon}
+              active={isActivePath(pathname, item.href)}
             />
           ))}
         </nav>
 
         <SectionTitle>Gestion</SectionTitle>
-        <nav className="space-y-1">
-          {gestion.map((i) => (
+        <nav className="space-y-0.5">
+          {gestion.map((item) => (
             <NavItem
-              key={i.href}
-              href={i.href}
-              title={i.title}
-              Icon={i.icon}
-              active={isActivePath(pathname, i.href)}
+              key={item.href}
+              href={item.href}
+              title={item.title}
+              Icon={item.icon}
+              active={isActivePath(pathname, item.href)}
             />
           ))}
         </nav>
-      </div>
-
-      <div className="mt-auto border-t px-4 py-3 text-xs text-zinc-600">
-        Recettes = encaissements. Dépenses = paiements fournisseurs.
       </div>
     </aside>
   );

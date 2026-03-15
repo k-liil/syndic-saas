@@ -3,7 +3,13 @@ import { prisma } from "@/lib/prisma";
 import { requireAdmin } from "@/lib/authz";
 
 export async function GET() {
+  const gate = await requireAdmin();
+  if (!gate.ok) {
+    return NextResponse.json({ error: gate.error }, { status: gate.status });
+  }
+
   const items = await prisma.ownership.findMany({
+    where: { organizationId: gate.organizationId },
     orderBy: { startDate: "desc" },
     include: {
       owner: true,
@@ -39,6 +45,7 @@ export async function POST(req: Request) {
   // prevent duplicate active ownership for same owner+unit
   const existing = await prisma.ownership.findFirst({
     where: {
+      organizationId: gate.organizationId,
       ownerId,
       unitId,
       endDate: null,
@@ -54,6 +61,7 @@ export async function POST(req: Request) {
 
   const created = await prisma.ownership.create({
     data: {
+      organizationId: gate.organizationId,
       ownerId,
       unitId,
       startDate,

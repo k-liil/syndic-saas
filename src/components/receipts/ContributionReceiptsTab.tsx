@@ -1,8 +1,9 @@
 "use client";
 
 import { useEffect, useState } from "react";
+import { useSearchParams } from "next/navigation";
 import { Modal } from "@/components/ui/Modal";
-import { Table, THead, TR, TH, TD } from "@/components/ui/Table";
+import { Table, THead, TR, TH, TD } from "@/components/ui/table";
 
 type Method = "CASH" | "TRANSFER" | "CHECK";
 
@@ -38,6 +39,14 @@ function fmtMonth(d: string) {
   });
 }
 
+function fmtElapsed(ms: number) {
+  const totalSeconds = Math.max(0, Math.floor(ms / 1000));
+  const minutes = Math.floor(totalSeconds / 60);
+  const seconds = totalSeconds % 60;
+
+  return `${minutes}:${String(seconds).padStart(2, "0")}`;
+}
+
 function fmtReceiptNumber(
   receiptNumber: number,
   usePrefix: boolean,
@@ -51,7 +60,19 @@ function fmtReceiptNumber(
 }
 
 export function ContributionReceiptsTab() {
+  const searchParams = useSearchParams();
+  const year = searchParams.get("year");
+
   const [receipts, setReceipts] = useState<Receipt[]>([]);
+  const [totalReceipts, setTotalReceipts] = useState(0);
+  const [selectAllAcrossResults, setSelectAllAcrossResults] = useState(false);
+
+const [totals, setTotals] = useState({
+  all: 0,
+  cash: 0,
+  transfer: 0,
+  check: 0,
+});
 
   const [page, setPage] = useState(1);
 const [pageSize] = useState(50);
@@ -64,19 +85,22 @@ const [totalPages, setTotalPages] = useState(1);
     "ALL" | "CASH" | "TRANSFER" | "CHECK"
   >("ALL");
 
-  const totalAll = receipts.reduce((sum, r) => sum + Number(r.amount ?? 0), 0);
+  const [search, setSearch] = useState("");
 
-  const totalCash = receipts
-    .filter((r) => r.method === "CASH")
-    .reduce((sum, r) => sum + Number(r.amount ?? 0), 0);
+const totalAll = totals.all;
+const totalCash = totals.cash;
+const totalTransfer = totals.transfer;
+const totalCheck = totals.check;
 
-  const totalTransfer = receipts
-    .filter((r) => r.method === "TRANSFER")
-    .reduce((sum, r) => sum + Number(r.amount ?? 0), 0);
+const filteredReceipts = receipts.filter((r) => {
+  const q = search.toLowerCase();
 
-  const totalCheck = receipts
-    .filter((r) => r.method === "CHECK")
-    .reduce((sum, r) => sum + Number(r.amount ?? 0), 0);
+  return (
+    r.owner?.name?.toLowerCase().includes(q) ||
+    r.unit?.reference?.toLowerCase().includes(q) ||
+    r.building?.name?.toLowerCase().includes(q)
+  );
+});
 
   const [mode, setMode] = useState<"UNIT" | "OWNER">("UNIT");
   const [deleteOpen, setDeleteOpen] = useState(false);
@@ -92,9 +116,12 @@ const [totalPages, setTotalPages] = useState(1);
 const [importProgress, setImportProgress] = useState(0);
 const [importTotal, setImportTotal] = useState(0);
 const [importPercent, setImportPercent] = useState(0);
+  const [importStartedAt, setImportStartedAt] = useState<number | null>(null);
+  const [importElapsedMs, setImportElapsedMs] = useState(0);
 
   const [toast, setToast] = useState<null | { type: "success" | "error"; text: string }>(null);
   const [deleting, setDeleting] = useState(false);
+  const [bulkDeleting, setBulkDeleting] = useState(false);
   const [receiptToDeleteNumber, setReceiptToDeleteNumber] = useState<number | null>(null);
 
   const [amount, setAmount] = useState("");
@@ -119,6 +146,7 @@ const [importPercent, setImportPercent] = useState(0);
   const [importResult, setImportResult] = useState<null | {
   imported: number;
   errors: { row: number; error: string }[];
+  durationMs: number;
 }>(null);
 
   const [success, setSuccess] = useState<null | {
@@ -131,43 +159,133 @@ const [importPercent, setImportPercent] = useState(0);
   }>(null);
 
 async function loadReceipts() {
-  const res = await fetch(
-    `/api/receipts?page=${page}&pageSize=${pageSize}&type=CONTRIBUTION`
-  );
+  if (!year) return;
+
+  const params = new URLSearchParams({
+    page: String(page),
+    pageSize: String(pageSize),
+    type: "CONTRIBUTION",
+    year,
+  });
+
+  if (methodFilter !== "ALL") {
+    params.append("method", methodFilter);
+  }
+
+  const res = await fetch(`/api/receipts?${params.toString()}`, {
+    cache: "no-store",
+  });
 
   const data = await res.json();
 
-  setReceipts(data.items);
-  setTotalPages(data.pagination.totalPages);
+setReceipts(Array.isArray(data?.items) ? data.items : []);
+setTotalPages(Number(data?.pagination?.totalPages ?? 1));
+setTotalReceipts(Number(data?.pagination?.total ?? 0));
+
+setTotals({
+  all: Number(data?.totals?.all ?? 0),
+  cash: Number(data?.totals?.cash ?? 0),
+  transfer: Number(data?.totals?.transfer ?? 0),
+  check: Number(data?.totals?.check ?? 0),
+});
 }
 
-async function deleteSelected() {
+async function loadReceiptsTotalCount() {
+  if (!year) return 0;
 
-  if (selectedReceipts.length === 0) return;
+  const params = new URLSearchParams({
+    page: "1",
+    pageSize: "1",
+    type: "CONTRIBUTION",
+    year,
+  });
 
-  const res = await fetch("/api/receipts/bulk", {
-    method: "DELETE",
-    headers: {
-      "Content-Type": "application/json",
-    },
-    body: JSON.stringify({
-      ids: selectedReceipts,
-    }),
+  if (methodFilter !== "ALL") {
+    params.append("method", methodFilter);
+  }
+
+  const res = await fetch(`/api/receipts?${params.toString()}`, {
+    cache: "no-store",
   });
 
   const data = await res.json().catch(() => null);
+  return Number(data?.pagination?.total ?? 0);
+}
 
-  if (!res.ok) {
-    setToast({
-      type: "error",
-      text: data?.error ?? "Erreur suppression",
+async function deleteSelected() {
+  if (selectedReceipts.length === 0 && !selectAllAcrossResults) return;
+
+  setBulkDeleting(true);
+
+  if (selectAllAcrossResults) {
+    for (let attempt = 0; attempt < 5; attempt += 1) {
+      const res = await fetch("/api/receipts/bulk", {
+        method: "DELETE",
+        headers: {
+          "Content-Type": "application/json",
+        },
+        body: JSON.stringify({
+          deleteAll: true,
+          type: "CONTRIBUTION",
+          year,
+          method: methodFilter === "ALL" ? undefined : methodFilter,
+        }),
+      });
+
+      const data = await res.json().catch(() => null);
+
+      if (!res.ok) {
+        setToast({
+          type: "error",
+          text: data?.error ?? "Erreur suppression",
+        });
+        setBulkDeleting(false);
+        return;
+      }
+
+      const remaining = await loadReceiptsTotalCount();
+      if (remaining === 0) {
+        break;
+      }
+
+      if (attempt === 4) {
+        setToast({
+          type: "error",
+          text: `Suppression partielle : ${remaining} ligne(s) restante(s)`,
+        });
+        setBulkDeleting(false);
+        return;
+      }
+    }
+  } else {
+    const res = await fetch("/api/receipts/bulk", {
+      method: "DELETE",
+      headers: {
+        "Content-Type": "application/json",
+      },
+      body: JSON.stringify({
+        ids: selectedReceipts,
+      }),
     });
-    return;
+
+    const data = await res.json().catch(() => null);
+
+    if (!res.ok) {
+      setToast({
+        type: "error",
+        text: data?.error ?? "Erreur suppression",
+      });
+      setBulkDeleting(false);
+      return;
+    }
   }
 
   setSelectedReceipts([]);
+  setSelectAllAcrossResults(false);
+  setPage(1);
 
   await loadReceipts();
+  setBulkDeleting(false);
 
   setToast({
     type: "success",
@@ -178,14 +296,17 @@ async function deleteSelected() {
 }
 
 function toggleSelectAll() {
-  if (selectedReceipts.length === receipts.length) {
+  if (selectedReceipts.length === receipts.length && !selectAllAcrossResults) {
     setSelectedReceipts([]);
+    setSelectAllAcrossResults(false);
   } else {
     setSelectedReceipts(receipts.map((r) => r.id));
+    setSelectAllAcrossResults(false);
   }
 }
 
   function toggleSelect(id: string) {
+  setSelectAllAcrossResults(false);
   setSelectedReceipts((prev) =>
     prev.includes(id)
       ? prev.filter((x) => x !== id)
@@ -196,89 +317,137 @@ function toggleSelectAll() {
 async function importReceipts() {
   if (!importFile) return;
 
+  const startedAt = Date.now();
   setImportBusy(true);
+  setImportStartedAt(startedAt);
+  setImportElapsedMs(0);
   setImportProgress(0);
   setImportTotal(0);
   setImportPercent(0);
 setImportResult(null);
 
-  const text = await importFile.text();
-  const lines = text.split(/\r?\n/).filter(Boolean);
+  try {
+    const text = await importFile.text();
+    const lines = text.split(/\r?\n/).filter(Boolean);
 
-  const rows = lines.slice(1).map((l) => {
-    const c = l.split(",");
-    return {
-      lotNumber: c[0],
-      amount: Number(c[1]),
-      method: c[2],
-      date: c[3],
-      note: c[4] ?? "",
-    };
-  });
+    const rows = lines.slice(1).map((l) => {
+      const c = l.split(",");
+      return {
+        lotNumber: c[0],
+        amount: Number(c[1]),
+        method: c[2],
+        date: c[3],
+        note: c[4] ?? "",
+      };
+    });
 
-  setImportTotal(rows.length);
+    if (rows.length === 0) {
+      throw new Error("Le fichier ne contient aucune ligne exploitable");
+    }
 
-  const start = await fetch("/api/import/receipts", {
-    method: "POST",
-    headers: { "Content-Type": "application/json" },
-    body: JSON.stringify({
-      action: "start",
-      totalRows: rows.length,
-    }),
-  });
+    setImportTotal(rows.length);
 
-  const startData = await start.json();
-  const jobId = startData.jobId;
-
-  const batchSize = 5;
-  let processed = 0;
-let imported = 0;
-const errors: { row: number; error: string }[] = [];
-
-  while (processed < rows.length) {
-    const batch = rows.slice(processed, processed + batchSize);
-
-    const res = await fetch("/api/import/receipts", {
+    const start = await fetch("/api/import/receipts", {
       method: "POST",
-      headers: {
-        "Content-Type": "application/json",
-      },
+      headers: { "Content-Type": "application/json" },
       body: JSON.stringify({
-        action: "batch",
-        jobId,
-        rows: batch,
-        offset: processed,
-        isLastBatch: processed + batchSize >= rows.length,
+        action: "start",
+        totalRows: rows.length,
       }),
     });
 
-const data = await res.json();
+    const startData = await start.json().catch(() => null);
 
-imported += Number(data?.imported ?? 0);
+    if (!start.ok || !startData?.jobId) {
+      throw new Error(startData?.error ?? "Impossible de demarrer l'import");
+    }
 
-if (Array.isArray(data?.errors)) {
-  errors.push(...data.errors);
+    const jobId = startData.jobId;
+
+    const batchSize = 100;
+    let processed = 0;
+    let imported = 0;
+    const errors: { row: number; error: string }[] = [];
+
+    while (processed < rows.length) {
+      const batch = rows.slice(processed, processed + batchSize);
+
+      const res = await fetch("/api/import/receipts", {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+        },
+        body: JSON.stringify({
+          action: "batch",
+          jobId,
+          rows: batch,
+          offset: processed,
+          isLastBatch: processed + batchSize >= rows.length,
+        }),
+      });
+
+      const data = await res.json().catch(() => null);
+
+      if (!res.ok) {
+        throw new Error(data?.error ?? "Echec pendant l'import");
+      }
+
+      imported += Number(data?.imported ?? 0);
+
+      if (Array.isArray(data?.errors)) {
+        errors.push(...data.errors);
+      }
+
+      processed += batch.length;
+
+      setImportProgress(processed);
+      setImportPercent(Math.round((processed / rows.length) * 100));
+    }
+
+    await loadReceipts();
+
+    setImportResult({
+      imported,
+      errors,
+      durationMs: Date.now() - startedAt,
+    });
+
+    setImportFile(null);
+
+    const input = document.querySelector('input[type="file"]') as HTMLInputElement | null;
+    if (input) input.value = "";
+  } catch (error: any) {
+    setImportResult({
+      imported: 0,
+      errors: [
+        {
+          row: 0,
+          error: error?.message ?? "Import impossible",
+        },
+      ],
+      durationMs: Date.now() - startedAt,
+    });
+  } finally {
+    setImportBusy(false);
+    setImportStartedAt(null);
+    setImportElapsedMs(0);
+  }
 }
 
-processed += batch.length;
-
-    setImportProgress(processed);
-    setImportPercent(Math.round((processed / rows.length) * 100));
+useEffect(() => {
+  if (!importBusy || !importStartedAt) {
+    setImportElapsedMs(0);
+    return;
   }
 
-await loadReceipts();
+  setImportElapsedMs(Date.now() - importStartedAt);
 
-setImportResult({
-  imported,
-  errors,
-});
+  const timer = window.setInterval(() => {
+    setImportElapsedMs(Date.now() - importStartedAt);
+  }, 1000);
 
-setImportFile(null);
-setImportBusy(false);
-
-const input = document.querySelector('input[type="file"]') as HTMLInputElement | null;
-if (input) input.value = "";
-}
+  return () => window.clearInterval(timer);
+}, [importBusy, importStartedAt]);
 
   async function openDetail(id: string) {
     const res = await fetch(`/api/receipts/${id}`, { cache: "no-store" });
@@ -434,8 +603,9 @@ if (input) input.value = "";
   }
 
 useEffect(() => {
+  if (!year) return;
   loadReceipts();
-}, [page]);
+}, [page, methodFilter, year]);
 
 useEffect(() => {
   loadBanks();
@@ -444,7 +614,14 @@ useEffect(() => {
 
 useEffect(() => {
   setPage(1);
-}, [methodFilter]);
+  setSelectedReceipts([]);
+  setSelectAllAcrossResults(false);
+}, [year]);
+
+useEffect(() => {
+  setSelectedReceipts([]);
+  setSelectAllAcrossResults(false);
+}, [methodFilter, page]);
 
   async function searchUnits(q: string) {
     setQuery(q);
@@ -580,7 +757,10 @@ useEffect(() => {
       <div className="flex flex-col gap-4 xl:flex-row xl:items-center xl:justify-between">
         <div className="flex gap-2">
           <button
-            onClick={() => setMethodFilter("ALL")}
+            onClick={() => {
+              setPage(1);
+              setMethodFilter("ALL");
+            }}
             className={`rounded-xl px-3 py-1.5 text-sm border ${
               methodFilter === "ALL" ? "bg-zinc-900 text-white" : "bg-white"
             }`}
@@ -589,7 +769,10 @@ useEffect(() => {
           </button>
 
           <button
-            onClick={() => setMethodFilter("CASH")}
+            onClick={() => {
+              setPage(1);
+              setMethodFilter("CASH");
+            }}
             className={`rounded-xl px-3 py-1.5 text-sm border ${
               methodFilter === "CASH" ? "bg-zinc-900 text-white" : "bg-white"
             }`}
@@ -598,7 +781,10 @@ useEffect(() => {
           </button>
 
           <button
-            onClick={() => setMethodFilter("TRANSFER")}
+            onClick={() => {
+              setPage(1);
+              setMethodFilter("TRANSFER");
+            }}
             className={`rounded-xl px-3 py-1.5 text-sm border ${
               methodFilter === "TRANSFER" ? "bg-zinc-900 text-white" : "bg-white"
             }`}
@@ -607,7 +793,10 @@ useEffect(() => {
           </button>
 
           <button
-            onClick={() => setMethodFilter("CHECK")}
+            onClick={() => {
+              setPage(1);
+              setMethodFilter("CHECK");
+            }}
             className={`rounded-xl px-3 py-1.5 text-sm border ${
               methodFilter === "CHECK" ? "bg-zinc-900 text-white" : "bg-white"
             }`}
@@ -617,36 +806,36 @@ useEffect(() => {
         </div>
 
         <div className="grid grid-cols-2 gap-4 xl:grid-cols-4">
-          <div className="rounded-2xl border border-zinc-200 bg-white p-4 shadow-sm">
-            <div className="text-xs text-zinc-500">Total encaissé</div>
+          <div className="rounded-[24px] border border-white/70 bg-white/90 p-5 shadow-[0_10px_30px_rgba(15,23,42,0.06)]">
+            <div className="text-[11px] font-semibold uppercase tracking-[0.12em] text-zinc-400">Total encaissé</div>
             <div className="mt-1 text-lg font-semibold text-zinc-900">
               {totalAll.toLocaleString("fr-FR")} MAD
             </div>
           </div>
 
-          <div className="rounded-2xl border border-zinc-200 bg-white p-4 shadow-sm">
-            <div className="text-xs text-zinc-500">Espèces</div>
+          <div className="rounded-[24px] border border-white/70 bg-white/90 p-5 shadow-[0_10px_30px_rgba(15,23,42,0.06)]">
+            <div className="text-[11px] font-semibold uppercase tracking-[0.12em] text-zinc-400">Espèces</div>
             <div className="mt-1 text-lg font-semibold text-emerald-600">
               {totalCash.toLocaleString("fr-FR")} MAD
             </div>
           </div>
 
-          <div className="rounded-2xl border border-zinc-200 bg-white p-4 shadow-sm">
-            <div className="text-xs text-zinc-500">Virements</div>
+          <div className="rounded-[24px] border border-white/70 bg-white/90 p-5 shadow-[0_10px_30px_rgba(15,23,42,0.06)]">
+            <div className="text-[11px] font-semibold uppercase tracking-[0.12em] text-zinc-400">Virements</div>
             <div className="mt-1 text-lg font-semibold text-blue-600">
               {totalTransfer.toLocaleString("fr-FR")} MAD
             </div>
           </div>
 
-          <div className="rounded-2xl border border-zinc-200 bg-white p-4 shadow-sm">
-            <div className="text-xs text-zinc-500">Chèques</div>
+          <div className="rounded-[24px] border border-white/70 bg-white/90 p-5 shadow-[0_10px_30px_rgba(15,23,42,0.06)]">
+            <div className="text-[11px] font-semibold uppercase tracking-[0.12em] text-zinc-400">Chèques</div>
             <div className="mt-1 text-lg font-semibold text-amber-600">
               {totalCheck.toLocaleString("fr-FR")} MAD
             </div>
           </div>
         </div>
 
-        <div className="flex gap-2">
+        <div className="inline-flex rounded-2xl border border-zinc-200 bg-white p-1 shadow-sm">
           <button
             onClick={() => {
   setImportOpen(true);
@@ -656,89 +845,151 @@ useEffect(() => {
   setImportTotal(0);
   setImportPercent(0);
 }}
-            className="rounded-xl border px-4 py-2 text-sm bg-white hover:bg-zinc-50"
+            className="rounded-2xl border border-zinc-200 bg-white px-4 py-2.5 text-sm font-medium text-zinc-700 shadow-sm transition hover:bg-zinc-50"
           >
             Importer
           </button>
 
           <button
             onClick={openCreate}
-            className="rounded-xl bg-blue-600 px-4 py-2 text-white"
+            className="rounded-2xl bg-blue-600 px-5 py-2.5 text-sm font-medium text-white shadow-sm transition hover:bg-blue-700"
           >
             + Encaisser
           </button>
         </div>
       </div>
 
-{selectedReceipts.length > 0 && (
+{(selectedReceipts.length > 0 || selectAllAcrossResults) && (
 
   <div className="flex items-center justify-between rounded-2xl border border-zinc-200 bg-white p-3 shadow-sm">
 
     <div className="text-sm text-zinc-600">
-      {selectedReceipts.length} encaissement(s) sélectionné(s)
+      {selectAllAcrossResults
+        ? `${totalReceipts} encaissement(s) sélectionné(s)`
+        : `${selectedReceipts.length} encaissement(s) sélectionné(s)`}
     </div>
+
+    {!selectAllAcrossResults && totalReceipts > selectedReceipts.length ? (
+      <button
+        type="button"
+        onClick={() => setSelectAllAcrossResults(true)}
+        className="rounded-xl border border-zinc-200 bg-zinc-50 px-3 py-2 text-xs font-medium text-zinc-700 transition hover:bg-zinc-100"
+      >
+        Selectionner toute la base ({totalReceipts})
+      </button>
+    ) : null}
+
+    {selectAllAcrossResults ? (
+      <button
+        type="button"
+        onClick={() => setSelectAllAcrossResults(false)}
+        className="rounded-xl border border-red-200 bg-red-50 px-3 py-2 text-xs font-medium text-red-800 transition hover:bg-red-100"
+      >
+        Revenir a la page courante
+      </button>
+    ) : null}
 
     <button
       onClick={deleteSelected}
-      className="rounded-xl bg-red-600 px-4 py-2 text-sm text-white"
+      disabled={bulkDeleting}
+      className="rounded-xl bg-red-600 px-4 py-2 text-sm font-medium text-white shadow-sm transition hover:bg-red-700 disabled:cursor-not-allowed disabled:opacity-60"
     >
-      Supprimer
+      {bulkDeleting ? "Suppression..." : "Supprimer"}
     </button>
 
   </div>
 
 )}
 
-      <Table>
-<THead>
-  <TR>
+{bulkDeleting ? (
+  <div className="flex items-center gap-3 rounded-2xl border border-amber-200 bg-amber-50 px-4 py-3 text-sm text-amber-900 shadow-sm">
+    <span className="h-4 w-4 animate-spin rounded-full border-2 border-amber-300 border-t-amber-700" />
+    <span>Suppression en cours, merci de patienter...</span>
+  </div>
+) : null}
 
-    <TH>
+{false && selectedReceipts.length > 0 && !selectAllAcrossResults && totalReceipts > selectedReceipts.length ? (
+  <div className="flex items-center justify-between rounded-2xl border border-zinc-200 bg-amber-50 px-4 py-3 text-sm text-amber-900 shadow-sm">
+    <span>
+      {selectedReceipts.length} ligne(s) selectionnee(s) sur cette page.
+    </span>
+
+    <button
+      type="button"
+      onClick={() => setSelectAllAcrossResults(true)}
+      className="rounded-xl border border-amber-200 bg-white px-3 py-2 text-xs font-medium text-amber-900 transition hover:bg-amber-100"
+    >
+      Selectionner toute la base ({totalReceipts})
+    </button>
+  </div>
+) : null}
+
+{false && selectAllAcrossResults ? (
+  <div className="flex items-center justify-between rounded-2xl border border-red-200 bg-red-50 px-4 py-3 text-sm text-red-900 shadow-sm">
+    <span>{totalReceipts} ligne(s) selectionnee(s) dans toute la base filtree.</span>
+
+    <button
+      type="button"
+      onClick={() => setSelectAllAcrossResults(false)}
+      className="rounded-xl border border-red-200 bg-white px-3 py-2 text-xs font-medium text-red-800 transition hover:bg-red-100"
+    >
+      Revenir a la page courante
+    </button>
+  </div>
+) : null}
+
+<div className="overflow-hidden rounded-[28px] border border-white/70 bg-white/90 shadow-[0_12px_30px_rgba(15,23,42,0.06)]">
+  <div className="overflow-x-auto">
+    <Table className="text-sm">
+<THead>
+  <TR className="border-b border-zinc-200 bg-zinc-50">
+    <TH className="w-10">
       <input
         type="checkbox"
         checked={
+          selectAllAcrossResults || (
           receipts.length > 0 &&
           selectedReceipts.length === receipts.length
-        }
+        )}
         onChange={toggleSelectAll}
       />
     </TH>
 
-    <TH>N°</TH>
-    <TH>Date</TH>
-    <TH>Lot</TH>
-    <TH>Immeuble</TH>
-    <TH>Copropriétaire</TH>
-    <TH>Méthode</TH>
-    <TH className="text-right">Montant</TH>
-    <TH></TH>
+    <TH className="text-[11px] font-bold uppercase tracking-[0.12em] text-zinc-500">N°</TH>
+    <TH className="text-[11px] font-bold uppercase tracking-[0.12em] text-zinc-500">Date</TH>
+    <TH className="text-[11px] font-bold uppercase tracking-[0.12em] text-zinc-500">Lot</TH>
+    <TH className="text-[11px] font-bold uppercase tracking-[0.12em] text-zinc-500">Immeuble</TH>
+    <TH className="text-[11px] font-bold uppercase tracking-[0.12em] text-zinc-500">Copropriétaire</TH>
+    <TH className="text-[11px] font-bold uppercase tracking-[0.12em] text-zinc-500">Méthode</TH>
+    <TH className="text-right text-[11px] font-bold uppercase tracking-[0.12em] text-zinc-500">Montant</TH>
+    <TH className="w-24 text-right text-[11px] font-bold uppercase tracking-[0.12em] text-zinc-500">Actions</TH>
   </TR>
 </THead>
 
         <tbody>
-          {receipts
-            .filter((r) => methodFilter === "ALL" || r.method === methodFilter)
-            .map((r) => (
-                
-              <TR key={r.id}>
-                <TD>
+          {filteredReceipts.map((r) => (
+            <TR
+              key={r.id}
+              onClick={() => openDetail(r.id)}
+              className="group cursor-pointer border-b border-zinc-100 transition hover:bg-zinc-50"
+            >
+                <TD onClick={(e) => e.stopPropagation()}>
   <input
     type="checkbox"
     checked={selectedReceipts.includes(r.id)}
     onChange={() => toggleSelect(r.id)}
   />
 </TD>
-                <TD
-                  onClick={() => openDetail(r.id)}
-                  className="cursor-pointer font-semibold text-zinc-900 hover:underline"
-                >
+                <TD className="font-semibold text-zinc-900 group-hover:underline">
                   {fmtReceiptNumber(r.receiptNumber, receiptUsePrefix, receiptPrefix)}
                 </TD>
 
-                <TD>{fmtDate(r.date)}</TD>
-                <TD>{r.unit?.reference ?? "—"}</TD>
-                <TD>{r.building?.name ?? "—"}</TD>
-                <TD>{r.owner?.name ?? "—"}</TD>
+                <TD className="text-zinc-600">{fmtDate(r.date)}</TD>
+                <TD>
+  <span className="font-medium text-zinc-900">{r.unit?.reference ?? "—"}</span>
+</TD>
+                <TD className="text-zinc-700">{r.building?.name ?? "—"}</TD>
+                <TD className="font-medium text-zinc-800">{r.owner?.name ?? "—"}</TD>
 
                 <TD>
                   {r.method === "CASH" && (
@@ -761,17 +1012,22 @@ useEffect(() => {
                 </TD>
 
                 <TD className="text-right">
+  <span className="font-semibold text-zinc-900">
                   <span className="font-semibold text-zinc-900">
                     {Number(r.amount).toLocaleString("fr-FR")} MAD
                   </span>
-                </TD>
+                  </span>
+</TD>
 
                 <TD className="text-right">
-                  <div className="flex justify-end gap-2">
+                  <div
+                    className="flex justify-end gap-2"
+                    onClick={(e) => e.stopPropagation()}
+                  >
                     <button
                       type="button"
                       onClick={() => openEditInForm(r.id)}
-                      className="group flex h-9 w-9 items-center justify-center rounded-xl text-zinc-400 transition hover:bg-blue-50 hover:text-blue-600"
+                      className="flex h-8 w-8 items-center justify-center rounded-lg text-zinc-400 transition hover:bg-blue-50 hover:text-blue-600"
                       title="Modifier l'encaissement"
                     >
                       <svg
@@ -790,7 +1046,7 @@ useEffect(() => {
                     <button
                       type="button"
                       onClick={() => askDelete(r.id, r.receiptNumber)}
-                      className="group flex h-9 w-9 items-center justify-center rounded-xl text-zinc-400 transition hover:bg-red-50 hover:text-red-600"
+                      className="flex h-8 w-8 items-center justify-center rounded-lg text-zinc-400 transition hover:bg-red-50 hover:text-red-600"
                       title="Supprimer l'encaissement"
                     >
                       <svg
@@ -813,26 +1069,32 @@ useEffect(() => {
               </TR>
             ))}
         </tbody>
-      </Table>
+    </Table>
+  </div>
+</div>
 
-<div className="flex gap-2 mt-4">
-  <button
-    disabled={page === 1}
-    onClick={() => setPage(page - 1)}
-  >
-    Previous
-  </button>
+<div className="mt-5 flex items-center justify-between">
+  <div className="text-sm text-zinc-500">
+    Page {page} sur {totalPages}
+  </div>
 
-  <span>
-    Page {page} / {totalPages}
-  </span>
+  <div className="flex items-center gap-2">
+    <button
+      disabled={page === 1}
+      onClick={() => setPage(page - 1)}
+      className="rounded-xl border border-zinc-200 bg-white px-4 py-2 text-sm font-medium text-zinc-700 shadow-sm transition hover:bg-zinc-50 disabled:cursor-not-allowed disabled:opacity-50"
+    >
+      Précédent
+    </button>
 
-  <button
-    disabled={page === totalPages}
-    onClick={() => setPage(page + 1)}
-  >
-    Next
-  </button>
+    <button
+      disabled={page === totalPages}
+      onClick={() => setPage(page + 1)}
+      className="rounded-xl border border-zinc-200 bg-white px-4 py-2 text-sm font-medium text-zinc-700 shadow-sm transition hover:bg-zinc-50 disabled:cursor-not-allowed disabled:opacity-50"
+    >
+      Suivant
+    </button>
+  </div>
 </div>
 
       <Modal
@@ -1391,7 +1653,18 @@ useEffect(() => {
       />
     </div>
 
-    <div className="text-xs text-zinc-500">{importPercent}%</div>
+    <div className="flex justify-between text-xs text-zinc-500">
+      <span>{importPercent}%</span>
+      <span>
+        Temps ecoule : {fmtElapsed(importElapsedMs)}
+      </span>
+    </div>
+
+    {importProgress === 0 ? (
+      <div className="rounded-xl border border-amber-200 bg-amber-50 px-3 py-2 text-xs text-amber-700">
+        Preparation du premier lot...
+      </div>
+    ) : null}
   </div>
 )}         
 
@@ -1427,6 +1700,10 @@ useEffect(() => {
       >
         {importResult.errors.length > 0 ? "⚠" : "✓"} {importResult.errors.length} erreur
         {importResult.errors.length > 1 ? "s" : ""}
+      </span>
+
+      <span className="inline-flex items-center gap-1 rounded-full bg-blue-100 px-3 py-1 text-sm font-medium text-blue-700">
+        Temps : {fmtElapsed(importResult.durationMs)}
       </span>
     </div>
 

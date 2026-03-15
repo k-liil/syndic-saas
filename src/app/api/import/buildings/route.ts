@@ -77,6 +77,7 @@ export async function POST(req: Request) {
         try {
           await tx.building.create({
             data: {
+              organizationId: gate.organizationId,
               name: r.name,
               address: r.address ?? null,
             },

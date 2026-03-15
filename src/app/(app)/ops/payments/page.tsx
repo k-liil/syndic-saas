@@ -23,7 +23,7 @@ type Payment = {
   id: string;
   paymentNumber: number;
   amount: number;
-  method: "CASH" | "TRANSFER" | "CHECK";
+  method: "CASH" | "TRANSFER" | "CHECK" | "DEBIT";
   date: string;
   note: string | null;
   bankName?: string | null;
@@ -58,6 +58,14 @@ function toInputDate(value: Date) {
   return `${year}-${month}-${day}`;
 }
 
+function fmtElapsed(ms: number) {
+  const totalSeconds = Math.max(0, Math.floor(ms / 1000));
+  const minutes = Math.floor(totalSeconds / 60);
+  const seconds = totalSeconds % 60;
+
+  return `${minutes}:${String(seconds).padStart(2, "0")}`;
+}
+
 export default function PaymentsPage() {
   const searchParams = useSearchParams();
   const year = searchParams.get("year") ?? new Date().getFullYear();
@@ -77,7 +85,7 @@ export default function PaymentsPage() {
   const [title, setTitle] = useState("");
   const [supplierId, setSupplierId] = useState("");
   const [categoryId, setCategoryId] = useState("");
-  const [method, setMethod] = useState<"CASH" | "TRANSFER" | "CHECK">("CASH");
+  const [method, setMethod] = useState<"CASH" | "TRANSFER" | "CHECK" | "DEBIT">("CASH");
   const [bankName, setBankName] = useState("");
   const [bankRef, setBankRef] = useState("");
   const [amount, setAmount] = useState<number | "">("");
@@ -91,6 +99,19 @@ export default function PaymentsPage() {
   const [selectedPayment, setSelectedPayment] = useState<Payment | null>(null);
   const [editingPayment, setEditingPayment] = useState<Payment | null>(null);
   const [paymentToDelete, setPaymentToDelete] = useState<Payment | null>(null);
+  const [selectedPayments, setSelectedPayments] = useState<string[]>([]);
+const [importOpen, setImportOpen] = useState(false);
+const [importFile, setImportFile] = useState<File | null>(null);
+const [importBusy, setImportBusy] = useState(false);
+const [importResult, setImportResult] = useState<null | {
+  imported: number;
+  errors: { row: number; error: string }[];
+  durationMs?: number;
+}>(null);
+const [importProgress, setImportProgress] = useState(0);
+const [importTotal, setImportTotal] = useState(0);
+const [importPercent, setImportPercent] = useState(0);
+const [importStartedAt, setImportStartedAt] = useState<number | null>(null);
 
   function showToast(message: string) {
     setToast(message);
@@ -105,6 +126,62 @@ export default function PaymentsPage() {
     }, 2500);
   }
 
+async function importPayments() {
+  if (!importFile) return;
+
+  setImportBusy(true);
+  setImportResult(null);
+
+  const text = await importFile.text();
+
+  const rows = text
+    .split(/\r?\n/)
+    .filter(Boolean)
+    .slice(1)
+    .map((line) => {
+      const cols = line.split(",");
+
+      return {
+        supplierName: cols[0] ?? "",
+        categoryName: cols[1] ?? "",
+        method: cols[2] ?? "",
+        amount: Number(cols[3] ?? 0),
+        date: cols[4] ?? "",
+        bankName: cols[5] ?? "",
+        bankRef: cols[6] ?? "",
+        note: cols[7] ?? "",
+      };
+    });
+
+  const res = await fetch("/api/imports/payments", {
+    method: "POST",
+    headers: {
+      "Content-Type": "application/json",
+    },
+    body: JSON.stringify({
+      action: "batch",
+      rows,
+      offset: 0,
+    }),
+  });
+
+  const json = await res.json().catch(() => null);
+
+  if (!res.ok) {
+    showToast(json?.error ?? "Import échoué");
+    setImportBusy(false);
+    return;
+  }
+
+  setImportResult({
+    imported: Number(json?.imported ?? 0),
+    errors: Array.isArray(json?.errors) ? json.errors : [],
+  });
+
+  await load();
+  setImportBusy(false);
+}
+
   async function load() {
     const res = await fetch(`/api/payments?year=${year}`);
     const json = await res.json();
@@ -113,6 +190,7 @@ export default function PaymentsPage() {
     const jsonCat = await resCat.json();
 
     setPayments(Array.isArray(json.payments) ? json.payments : []);
+    setSelectedPayments([]);
     setSuppliers(Array.isArray(json.suppliers) ? json.suppliers : []);
     setBanks(Array.isArray(json.banks) ? json.banks : []);
     setCategories(Array.isArray(jsonCat.categories) ? jsonCat.categories : []);
@@ -128,6 +206,49 @@ useEffect(() => {
     }
   };
 }, [year]);
+
+async function deleteSelected() {
+  if (selectedPayments.length === 0) return;
+
+  const results = await Promise.all(
+    selectedPayments.map((id) =>
+      fetch(`/api/payments?year=${year}`, {
+        method: "DELETE",
+        headers: {
+          "Content-Type": "application/json",
+        },
+        body: JSON.stringify({ id }),
+      })
+    )
+  );
+
+  const hasError = results.some((r) => !r.ok);
+
+  if (hasError) {
+    showToast("Erreur suppression");
+    return;
+  }
+
+  setSelectedPayments([]);
+  await load();
+  showToast("Dépenses supprimées");
+}
+
+function toggleSelectAll() {
+  if (selectedPayments.length === filteredPayments.length) {
+    setSelectedPayments([]);
+  } else {
+    setSelectedPayments(filteredPayments.map((p) => p.id));
+  }
+}
+
+function toggleSelect(id: string) {
+  setSelectedPayments((prev) =>
+    prev.includes(id)
+      ? prev.filter((x) => x !== id)
+      : [...prev, id]
+  );
+}
 
   function resetForm() {
     setTitle("");
@@ -178,7 +299,7 @@ useEffect(() => {
         method,
         bankName: method !== "CASH" ? bankName : null,
         bankRef: method === "CHECK" ? bankRef : null,
-        amount: Number(amount),
+        amount: parseFloat(String(amount)),
         date,
         note: finalNote || null,
       }),
@@ -233,7 +354,7 @@ useEffect(() => {
         method,
         bankName: method !== "CASH" ? bankName : null,
         bankRef: method === "CHECK" ? bankRef : null,
-        amount: Number(amount),
+        amount: parseFloat(String(amount)),
         date,
         note: finalNote || null,
       }),
@@ -370,24 +491,64 @@ useEffect(() => {
             onChange={(e) => setDateTo(e.target.value)}
           />
 
-          <button
-            type="button"
-            onClick={() => {
-              resetForm();
-              setEditingPayment(null);
-              setOpenCreate(true);
-            }}
-            className="h-12 rounded-2xl bg-indigo-600 px-5 text-sm font-semibold text-white"
-          >
-            + Ajouter une dépense
-          </button>
+<div className="flex gap-3">
+  <button
+    type="button"
+    onClick={() => {
+      setImportOpen(true);
+      setImportFile(null);
+      setImportResult(null);
+    }}
+    className="h-12 rounded-2xl border border-zinc-200 bg-white px-5 text-sm font-semibold text-zinc-700"
+  >
+    Importer
+  </button>
+
+  <button
+    type="button"
+    onClick={() => {
+      resetForm();
+      setEditingPayment(null);
+      setOpenCreate(true);
+    }}
+    className="h-12 rounded-2xl bg-indigo-600 px-5 text-sm font-semibold text-white"
+  >
+    + Ajouter une dépense
+  </button>
+</div>
+
         </div>
+
+{selectedPayments.length > 0 && (
+  <div className="flex items-center justify-between rounded-2xl border border-zinc-200 bg-white p-3 shadow-sm">
+    <div className="text-sm text-zinc-600">
+      {selectedPayments.length} dépense(s) sélectionnée(s)
+    </div>
+
+    <button
+      onClick={deleteSelected}
+      className="rounded-xl bg-red-600 px-4 py-2 text-sm text-white"
+    >
+      Supprimer
+    </button>
+  </div>
+)}
 
         <div className="mt-4 overflow-hidden rounded-2xl border border-zinc-200">
           <div className="overflow-x-auto">
             <table className="min-w-full border-collapse">
               <thead className="bg-zinc-50">
                 <tr className="text-left">
+                  <th className="px-5 py-4 text-xs font-semibold uppercase tracking-wide text-zinc-500">
+  <input
+    type="checkbox"
+    checked={
+      filteredPayments.length > 0 &&
+      selectedPayments.length === filteredPayments.length
+    }
+    onChange={toggleSelectAll}
+  />
+</th>
                   <th className="px-5 py-4 text-xs font-semibold uppercase tracking-wide text-zinc-500">
                     Date
                   </th>
@@ -416,7 +577,7 @@ useEffect(() => {
                 {filteredPayments.length === 0 ? (
                   <tr>
                     <td
-                      colSpan={7}
+                      colSpan={8}
                       className="px-5 py-10 text-center text-sm text-zinc-500"
                     >
                       Aucune dépense trouvée.
@@ -430,11 +591,20 @@ useEffect(() => {
                         : String(p.paymentNumber);
 
                     return (
+                      
                       <tr
                         key={p.id}
                         onClick={() => setSelectedPayment(p)}
                         className="cursor-pointer border-t border-zinc-200 text-sm text-zinc-700 hover:bg-zinc-50"
                       >
+                        <td className="px-5 py-4">
+  <input
+    type="checkbox"
+    checked={selectedPayments.includes(p.id)}
+    onChange={() => toggleSelect(p.id)}
+    onClick={(e) => e.stopPropagation()}
+  />
+</td>
                         <td className="px-5 py-4">{formatDate(p.date)}</td>
                         <td className="px-5 py-4">
                           <div className="font-medium text-zinc-900">
@@ -459,10 +629,12 @@ useEffect(() => {
                             }`}
                           >
                             {p.method === "CASH"
-                              ? "Espèces"
-                              : p.method === "TRANSFER"
-                              ? "Virement"
-                              : "Chèque"}
+  ? "Espèces"
+  : p.method === "TRANSFER"
+  ? "Virement"
+  : p.method === "CHECK"
+  ? "Chèque"
+  : "Prélèvement"}
                           </span>
                         </td>
                         <td className="px-5 py-4 font-semibold text-zinc-900">
@@ -525,13 +697,19 @@ useEffect(() => {
                     Montant (MAD)
                   </label>
                   <input
-                    type="number"
-                    className="h-12 w-full rounded-2xl border border-zinc-200 px-4 text-sm outline-none"
-                    value={amount}
-                    onChange={(e) =>
-                      setAmount(e.target.value ? Number(e.target.value) : "")
-                    }
-                  />
+  type="number"
+  step="0.01"
+  inputMode="decimal"
+  className="h-12 w-full rounded-2xl border border-zinc-200 px-4 text-sm outline-none"
+  value={amount}
+  onChange={(e) => {
+  const v = e.target.value;
+  console.log("INPUT VALUE:", v);
+  console.log("PARSED VALUE:", v === "" ? "" : parseFloat(v));
+
+  setAmount(v === "" ? "" : parseFloat(v));
+}}
+/>
                 </div>
 
                 <div>
@@ -646,6 +824,25 @@ useEffect(() => {
                       Banque + numéro de chèque
                     </div>
                   </button>
+
+                  <button
+  type="button"
+  onClick={() => setMethod("DEBIT")}
+  className={`rounded-2xl border p-4 text-left shadow-sm transition ${
+    method === "DEBIT"
+      ? "border-purple-500 bg-purple-50 shadow-sm"
+      : "border-zinc-200 bg-white hover:border-zinc-300 hover:shadow-sm"
+  }`}
+>
+  <div className="text-2xl">💳</div>
+  <div className="mt-3 text-base font-semibold text-zinc-900">
+    Prélèvement
+  </div>
+  <div className="mt-1 text-sm text-zinc-500">
+    Débit direct banque
+  </div>
+</button>
+
                 </div>
               </div>
 
@@ -872,6 +1069,93 @@ useEffect(() => {
           </div>
         </div>
       ) : null}
+      {importOpen ? (
+  <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/30 p-4">
+    <div className="w-full max-w-xl rounded-3xl bg-white shadow-2xl">
+      <div className="flex items-center justify-between border-b border-zinc-200 px-6 py-5">
+        <h2 className="text-2xl font-semibold text-zinc-900">
+          Importer des dépenses
+        </h2>
+
+        <button
+          type="button"
+          onClick={() => {
+            setImportOpen(false);
+            setImportFile(null);
+            setImportResult(null);
+          }}
+          className="text-2xl leading-none text-zinc-400"
+        >
+          ×
+        </button>
+      </div>
+
+      <div className="space-y-4 px-6 py-6">
+        <div className="text-sm text-zinc-600">
+          CSV attendu : <b>supplierName, categoryName, method, amount, date, bankName, bankRef, note</b>
+        </div>
+
+        <input
+          type="file"
+          accept=".csv"
+          onChange={(e) => setImportFile(e.target.files?.[0] ?? null)}
+          className="block w-full text-sm"
+        />
+
+        <div className="rounded-2xl bg-zinc-50 p-3 text-xs text-zinc-600">
+          supplierName,categoryName,method,amount,date,bankName,bankRef,note
+          <br />
+          Plombier Ahmed,Plomberie,CASH,350,2024-02-02,,,"Réparation fuite"
+          <br />
+          Electricien Sami,Electricité,TRANSFER,1200,2024-02-10,Attijari,,"Remplacement disjoncteur"
+        </div>
+
+        <button
+          onClick={importPayments}
+          disabled={!importFile || importBusy}
+          className="h-12 w-full rounded-2xl bg-zinc-900 text-sm font-medium text-white disabled:opacity-50"
+        >
+          {importBusy ? "Import en cours..." : "Importer"}
+        </button>
+
+        {importResult ? (
+          <div className="grid gap-2">
+            <div className="flex items-center gap-3">
+              <span className="inline-flex items-center gap-1 rounded-full bg-emerald-100 px-3 py-1 text-sm font-medium text-emerald-700">
+                ✓ {importResult.imported} importé{importResult.imported > 1 ? "s" : ""}
+              </span>
+
+              <span
+                className={`inline-flex items-center gap-1 rounded-full px-3 py-1 text-sm font-medium ${
+                  importResult.errors.length > 0
+                    ? "bg-red-100 text-red-700"
+                    : "bg-zinc-200 text-zinc-600"
+                }`}
+              >
+                {importResult.errors.length > 0 ? "⚠" : "✓"} {importResult.errors.length} erreur
+                {importResult.errors.length > 1 ? "s" : ""}
+              </span>
+            </div>
+
+            {importResult.errors.length > 0 ? (
+              <div className="rounded-xl border border-zinc-200 bg-white p-3">
+                <div className="mb-2 text-sm font-medium text-zinc-900">Détail des erreurs</div>
+                <ul className="max-h-48 space-y-1 overflow-auto text-sm text-zinc-700">
+                  {importResult.errors.map((e, idx) => (
+                    <li key={idx} className="flex gap-2">
+                      <span className="w-16 shrink-0 text-zinc-500">Ligne {e.row}</span>
+                      <span className="break-words">{e.error}</span>
+                    </li>
+                  ))}
+                </ul>
+              </div>
+            ) : null}
+          </div>
+        ) : null}
+      </div>
+    </div>
+  </div>
+) : null}
     </div>
   );
 }

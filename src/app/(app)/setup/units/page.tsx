@@ -2,7 +2,7 @@
 
 import { useEffect, useMemo, useState } from "react";
 import { Modal } from "@/components/ui/Modal";
-import { Table, THead, TR, TH, TD } from "@/components/ui/Table";
+import { Table, THead, TR, TH, TD } from "@/components/ui/table";
 import {
   parseUnitsCsv,
   type ImportUnitError,

@@ -1,0 +1,165 @@
+﻿supplierName,categoryName,method,amount,date,bankName,bankRef,note
+Redal,Téléphonie et électricité,CHECK,665.86,2024-01-02,BP,bp AAA 1300029,consommation du 12/23
+Inwi,Téléphonie et électricité,DEBIT,199.0,2024-01-08,BP,,forfait 01/2024
+Fournisseur matériel et produit d’entretien,Entretien espaces verts,CASH,132.0,2024-01-08,,,essence + huile
+CNSS,Social,DEBIT,1385.94,2024-01-12,BP,,Décembre
+Personnel,Paie et primes,CASH,4507.0,2024-01-15,,,1ère quinzaine
+Personnel,Dépenses courantes,CASH,25.0,2024-01-15,,,souliers femme de ménage
+Fournisseur matériel et produit d’entretien,Dépenses courantes,CASH,95.0,2024-01-27,,,eau de javel +  nettoyant sol
+Plombier,Dépenses courantes,CASH,800.0,2024-01-27,,,Débouchage conduites Imm 6
+Plombier,Dépenses courantes,CASH,680.0,2024-01-30,,,conduite eau potable Imm. N°2
+Redal,Dépenses courantes,CASH,100.0,2024-01-30,,,pourboire agents REDAL Im. 2
+Redal,Téléphonie et électricité,CHECK,575.88,2024-02-01,BP,bp AAA 1300031,consommation du 01/24
+Fournisseur matériel et produit d’entretien,Dépenses courantes,CASH,24.0,2024-02-05,,,Balai
+Personnel,Paie et primes,CASH,4840.0,2024-01-30,,,2ième quinzaine
+Électricien,Téléphonie et électricité,CASH,350.0,2024-02-06,,,remise en état interphone Im:4
+Plombier,Dépenses courantes,CASH,450.0,2024-02-07,,,conduite eau potable Imm. N°3
+Inwi,Téléphonie et électricité,DEBIT,199.0,2024-02-08,BP,,forfait 02/2024
+Fournisseur matériel et produit d’entretien,Dépenses courantes,CASH,18.0,2024-02-12,,,cadenas pour local technique
+CNSS,Social,DEBIT,1918.88,2024-02-12,Bp,,45292
+Personnel,Paie et primes,CASH,4840.0,2024-02-15,,,1ère quinzaine
+Plombier,Dépenses courantes,CASH,600.0,2024-02-19,,,Débouchage conduites Imm 4
+Fournisseur matériel et produit d’entretien,Dépenses courantes,CASH,39.0,2024-02-22,,,Lave vitre
+Fournisseur matériel et produit d’entretien,Dépenses courantes,CASH,95.0,2024-02-22,,,eau de javel +  nettoyant sol
+Électricien,Téléphonie et électricité,CASH,148.0,2024-02-23,,,pannel rond  led 12W entrée Im
+Plombier,Dépenses courantes,CASH,300.0,2024-02-23,,,"Fuite gaine Imm,5 Appt 2"
+Personnel,Paie et primes,CASH,4840.0,2024-02-29,,,2ième quinzaine
+Redal,Téléphonie et électricité,CHECK,604.96,2024-03-01,BP,bp AAA 1300032,consommation du 02/24
+Fournisseur matériel et produit d’entretien,Entretien espaces verts,CASH,78.0,2024-03-01,,,essence
+Banque,Prestation bancaire,DEBIT,276.56,2024-01-10,TGR,,
+Fournisseur matériel et produit d’entretien,Entretien espaces verts,CASH,15.0,2024-03-05,,,bougie pour tondeuse
+Plombier,Dépenses courantes,CASH,200.0,2024-03-06,,,"Fuite buanderie Imm,5 Appt 15"
+Inwi,Téléphonie et électricité,DEBIT,199.0,2024-03-08,BP,,forfait 03/2024
+CNSS,Social,DEBIT,2078.9,2024-03-12,BP,,fevrier 2024
+Personnel,Paie et primes,CASH,4840.0,2024-03-15,,,1ère quinzaine
+Fournisseur matériel et produit d’entretien,Dépenses courantes,CASH,95.0,2024-03-28,,,eau de javel +  nettoyant sol
+Personnel,Paie et primes,CASH,4840.0,2024-03-30,,,2ième quinzaine
+Redal,Téléphonie et électricité,CHECK,626.55,2024-04-01,BP,bp AAA 1300033,consommation du 03/24
+Électricien,Téléphonie et électricité,CASH,100.0,2024-04-05,,,Ampoules B22
+Fournisseur matériel et produit d’entretien,Entretien espaces verts,CASH,83.0,2024-04-05,,,essence
+Personnel,Paie et primes,CASH,1200.0,2024-04-08,,,
+Inwi,Téléphonie et électricité,DEBIT,199.0,2024-04-09,BP,,forfait 04/2024
+CNSS,Social,DEBIT,2078.9,2024-04-12,BP,,45352
+Personnel,Paie et primes,CASH,4840.0,2024-04-15,,,1ère quinzaine
+Fournisseur matériel et produit d’entretien,Dépenses courantes,CASH,32.0,2024-04-19,,,Raclette + manche
+Fournisseur matériel et produit d’entretien,Dépenses courantes,CASH,53.0,2024-04-19,,,Médicaments Gardien Mbarek
+Fournisseur matériel et produit d’entretien,Entretien espaces verts,CASH,80.0,2024-04-23,,,essence
+Fournisseur matériel et produit d’entretien,Entretien espaces verts,CASH,1059.0,2024-04-29,,,Tuyau de 50M + Combinaisons
+Personnel,Paie et primes,CASH,4840.0,2024-04-30,,,2ième quinzaine
+Redal,Téléphonie et électricité,CHECK,692.37,2024-05-02,BP,bp AAA 1300034,consommation du 04/24
+Fournisseur matériel et produit d’entretien,Dépenses courantes,CHECK,2268.0,2024-05-02,BP,bp AAA 1300035,taxes services communaux
+Fournisseur matériel et produit d’entretien,Dépenses courantes,CASH,95.0,2024-05-02,,,eau de javel +  nettoyant sol
+Fournisseur matériel et produit d’entretien,Dépenses courantes,CASH,195.0,2024-05-07,,,Cartouche noir Imprimante
+Inwi,Téléphonie et électricité,CASH,199.0,2024-05-07,,,forfait 05/2024
+Fournisseur matériel et produit d’entretien,Dépenses courantes,CASH,69.0,2024-05-10,,,Médicaments Gardien Mbarek
+CNSS,Social,DEBIT,2078.9,2024-05-11,BP,,45383
+Personnel,Paie et primes,CASH,4840.0,2024-05-15,,,1ère quinzaine
+Personnel,Paie et primes,CASH,26.0,2024-05-18,,,gants pour femme de ménage
+Personnel,Paie et primes,CASH,4840.0,2024-05-30,,,2ième quinzaine
+Fournisseur matériel et produit d’entretien,Entretien espaces verts,CASH,80.0,2024-06-04,,,essence
+Fournisseur matériel et produit d’entretien,Dépenses courantes,CASH,95.0,2024-06-04,,,eau de javel +  nettoyant sol
+Redal,Téléphonie et électricité,CASH,719.2,2024-06-04,,,consommation du 05/24
+Fournisseur matériel et produit d’entretien,Dépenses courantes,CASH,25.0,2024-06-09,,,Cadenas pour pépinière
+Fournisseur matériel et produit d’entretien,Dépenses courantes,CASH,200.0,2024-06-11,,,Rebouchage trous gaine Im: 1
+CNSS,Social,DEBIT,2078.9,2024-06-11,BP,,45413
+Inwi,Téléphonie et électricité,DEBIT,199.0,2024-06-12,BP,,forfait 06/2024
+Électricien,Téléphonie et électricité,CASH,100.0,2024-06-15,,,Entretien courant Interph Im5
+Fournisseur matériel et produit d’entretien,Dépenses courantes,CASH,900.0,2024-06-16,,,compensation virt  reçu/erreur
+Personnel,Paie et primes,CASH,4840.0,2024-06-14,,,1ère quinzaine
+Personnel,Paie et primes,CASH,5000.0,2024-06-14,,,
+Personnel,Paie et primes,CASH,4840.0,2024-06-30,,,2ième quinzaine
+Redal,Téléphonie et électricité,CHECK,773.72,2024-07-01,BP,bp AAA 1300038,consommation du 06/24
+Fournisseur matériel et produit d’entretien,Entretien espaces verts,CASH,128.5,2024-07-03,,,botte /gardien El Yamani
+Plombier,Dépenses courantes,CASH,300.0,2024-07-03,,,débouchage gaine IM. 4 Apt 3
+Fournisseur matériel et produit d’entretien,Entretien espaces verts,CASH,50.0,2024-07-08,,,Essence
+Fournisseur matériel et produit d’entretien,Dépenses courantes,CASH,95.0,2024-07-11,,,eau de javel +  nettoyant sol
+CNSS,Social,DEBIT,2078.9,2024-07-11,BP,,45444
+Inwi,Téléphonie et électricité,DEBIT,199.0,2024-07-11,BP,,forfait 07/2024
+Personnel,Paie et primes,CASH,4840.0,2024-07-15,,,1ère quinzaine
+Fournisseur matériel et produit d’entretien,Entretien espaces verts,CASH,82.0,2024-07-20,,,Essence
+Fournisseur matériel et produit d’entretien,Dépenses courantes,CASH,10.0,2024-07-20,,,Esprit de sel
+Plombier,Dépenses courantes,CASH,500.0,2024-07-20,,,fuite d'eau arrivée IMM.4
+Électricien,Téléphonie et électricité,CASH,19.0,2024-07-25,,,Interphone IMM:4 fourniture
+Électricien,Téléphonie et électricité,CASH,330.0,2024-07-25,,,Interphone IMM:4 fourniture
+Électricien,Téléphonie et électricité,CASH,500.0,2024-07-31,,,Interphone IM:4 Main d'ouvre
+Personnel,Paie et primes,CASH,4840.0,2024-07-31,,,2ième quinzaine
+Redal,Téléphonie et électricité,CHECK,855.69,2024-08-01,BP,bp AAA 1300039,consommation du 07/24
+Fournisseur matériel et produit d’entretien,Dépenses courantes,CASH,400.0,2024-08-05,,,Pouboire traitement anti-cafar
+Plombier,Dépenses courantes,CASH,380.0,2024-08-06,,,Fuite nourrice Apt 15 IMM:6
+Fournisseur matériel et produit d’entretien,Entretien espaces verts,CASH,80.0,2024-08-07,,,Essence
+Fournisseur matériel et produit d’entretien,Dépenses courantes,CASH,95.0,2024-08-08,,,eau de javel +  nettoyant sol
+Inwi,Téléphonie et électricité,DEBIT,199.0,2024-08-08,BP,,forfait 08/2024
+CNSS,Social,DEBIT,2078.9,2024-08-12,BP,,45474
+Électricien,Téléphonie et électricité,CASH,8.0,2024-08-14,,,Platre
+Fournisseur matériel et produit d’entretien,Entretien espaces verts,CASH,1000.0,2024-08-15,,,Elagage palmiers
+Fournisseur matériel et produit d’entretien,Dépenses courantes,CASH,26.0,2024-08-15,,,Paires de gants femme ménge
+Personnel,Paie et primes,CASH,5100.0,2024-08-15,,,1ère quinzaine
+Personnel,Paie et primes,CASH,520.0,2024-08-15,,,Rappel augmentation 5% 07/24
+Plombier,Dépenses courantes,CASH,350.0,2024-08-20,,,fuite nourrice Apt 8 IMM:5
+Plombier,Dépenses courantes,CASH,300.0,2024-08-23,,,fuite nourrice Apt 8 IMM:2
+Fournisseur matériel et produit d’entretien,Dépenses courantes,CASH,260.0,2024-08-27,,,Blouses pour femmes  ménage
+Fournisseur matériel et produit d’entretien,Dépenses courantes,CASH,35.0,2024-08-28,,,Ciment pour IMM:3
+Électricien,Téléphonie et électricité,CASH,40.0,2024-08-28,,,Ampoules B22
+Fournisseur matériel et produit d’entretien,Entretien espaces verts,CASH,200.0,2024-08-30,,,Evacuation déchets verts
+Personnel,Paie et primes,CASH,5100.0,2024-08-31,,,2ième quinzaine
+Redal,Téléphonie et électricité,CHECK,1227.79,2024-09-01,BP,bp AAA 1300040,consommation du 08/24
+Fournisseur matériel et produit d’entretien,Dépenses courantes,CASH,170.0,2024-09-02,,,serrure porte vide ordures IM4
+Personnel,Paie et primes,CASH,20.0,2024-09-04,,,Sceau pour femme de ménage
+Fournisseur matériel et produit d’entretien,Entretien espaces verts,CASH,77.0,2024-09-06,,,Essence
+Plombier,Dépenses courantes,CASH,400.0,2024-09-07,,,fuite nourrice Apt N°1 & 8 IM:6
+Fournisseur matériel et produit d’entretien,Entretien espaces verts,CASH,70.0,2024-09-09,,,Insecticide  DELTAMOX
+Inwi,Téléphonie et électricité,DEBIT,199.0,2024-09-10,BP,,forfait 09/2024
+Fournisseur matériel et produit d’entretien,Entretien espaces verts,CASH,45.0,2024-09-10,,,Fil de coupe/ débroussalleuse
+CNSS,Social,DEBIT,2170.74,2024-09-10,BP,,AOUT 2024
+Personnel,Paie et primes,CASH,5100.0,2024-09-15,,,1ère quinzaine
+Fournisseur matériel et produit d’entretien,Entretien espaces verts,CASH,52.0,2024-09-24,,,huille materiel jardin
+Fournisseur matériel et produit d’entretien,Dépenses courantes,CASH,95.0,2024-09-24,,,eau de javel +  nettoyant sol
+Fournisseur matériel et produit d’entretien,Dépenses courantes,CASH,125.0,2024-09-24,,,Détergeant TIDE 48 paquets
+Fournisseur matériel et produit d’entretien,Dépenses courantes,CASH,42.0,2024-09-24,,,photocopies AGO 2024
+Fournisseur matériel et produit d’entretien,Entretien espaces verts,CASH,70.0,2024-09-30,,,Essence
+Électricien,Téléphonie et électricité,CASH,140.0,2024-09-30,,,Pannel rond 12W entrée des Im
+Électricien,Téléphonie et électricité,CASH,50.0,2024-09-30,,,eclairage entrée Imm: 6
+Personnel,Paie et primes,CASH,5100.0,2024-09-30,,,2ième quinzaine
+Fournisseur matériel et produit d’entretien,Dépenses courantes,CASH,8.0,2024-10-01,,,photocopies AGO 2024
+Fournisseur matériel et produit d’entretien,Dépenses courantes,CASH,20.0,2024-10-01,,,cadenas vide ordures IMM 2
+Redal,Téléphonie et électricité,CHECK,1157.05,2024-10-01,BP,ABC 1300041,consommation du 09/24
+Plombier,Dépenses courantes,CASH,500.0,2024-10-05,,,fuite eaux usees Apt 4 IMM 5
+Plombier,Dépenses courantes,CASH,300.0,2024-10-05,,,débouchage égout IM 4 Apt 1
+Plombier,Dépenses courantes,CASH,100.0,2024-10-05,,,aide au débouchage Im: 4 Apt1
+Inwi,Téléphonie et électricité,DEBIT,199.0,2024-10-09,BP,,forfait 10/2024
+CNSS,Social,DEBIT,2170.74,2024-10-11,BP,,45536
+Personnel,Paie et primes,CASH,5100.0,2024-10-15,,,1ère quinzaine
+Fournisseur matériel et produit d’entretien,Dépenses courantes,CASH,30.0,2024-10-17,,,photocopies AGO 2024
+Fournisseur matériel et produit d’entretien,Entretien espaces verts,CASH,74.0,2024-10-18,,,Essence
+Fournisseur matériel et produit d’entretien,Dépenses courantes,CASH,260.0,2024-10-18,,,tabliers pour femmes ménage
+Fournisseur matériel et produit d’entretien,Dépenses courantes,CASH,17.0,2024-10-21,,,fournitures de bureau
+Fournisseur matériel et produit d’entretien,Entretien espaces verts,CASH,15.0,2024-10-22,,,bougie pour tondeuse
+Fournisseur matériel et produit d’entretien,Dépenses courantes,CASH,95.0,2024-10-24,,,eau de javel +  nettoyant sol
+Fournisseur matériel et produit d’entretien,Dépenses courantes,CASH,235.0,2024-10-28,,,fournitures de bureau
+Fournisseur matériel et produit d’entretien,Dépenses courantes,CASH,20.0,2024-10-31,,,traitement de texte AGO 2024
+Personnel,Paie et primes,CASH,5100.0,2024-10-31,,,2ième quinzaine
+Redal,Téléphonie et électricité,CHECK,909.88,2024-11-01,BP,ABC 1300042,consommation du 10/24
+Inwi,Téléphonie et électricité,DEBIT,199.0,2024-11-11,BP,,forfait 11/2024
+Banque,Prestation bancaire,DEBIT,46.2,2024-01-31,BP,,
+Banque,Prestation bancaire,DEBIT,30.8,2024-02-29,BP,,
+Banque,Prestation bancaire,DEBIT,29.7,2024-03-31,BP,,
+Banque,Prestation bancaire,DEBIT,26.4,2024-04-30,BP,,
+Banque,Prestation bancaire,DEBIT,29.7,2024-05-31,BP,,
+Banque,Prestation bancaire,DEBIT,33.0,2024-06-30,BP,,
+Banque,Prestation bancaire,DEBIT,31.9,2024-07-31,BP,,
+Banque,Prestation bancaire,DEBIT,29.7,2024-08-31,BP,,
+Banque,Prestation bancaire,DEBIT,29.7,2024-09-30,BP,,
+Banque,Prestation bancaire,DEBIT,30.8,2024-10-31,BP,,
+Banque,Prestation bancaire,DEBIT,27.5,2024-11-30,BP,,
+Banque,Prestation bancaire,DEBIT,31.9,2024-12-31,BP,,
+Banque,Prestation bancaire,DEBIT,255.14,2024-07-10,TGR,,
+Personnel,Paie et primes,CASH,5100.0,2024-11-15,,,1ère quinzaine
+Fournisseur matériel et produit d’entretien,Dépenses courantes,CASH,95.0,2024-11-25,,,eau de javel +  nettoyant sol
+Fournisseur matériel et produit d’entretien,Dépenses courantes,CASH,41.0,2024-11-27,,,fournitures de bureau
+Fournisseur matériel et produit d’entretien,Entretien espaces verts,CASH,70.0,2024-11-29,,,Essence
+Personnel,Paie et primes,CASH,5100.0,2024-11-30,,,2ième quinzaine
+Redal,Téléphonie et électricité,CHECK,783.5,2024-12-02,BP,ABC 1300044,consommation du 11/24
+Fournisseur matériel et produit d’entretien,Dépenses courantes,CASH,14.0,2024-12-06,,,photocopies AGO 2024
+Inwi,Téléphonie et électricité,DEBIT,199.0,2024-12-15,BP,,forfait 12/2024
+Gestionnaire du syndic,Dépenses courantes,CHECK,5100.0,2024-12-17,TGR,YA 4624536,Avance sur prestation de serce
+Gestionnaire du syndic,Dépenses courantes,CHECK,11500.0,2024-12-30,TGR,YA 4624537,complt Avce prestion de serce

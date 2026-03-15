@@ -3,7 +3,13 @@ import { prisma } from "@/lib/prisma";
 import { requireAdmin } from "@/lib/authz";
 
 export async function GET() {
+  const gate = await requireAdmin();
+  if (!gate.ok) {
+    return NextResponse.json({ error: gate.error }, { status: gate.status });
+  }
+
   const banks = await prisma.internalBank.findMany({
+    where: { organizationId: gate.organizationId },
     orderBy: { name: "asc" },
   });
 
@@ -24,6 +30,7 @@ export async function POST(req: Request) {
 
   const bank = await prisma.internalBank.create({
     data: {
+      organizationId: gate.organizationId,
       name: body.name.trim(),
     },
   });
@@ -41,6 +48,15 @@ export async function PUT(req: Request) {
 
   if (!body.id) {
     return NextResponse.json({ error: "ID_REQUIRED" }, { status: 400 });
+  }
+
+  const existing = await prisma.internalBank.findFirst({
+    where: { id: body.id, organizationId: gate.organizationId },
+    select: { id: true },
+  });
+
+  if (!existing) {
+    return NextResponse.json({ error: "BANK_NOT_FOUND" }, { status: 404 });
   }
 
   const bank = await prisma.internalBank.update({
@@ -65,6 +81,15 @@ export async function DELETE(req: Request) {
 
   if (!body.id) {
     return NextResponse.json({ error: "ID_REQUIRED" }, { status: 400 });
+  }
+
+  const existing = await prisma.internalBank.findFirst({
+    where: { id: body.id, organizationId: gate.organizationId },
+    select: { id: true },
+  });
+
+  if (!existing) {
+    return NextResponse.json({ error: "BANK_NOT_FOUND" }, { status: 404 });
   }
 
   const bank = await prisma.internalBank.update({

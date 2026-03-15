@@ -1,59 +1,77 @@
-import { ReactNode, TdHTMLAttributes, ThHTMLAttributes, TableHTMLAttributes, HTMLAttributes } from "react";
+import * as React from "react";
 
-type TableProps = TableHTMLAttributes<HTMLTableElement> & {
-  children: ReactNode;
+const Table = React.forwardRef<
+  HTMLTableElement,
+  React.HTMLAttributes<HTMLTableElement>
+>(({ className = "", ...props }, ref) => (
+  <div className="relative w-full overflow-auto">
+    <table
+      ref={ref}
+      className={`w-full caption-bottom text-sm ${className}`}
+      {...props}
+    />
+  </div>
+));
+Table.displayName = "Table";
+
+const TableHeader = React.forwardRef<
+  HTMLTableSectionElement,
+  React.HTMLAttributes<HTMLTableSectionElement>
+>(({ className = "", ...props }, ref) => (
+  <thead ref={ref} className={className} {...props} />
+));
+TableHeader.displayName = "TableHeader";
+
+const TableBody = React.forwardRef<
+  HTMLTableSectionElement,
+  React.HTMLAttributes<HTMLTableSectionElement>
+>(({ className = "", ...props }, ref) => (
+  <tbody ref={ref} className={className} {...props} />
+));
+TableBody.displayName = "TableBody";
+
+const TableRow = React.forwardRef<
+  HTMLTableRowElement,
+  React.HTMLAttributes<HTMLTableRowElement>
+>(({ className = "", ...props }, ref) => (
+  <tr ref={ref} className={`border-b ${className}`} {...props} />
+));
+TableRow.displayName = "TableRow";
+
+const TableHead = React.forwardRef<
+  HTMLTableCellElement,
+  React.ThHTMLAttributes<HTMLTableCellElement>
+>(({ className = "", ...props }, ref) => (
+  <th
+    ref={ref}
+    className={`h-12 px-4 text-left align-middle font-medium text-zinc-500 ${className}`}
+    {...props}
+  />
+));
+TableHead.displayName = "TableHead";
+
+const TableCell = React.forwardRef<
+  HTMLTableCellElement,
+  React.TdHTMLAttributes<HTMLTableCellElement>
+>(({ className = "", ...props }, ref) => (
+  <td ref={ref} className={`p-4 align-middle ${className}`} {...props} />
+));
+TableCell.displayName = "TableCell";
+
+const THead = TableHeader;
+const TR = TableRow;
+const TH = TableHead;
+const TD = TableCell;
+
+export {
+  Table,
+  TableHeader,
+  TableBody,
+  TableHead,
+  TableRow,
+  TableCell,
+  THead,
+  TR,
+  TH,
+  TD,
 };
-
-type RowProps = HTMLAttributes<HTMLTableRowElement> & {
-  children: ReactNode;
-};
-
-type ThProps = ThHTMLAttributes<HTMLTableCellElement> & {
-  children: ReactNode;
-};
-
-type TdProps = TdHTMLAttributes<HTMLTableCellElement> & {
-  children: ReactNode;
-};
-
-export function Table({ children, className = "", ...props }: TableProps) {
-  return (
-    <div className="overflow-hidden rounded-2xl border border-zinc-200 bg-white">
-      <table className={`w-full text-sm ${className}`} {...props}>
-        {children}
-      </table>
-    </div>
-  );
-}
-
-export function THead({ children }: { children: ReactNode }) {
-  return (
-    <thead className="bg-zinc-50 text-[11px] font-semibold uppercase tracking-wider text-zinc-500">
-      {children}
-    </thead>
-  );
-}
-
-export function TR({ children, className = "", ...props }: RowProps) {
-  return (
-    <tr className={`border-b border-zinc-100 last:border-0 ${className}`} {...props}>
-      {children}
-    </tr>
-  );
-}
-
-export function TH({ children, className = "", ...props }: ThProps) {
-  return (
-    <th className={`px-4 py-3 text-left ${className}`} {...props}>
-      {children}
-    </th>
-  );
-}
-
-export function TD({ children, className = "", ...props }: TdProps) {
-  return (
-    <td className={`px-4 py-4 align-middle ${className}`} {...props}>
-      {children}
-    </td>
-  );
-}

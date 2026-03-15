@@ -2,7 +2,7 @@
 
 import { useEffect, useMemo, useState } from "react";
 import { Modal } from "@/components/ui/Modal";
-import { Table, THead, TR, TH, TD } from "@/components/ui/Table";
+import { Table, THead, TR, TH, TD } from "@/components/ui/table";
 import { Pencil, Trash2 } from "lucide-react";
 
 type Unit = {
@@ -30,6 +30,14 @@ type Owner = {
 };
 
 export default function OwnersPage() {
+  function fmtElapsed(ms: number) {
+    const totalSeconds = Math.max(0, Math.floor(ms / 1000));
+    const minutes = Math.floor(totalSeconds / 60);
+    const seconds = totalSeconds % 60;
+
+    return `${minutes}:${String(seconds).padStart(2, "0")}`;
+  }
+
   const [selected, setSelected] = useState<Record<string, boolean>>({});
   const [items, setItems] = useState<Owner[]>([]);
   const [openForm, setOpenForm] = useState(false);
@@ -53,12 +61,14 @@ export default function OwnersPage() {
   const [importResult, setImportResult] = useState<{
     imported: number;
     errors: { row: number; error: string }[];
+    durationMs: number;
   } | null>(null);
   const [importError, setImportError] = useState<string>("");
 
   const [importProgress, setImportProgress] = useState(0);
 const [importTotal, setImportTotal] = useState(0);
 const [importPercent, setImportPercent] = useState(0);
+  const [importStartedAt, setImportStartedAt] = useState<number | null>(null);
 
   // dropdown filtre bâtiment (multi)
   const [buildingMenuOpen, setBuildingMenuOpen] = useState(false);
@@ -475,6 +485,8 @@ onClick={async () => {
   setImportError("");
 
   try {
+    const startedAt = Date.now();
+    setImportStartedAt(startedAt);
     const text = await importFile.text();
     const lines = text.split(/\r?\n/).filter(Boolean);
 
@@ -503,7 +515,7 @@ setImportTotal(rows.length);
     const startData = await start.json();
     const jobId = startData.jobId;
 
-    const batchSize = 5;
+    const batchSize = 50;
     let processed = 0;
     let imported = 0;
     const errors: any[] = [];
@@ -536,6 +548,7 @@ setImportPercent(rows.length > 0 ? Math.round((processed / rows.length) * 100) :
     setImportResult({
       imported,
       errors,
+      durationMs: Date.now() - startedAt,
     });
 
     await load();
@@ -543,6 +556,7 @@ setImportPercent(rows.length > 0 ? Math.round((processed / rows.length) * 100) :
     setImportError(e?.message ?? "Import failed");
   } finally {
     setImportBusy(false);
+    setImportStartedAt(null);
   }
 }}
             className="h-11 w-full rounded-xl bg-zinc-900 text-sm font-medium text-white hover:bg-zinc-800 disabled:opacity-40"
@@ -565,7 +579,12 @@ setImportPercent(rows.length > 0 ? Math.round((processed / rows.length) * 100) :
       />
     </div>
 
-    <div className="text-xs text-zinc-500">{importPercent}%</div>
+    <div className="flex justify-between text-xs text-zinc-500">
+      <span>{importPercent}%</span>
+      <span>
+        Temps ecoule : {fmtElapsed(importStartedAt ? Date.now() - importStartedAt : 0)}
+      </span>
+    </div>
   </div>
 ) : null}
           {importError ? (
@@ -586,6 +605,10 @@ setImportPercent(rows.length > 0 ? Math.round((processed / rows.length) * 100) :
                 >
                   {importResult.errors.length > 0 ? "⚠" : "✓"} {importResult.errors.length} erreur
                   {importResult.errors.length > 1 ? "s" : ""}
+                </span>
+
+                <span className="inline-flex items-center gap-1 rounded-full bg-blue-100 px-3 py-1 text-sm font-medium text-blue-700">
+                  Temps : {fmtElapsed(importResult.durationMs)}
                 </span>
               </div>
 

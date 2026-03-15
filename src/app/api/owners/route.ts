@@ -8,18 +8,26 @@ function asString(v: unknown) {
 
 export async function GET(req: Request) {
   try {
+    const gate = await requireAdmin();
+    if (!gate.ok) {
+      return NextResponse.json({ error: gate.error }, { status: gate.status });
+    }
+
     const { searchParams } = new URL(req.url);
     const unitId = searchParams.get("unitId");
 
     const items = await prisma.owner.findMany({
       orderBy: { createdAt: "desc" },
-      where: unitId
-        ? {
-            ownerships: {
-              some: { unitId, endDate: null },
-            },
-          }
-        : undefined,
+      where: {
+        organizationId: gate.organizationId,
+        ...(unitId
+          ? {
+              ownerships: {
+                some: { unitId, endDate: null, organizationId: gate.organizationId },
+              },
+            }
+          : {}),
+      },
       select: {
         id: true,
         name: true,
@@ -110,20 +118,32 @@ if (!cin) return NextResponse.json({ error: "CIN is required" }, { status: 400 }
 
   try {
     const unit = unitId
-      ? await prisma.unit.findUnique({ where: { id: unitId }, select: { id: true } })
-      : await prisma.unit.findUnique({ where: { lotNumber }, select: { id: true } });
+      ? await prisma.unit.findFirst({
+          where: { id: unitId, organizationId: gate.organizationId },
+          select: { id: true },
+        })
+      : await prisma.unit.findFirst({
+          where: { lotNumber, organizationId: gate.organizationId },
+          select: { id: true },
+        });
 
     if (!unit) return NextResponse.json({ error: "Unit not found" }, { status: 400 });
 
     const created = await prisma.$transaction(async (tx) => {
       const owner = await tx.owner.upsert({
-        where: { cin },
+        where: {
+          organizationId_cin: {
+            organizationId: gate.organizationId,
+            cin,
+          },
+        },
         update: {
           name,
           email: email || null,
           phone: phone || null,
         },
         create: {
+          organizationId: gate.organizationId,
           cin,
           name,
           email: email || null,
@@ -138,7 +158,13 @@ if (!cin) return NextResponse.json({ error: "CIN is required" }, { status: 400 }
       });
 
       if (!existing) {
-        await tx.ownership.create({ data: { ownerId: owner.id, unitId: unit.id } });
+        await tx.ownership.create({
+          data: {
+            organizationId: gate.organizationId,
+            ownerId: owner.id,
+            unitId: unit.id,
+          },
+        });
       }
 
       return owner;
@@ -172,10 +198,23 @@ export async function PATCH(req: Request) {
   try {
     const updated = await prisma.$transaction(async (tx) => {
       const unit = unitId
-        ? await tx.unit.findUnique({ where: { id: unitId }, select: { id: true } })
-        : await tx.unit.findUnique({ where: { lotNumber }, select: { id: true } });
+        ? await tx.unit.findFirst({
+            where: { id: unitId, organizationId: gate.organizationId },
+            select: { id: true },
+          })
+        : await tx.unit.findFirst({
+            where: { lotNumber, organizationId: gate.organizationId },
+            select: { id: true },
+          });
 
       if (!unit) throw new Error("Unit not found");
+
+      const existingOwner = await tx.owner.findFirst({
+        where: { id, organizationId: gate.organizationId },
+        select: { id: true },
+      });
+
+      if (!existingOwner) throw new Error("Owner not found");
 
       const owner = await tx.owner.update({
         where: { id },
@@ -189,17 +228,33 @@ export async function PATCH(req: Request) {
       });
 
       await tx.ownership.updateMany({
-        where: { ownerId: owner.id, endDate: null, unitId: { not: unit.id } },
+        where: {
+          organizationId: gate.organizationId,
+          ownerId: owner.id,
+          endDate: null,
+          unitId: { not: unit.id },
+        },
         data: { endDate: new Date() },
       });
 
       const existing = await tx.ownership.findFirst({
-        where: { ownerId: owner.id, unitId: unit.id, endDate: null },
+        where: {
+          organizationId: gate.organizationId,
+          ownerId: owner.id,
+          unitId: unit.id,
+          endDate: null,
+        },
         select: { id: true },
       });
 
       if (!existing) {
-        await tx.ownership.create({ data: { ownerId: owner.id, unitId: unit.id } });
+        await tx.ownership.create({
+          data: {
+            organizationId: gate.organizationId,
+            ownerId: owner.id,
+            unitId: unit.id,
+          },
+        });
       }
 
       return owner;
@@ -221,8 +276,17 @@ export async function DELETE(req: Request) {
 
   try {
     await prisma.$transaction(async (tx) => {
+      const existingOwner = await tx.owner.findFirst({
+        where: { id, organizationId: gate.organizationId },
+        select: { id: true },
+      });
+
+      if (!existingOwner) {
+        throw new Error("Owner not found");
+      }
+
       await tx.ownership.updateMany({
-        where: { ownerId: id, endDate: null },
+        where: { organizationId: gate.organizationId, ownerId: id, endDate: null },
         data: { endDate: new Date() },
       });
       await tx.owner.delete({ where: { id } });

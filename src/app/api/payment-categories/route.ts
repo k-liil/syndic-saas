@@ -1,8 +1,15 @@
 import { NextResponse } from "next/server";
 import { prisma } from "@/lib/prisma";
+import { requireAdmin } from "@/lib/authz";
 
 export async function GET() {
+  const gate = await requireAdmin();
+  if (!gate.ok) {
+    return NextResponse.json({ error: gate.error }, { status: gate.status });
+  }
+
   const categories = await prisma.paymentCategory.findMany({
+    where: { organizationId: gate.organizationId },
     orderBy: { name: "asc" },
   });
 
@@ -10,6 +17,11 @@ export async function GET() {
 }
 
 export async function POST(req: Request) {
+  const gate = await requireAdmin();
+  if (!gate.ok) {
+    return NextResponse.json({ error: gate.error }, { status: gate.status });
+  }
+
   const body = await req.json();
 
   const name =
@@ -24,6 +36,7 @@ export async function POST(req: Request) {
 
   const existing = await prisma.paymentCategory.findFirst({
     where: {
+      organizationId: gate.organizationId,
       name: {
         equals: name,
         mode: "insensitive",
@@ -40,6 +53,7 @@ export async function POST(req: Request) {
 
   const category = await prisma.paymentCategory.create({
     data: {
+      organizationId: gate.organizationId,
       name,
     },
   });

@@ -20,14 +20,29 @@ export async function GET(req: Request) {
   const page = Math.max(1, Number(searchParams.get("page") ?? 1));
   const pageSize = Math.min(100, Math.max(1, Number(searchParams.get("pageSize") ?? 50)));
   const type = asString(searchParams.get("type")).trim();
+  const rawYear = searchParams.get("year");
+  const year = rawYear ? Number(rawYear) : null;
   const q = asString(searchParams.get("q")).trim();
+
+  const method = asString(searchParams.get("method")).trim();
 
   const skip = (page - 1) * pageSize;
 
   const where: any = {};
+  where.organizationId = gate.organizationId;
+if (method) {
+  where.method = method;
+}
 
   if (type) {
     where.type = type;
+  }
+
+  if (year && Number.isFinite(year)) {
+    where.date = {
+      gte: new Date(Date.UTC(year, 0, 1)),
+      lt: new Date(Date.UTC(year + 1, 0, 1)),
+    };
   }
 
   if (q) {
@@ -127,6 +142,7 @@ export async function POST(req: Request) {
     }
 
     const last = await prisma.otherReceipt.findFirst({
+      where: { organizationId: gate.organizationId },
       orderBy: { receiptNumber: "desc" },
       select: { receiptNumber: true }
     });
@@ -137,6 +153,7 @@ export async function POST(req: Request) {
 
     const created = await prisma.otherReceipt.create({
       data: {
+        organizationId: gate.organizationId,
         receiptNumber,
         type: type as any,
         description,

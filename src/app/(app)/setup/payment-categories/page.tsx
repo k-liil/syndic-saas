@@ -1,6 +1,12 @@
 "use client";
 
-import { useEffect, useState } from "react";
+import {
+  forwardRef,
+  useEffect,
+  useImperativeHandle,
+  useMemo,
+  useState,
+} from "react";
 
 type PaymentCategory = {
   id: string;
@@ -9,10 +15,28 @@ type PaymentCategory = {
   isActive: boolean;
 };
 
-export default function PaymentCategoriesPage() {
+export type PaymentCategoriesPageHandle = {
+  submit: () => Promise<boolean>;
+};
+
+type PaymentCategoriesPageProps = {
+  hidePageHeader?: boolean;
+  onDirtyChange?: (dirty: boolean) => void;
+  onStatusChange?: (msg: string) => void;
+};
+
+const PaymentCategoriesPage = forwardRef<
+  PaymentCategoriesPageHandle,
+  PaymentCategoriesPageProps
+>(function PaymentCategoriesPage(
+  { hidePageHeader = false, onDirtyChange, onStatusChange },
+  ref
+) {
   const [items, setItems] = useState<PaymentCategory[]>([]);
   const [name, setName] = useState("");
-  const [msg, setMsg] = useState("");
+  const [saving, setSaving] = useState(false);
+
+  const isDirty = useMemo(() => name.trim().length > 0, [name]);
 
   async function load() {
     const res = await fetch("/api/payment-categories");
@@ -24,11 +48,16 @@ export default function PaymentCategoriesPage() {
     load();
   }, []);
 
+  useEffect(() => {
+    onDirtyChange?.(isDirty);
+  }, [isDirty, onDirtyChange]);
+
   async function createCategory() {
     const trimmed = name.trim();
-    if (!trimmed) return;
+    if (!trimmed || saving) return false;
 
-    setMsg("Création...");
+    setSaving(true);
+    onStatusChange?.("Enregistrement...");
 
     const res = await fetch("/api/payment-categories", {
       method: "POST",
@@ -40,56 +69,53 @@ export default function PaymentCategoriesPage() {
 
     if (!res.ok) {
       const err = await res.json().catch(() => ({}));
-      setMsg(`Erreur: ${err?.error ?? "create failed"}`);
-      return;
+      onStatusChange?.(`Erreur: ${err?.error ?? "create failed"}`);
+      setSaving(false);
+      return false;
     }
 
     setName("");
     await load();
-    setMsg("✅ Catégorie ajoutée.");
+    onStatusChange?.("Categorie enregistree.");
+    setSaving(false);
+    return true;
   }
+
+  useImperativeHandle(ref, () => ({
+    submit: createCategory,
+  }));
 
   return (
     <div className="space-y-6">
-      <div className="rounded-3xl border border-zinc-200 bg-white p-6 shadow-sm">
-        <h1 className="text-2xl font-semibold text-zinc-900">
-          Catégories de dépenses
-        </h1>
-        <p className="mt-2 text-sm text-zinc-500">
-          Paramètre les catégories utilisées dans les paiements sortants.
-        </p>
-      </div>
+      {!hidePageHeader ? (
+        <div className="rounded-3xl border border-zinc-200 bg-white p-6 shadow-sm">
+          <h1 className="text-2xl font-semibold text-zinc-900">
+            Categories de depenses
+          </h1>
+          <p className="mt-2 text-sm text-zinc-500">
+            Parametre les categories utilisees dans les paiements sortants.
+          </p>
+        </div>
+      ) : null}
 
       <div className="rounded-3xl border border-zinc-200 bg-white p-6 shadow-sm space-y-4">
         <div>
           <label className="mb-2 block text-sm font-medium text-zinc-700">
-            Nom de la catégorie
+            Nom de la categorie
           </label>
           <input
             className="h-12 w-full rounded-2xl border border-zinc-200 px-4 text-sm outline-none"
             value={name}
             onChange={(e) => setName(e.target.value)}
-            placeholder="Ex: Dépenses courantes"
+            placeholder="Ex: Depenses courantes"
           />
         </div>
-
-        <button
-          type="button"
-          onClick={createCategory}
-          className="rounded-2xl bg-indigo-600 px-5 py-3 text-sm font-semibold text-white"
-        >
-          Ajouter catégorie
-        </button>
-
-        {msg ? (
-          <div className="text-sm text-zinc-600">{msg}</div>
-        ) : null}
       </div>
 
       <div className="rounded-3xl border border-zinc-200 bg-white p-6 shadow-sm">
         {items.length === 0 ? (
           <div className="text-sm text-zinc-500">
-            Aucune catégorie configurée.
+            Aucune categorie configuree.
           </div>
         ) : (
           <div className="space-y-3">
@@ -109,4 +135,6 @@ export default function PaymentCategoriesPage() {
       </div>
     </div>
   );
-}
+});
+
+export default PaymentCategoriesPage;
