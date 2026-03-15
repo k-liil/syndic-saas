@@ -250,22 +250,6 @@ function toggleSelect(id: string) {
   );
 }
 
-export default function PaymentsPage() {
-  return (
-    <Suspense
-      fallback={
-        <div className="space-y-6">
-          <div className="rounded-3xl border border-zinc-200 bg-white p-8 text-center text-sm text-zinc-500 shadow-sm">
-            Chargement des depenses...
-          </div>
-        </div>
-      }
-    >
-      <PaymentsPageContent />
-    </Suspense>
-  );
-}
-
   function resetForm() {
     setTitle("");
     setSupplierId("");
@@ -1173,5 +1157,21 @@ export default function PaymentsPage() {
   </div>
 ) : null}
     </div>
+  );
+}
+
+export default function PaymentsPage() {
+  return (
+    <Suspense
+      fallback={
+        <div className="space-y-6">
+          <div className="rounded-3xl border border-zinc-200 bg-white p-8 text-center text-sm text-zinc-500 shadow-sm">
+            Chargement des depenses...
+          </div>
+        </div>
+      }
+    >
+      <PaymentsPageContent />
+    </Suspense>
   );
 }
