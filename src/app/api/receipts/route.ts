@@ -375,7 +375,9 @@ await tx.fiscalYear.upsert({
         for (const due of dues) {
           if (remaining <= 0) break;
 
-          const remainingDue = due.amountDue - due.paidAmount;
+          const amountDue = Number(due.amountDue);
+          const paidAmount = Number(due.paidAmount);
+          const remainingDue = amountDue - paidAmount;
           if (remainingDue <= 0) continue;
 
           const allocationAmount =
@@ -389,14 +391,14 @@ await tx.fiscalYear.upsert({
             },
           });
 
-          const newPaidAmount = due.paidAmount + allocationAmount;
+          const newPaidAmount = paidAmount + allocationAmount;
 
           await tx.monthlyDue.update({
             where: { id: due.id },
             data: {
               paidAmount: newPaidAmount,
               status:
-                newPaidAmount >= due.amountDue
+                newPaidAmount >= amountDue
                   ? DueStatus.PAID
                   : DueStatus.PARTIAL,
             },
