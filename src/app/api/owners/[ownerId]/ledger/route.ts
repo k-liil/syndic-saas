@@ -61,12 +61,12 @@ export async function GET(
     );
 
     const remainingDueNowTotal = dueNow.reduce(
-      (sum, d) => sum + (d.amountDue - d.paidAmount),
+      (sum, d) => sum + (Number(d.amountDue) - Number(d.paidAmount)),
       0
     );
 
     const remainingFutureTotal = future.reduce(
-      (sum, d) => sum + (d.amountDue - d.paidAmount),
+      (sum, d) => sum + (Number(d.amountDue) - Number(d.paidAmount)),
       0
     );
 
