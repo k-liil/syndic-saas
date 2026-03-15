@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useMemo, useRef, useState } from "react";
+import { Suspense, useEffect, useMemo, useRef, useState } from "react";
 import { useSearchParams } from "next/navigation";
 
 type Supplier = {
@@ -66,7 +66,7 @@ function fmtElapsed(ms: number) {
   return `${minutes}:${String(seconds).padStart(2, "0")}`;
 }
 
-export default function PaymentsPage() {
+function PaymentsPageContent() {
   const searchParams = useSearchParams();
   const year = searchParams.get("year") ?? new Date().getFullYear();
   const [payments, setPayments] = useState<Payment[]>([]);
@@ -247,6 +247,22 @@ function toggleSelect(id: string) {
     prev.includes(id)
       ? prev.filter((x) => x !== id)
       : [...prev, id]
+  );
+}
+
+export default function PaymentsPage() {
+  return (
+    <Suspense
+      fallback={
+        <div className="space-y-6">
+          <div className="rounded-3xl border border-zinc-200 bg-white p-8 text-center text-sm text-zinc-500 shadow-sm">
+            Chargement des depenses...
+          </div>
+        </div>
+      }
+    >
+      <PaymentsPageContent />
+    </Suspense>
   );
 }
 
