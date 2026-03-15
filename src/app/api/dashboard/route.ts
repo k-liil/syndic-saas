@@ -178,7 +178,7 @@ const openingBank = toNumber(settings?.openingBankBalance);
 
 const categoryIds = expensesByCategory
   .map((c) => c.categoryId)
-  .filter((id): id is number => id !== null);
+  .filter((id): id is string => id !== null);
 
 const categories = categoryIds.length
   ? await prisma.paymentCategory.findMany({
