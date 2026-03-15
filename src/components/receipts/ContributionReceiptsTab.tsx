@@ -3,7 +3,7 @@
 import { useEffect, useState } from "react";
 import { useSearchParams } from "next/navigation";
 import { Modal } from "@/components/ui/Modal";
-import { Table, THead, TR, TH, TD } from "@/components/ui/Table";
+import { Table, THead, TR, TH, TD } from "@/components/ui/table";
 
 type Method = "CASH" | "TRANSFER" | "CHECK";
 

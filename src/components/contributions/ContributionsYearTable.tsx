@@ -14,7 +14,7 @@ import {
   TableHead,
   TableHeader,
   TableRow,
-} from "../ui/Table";
+} from "../ui/table";
 
 type MonthStatus = "PAID" | "PARTIAL" | "UNPAID" | "ADVANCE" | null;
 
