@@ -20,8 +20,22 @@ async function safeDeleteMany(fn: () => Promise<unknown>) {
 async function seedAuthAdmin() {
   const adminEmail = process.env.ADMIN_EMAIL || "admin@syndic.local";
   const adminPassword = process.env.ADMIN_PASSWORD || "Admin123!";
+  const organizationName = process.env.ORGANIZATION_NAME || "Syndic";
+  const organizationSlug = process.env.ORGANIZATION_SLUG || "default";
 
   const passwordHash = await bcrypt.hash(adminPassword, 12);
+  const organization = await prisma.organization.upsert({
+    where: { slug: organizationSlug },
+    update: {
+      name: organizationName,
+      isActive: true,
+    },
+    create: {
+      name: organizationName,
+      slug: organizationSlug,
+      isActive: true,
+    },
+  });
 
   await prisma.user.upsert({
     where: { email: adminEmail },
@@ -30,6 +44,7 @@ async function seedAuthAdmin() {
       isActive: true,
       passwordHash,
       name: "Admin",
+      organizationId: organization.id,
     },
     create: {
       email: adminEmail,
@@ -37,6 +52,9 @@ async function seedAuthAdmin() {
       isActive: true,
       passwordHash,
       name: "Admin",
+      organization: {
+        connect: { id: organization.id },
+      },
     },
   });
 
