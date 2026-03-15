@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useState } from "react";
+import { Suspense, useEffect, useState } from "react";
 import { useSearchParams } from "next/navigation";
 import { ContributionsYearTable } from "@/components/contributions/ContributionsYearTable";
 
@@ -49,7 +49,7 @@ type RowData = {
   dec: MonthStatus;
 };
 
-export default function ContributionsYearPage() {
+function ContributionsYearPageContent() {
   const searchParams = useSearchParams();
   const year = Number(searchParams.get("year"));
 
@@ -220,5 +220,21 @@ export default function ContributionsYearPage() {
         );
       })}
     </div>
+  );
+}
+
+export default function ContributionsYearPage() {
+  return (
+    <Suspense
+      fallback={
+        <div className="space-y-6">
+          <div className="rounded-2xl border border-zinc-200 bg-white p-8 text-center text-sm text-zinc-500 shadow-sm">
+            Chargement des cotisations...
+          </div>
+        </div>
+      }
+    >
+      <ContributionsYearPageContent />
+    </Suspense>
   );
 }
