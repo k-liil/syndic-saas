@@ -234,6 +234,11 @@ export async function POST(req: Request) {
         throw new Error("Unit has no building");
       }
 
+      const ensuredUnit = {
+        ...unit,
+        buildingId: unit.buildingId,
+      };
+
       const ownership = await tx.ownership.findFirst({
         where: {
           organizationId: gate.organizationId,
@@ -305,8 +310,8 @@ await tx.fiscalYear.upsert({
           receiptNumber: nextNumber,
           type,
           ownerId,
-          buildingId: unit.buildingId,
-          unitId: unit.id,
+          buildingId: ensuredUnit.buildingId,
+          unitId: ensuredUnit.id,
           amount,
           method: method as PaymentMethod,
           date,
@@ -328,7 +333,7 @@ await tx.fiscalYear.upsert({
           data: [
             {
               organizationId: gate.organizationId,
-              unitId: unit.id,
+              unitId: ensuredUnit.id,
               period,
               amountDue: fee,
               paidAmount: 0,
@@ -354,7 +359,7 @@ await tx.fiscalYear.upsert({
         const dues = await tx.monthlyDue.findMany({
           where: {
             organizationId: gate.organizationId,
-            unitId: unit.id,
+            unitId: ensuredUnit.id,
             status: { in: [DueStatus.UNPAID, DueStatus.PARTIAL] },
             period: { gte: startPeriod },
           },
