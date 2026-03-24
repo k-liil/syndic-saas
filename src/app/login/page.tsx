@@ -1,43 +1,10 @@
 "use client";
 
-import { Suspense, useEffect, useState } from "react";
+import { Suspense, useMemo, useState } from "react";
+import Image from "next/image";
 import { signIn } from "next-auth/react";
 import { useSearchParams } from "next/navigation";
-import { ArrowRight, Building2, LockKeyhole, Mail, ShieldCheck } from "lucide-react";
-
-type ProviderMap = Record<
-  string,
-  {
-    id: string;
-    name: string;
-    type: string;
-    signinUrl: string;
-    callbackUrl: string;
-  }
->;
-
-function GoogleIcon() {
-  return (
-    <svg viewBox="0 0 24 24" aria-hidden="true" className="h-5 w-5">
-      <path
-        d="M21.81 10.04H12.3v3.95h5.48c-.24 1.27-.96 2.35-2.04 3.08v2.56h3.3c1.93-1.78 3.04-4.4 3.04-7.5 0-.71-.06-1.4-.27-2.09Z"
-        fill="#4285F4"
-      />
-      <path
-        d="M12.3 22c2.7 0 4.97-.89 6.63-2.37l-3.3-2.56c-.91.61-2.09.97-3.33.97-2.55 0-4.71-1.72-5.48-4.03H3.42v2.64A9.99 9.99 0 0 0 12.3 22Z"
-        fill="#34A853"
-      />
-      <path
-        d="M6.82 14.01a6.01 6.01 0 0 1 0-4.02V7.35H3.42a9.98 9.98 0 0 0 0 9.3l3.4-2.64Z"
-        fill="#FBBC05"
-      />
-      <path
-        d="M12.3 5.96c1.45 0 2.76.5 3.79 1.47l2.85-2.85C17.27 3.02 15 2 12.3 2a9.99 9.99 0 0 0-8.88 5.35l3.4 2.64c.77-2.31 2.93-4.03 5.48-4.03Z"
-        fill="#EA4335"
-      />
-    </svg>
-  );
-}
+import { ArrowRight, LockKeyhole, Mail, ShieldCheck } from "lucide-react";
 
 function LoginPageContent() {
   const sp = useSearchParams();
@@ -47,29 +14,15 @@ function LoginPageContent() {
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
   const [msg, setMsg] = useState("");
-  const [providers, setProviders] = useState<ProviderMap>({});
-  const [loadingGoogle, setLoadingGoogle] = useState(false);
 
-  useEffect(() => {
-    fetch("/api/auth/providers", { cache: "no-store" })
-      .then((res) => res.json())
-      .then((data) => setProviders(data ?? {}))
-      .catch(() => setProviders({}));
-  }, []);
-
-  useEffect(() => {
-    if (!error) return;
-
+  const errorMessage = useMemo(() => {
+    if (!error) return "";
     const messages: Record<string, string> = {
-      AccessDenied:
-        "Connexion Google refusee. Verifie que votre email existe deja dans la plateforme et que le compte est actif.",
-      OAuthAccountNotLinked:
-        "Ce compte Google n'est pas encore lie correctement. Reessaie avec le meme email que ton compte existant.",
       Configuration:
-        "La connexion externe n'est pas encore configuree correctement.",
+        "La configuration de connexion n'est pas encore correcte.",
     };
 
-    setMsg(messages[error] ?? "Une erreur de connexion est survenue.");
+    return messages[error] ?? "Une erreur de connexion est survenue.";
   }, [error]);
 
   async function onSubmit(e: React.FormEvent) {
@@ -89,14 +42,6 @@ function LoginPageContent() {
     window.location.href = next;
   }
 
-  async function onGoogleSignIn() {
-    setLoadingGoogle(true);
-    setMsg("");
-    await signIn("google", { callbackUrl: next });
-  }
-
-  const googleProvider = providers.google;
-
   return (
     <div className="ambient-grid min-h-screen overflow-hidden text-slate-900">
       <div className="soft-orb left-[-7rem] top-[8rem] h-72 w-72 bg-sky-300/55" />
@@ -104,9 +49,15 @@ function LoginPageContent() {
       <div className="mx-auto grid min-h-screen max-w-7xl gap-10 px-6 py-8 lg:grid-cols-[1.05fr_0.95fr] lg:px-10">
         <section className="glass-panel flex flex-col justify-between rounded-[40px] p-8 text-slate-900 lg:p-10">
           <div>
-            <div className="inline-flex items-center gap-2.5 rounded-full border border-slate-200 bg-white/75 px-3.5 py-1.5 text-sm font-semibold text-slate-800 shadow-sm">
-              <img src="/logo.png" alt="" className="h-5 w-5 object-contain" />
-              Syndicly
+            <div className="inline-flex rounded-[32px] border border-slate-200 bg-white/80 p-4 shadow-sm">
+              <Image
+                src="/logo.png"
+                alt="Syndicly"
+                width={320}
+                height={118}
+                className="h-auto w-[220px] object-contain sm:w-[280px]"
+                priority
+              />
             </div>
 
             <h1 className="display-title mt-8 max-w-xl text-5xl font-semibold leading-[0.96] text-slate-950 sm:text-6xl">
@@ -115,7 +66,7 @@ function LoginPageContent() {
 
             <p className="mt-5 max-w-lg text-base leading-7 text-slate-600">
               Retrouvez vos immeubles, vos coproprietaires, vos encaissements et
-              vos paiements dans un espace pense pour l'exploitation quotidienne.
+              vos paiements dans un espace pense pour l&apos;exploitation quotidienne.
             </p>
           </div>
 
@@ -124,7 +75,7 @@ function LoginPageContent() {
               <Mail className="text-sky-500" size={20} />
               <div className="mt-4 text-sm font-semibold text-slate-900">Connexion rapide</div>
               <p className="mt-2 text-sm leading-6 text-slate-600">
-                Email et mot de passe ou Google selon votre configuration.
+                Email et mot de passe dans une interface simple et directe.
               </p>
             </div>
             <div className="rounded-[28px] border border-slate-200 bg-white/75 p-5">
@@ -157,34 +108,7 @@ function LoginPageContent() {
               Connectez-vous pour acceder au tableau de bord et a vos operations.
             </p>
 
-            <div className="mt-6 space-y-3">
-              <button
-                type="button"
-                onClick={onGoogleSignIn}
-                disabled={!googleProvider || loadingGoogle}
-                className="flex w-full items-center justify-center gap-3 rounded-2xl border border-slate-200 bg-white/85 px-4 py-3 text-sm font-medium text-slate-700 shadow-sm transition hover:-translate-y-px hover:bg-slate-50 disabled:cursor-not-allowed disabled:opacity-60"
-              >
-                <GoogleIcon />
-                {googleProvider ? "Continuer avec Google" : "Google bientot disponible"}
-              </button>
-
-              {!googleProvider ? (
-                <p className="text-xs leading-5 text-slate-400">
-                  Ajoute `GOOGLE_CLIENT_ID` et `GOOGLE_CLIENT_SECRET` dans `.env`
-                  pour activer la connexion Google.
-                </p>
-              ) : null}
-            </div>
-
-            <div className="my-6 flex items-center gap-3">
-              <div className="h-px flex-1 bg-slate-200" />
-              <span className="text-xs font-medium uppercase tracking-[0.2em] text-slate-400">
-                Ou
-              </span>
-              <div className="h-px flex-1 bg-slate-200" />
-            </div>
-
-            <form onSubmit={onSubmit} className="space-y-4">
+            <form onSubmit={onSubmit} className="mt-8 space-y-4">
               <label className="block">
                 <span className="mb-2 block text-sm font-medium text-slate-700">
                   Email
@@ -219,9 +143,9 @@ function LoginPageContent() {
               </button>
             </form>
 
-            {msg ? (
+            {msg || errorMessage ? (
               <div className="mt-4 rounded-2xl border border-slate-200 bg-slate-50 px-4 py-3 text-sm leading-6 text-slate-600">
-                {msg}
+                {msg || errorMessage}
               </div>
             ) : null}
           </div>

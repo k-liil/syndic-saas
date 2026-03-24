@@ -1,15 +1,10 @@
 import type { NextAuthOptions } from "next-auth";
 import Credentials from "next-auth/providers/credentials";
-import GoogleProvider from "next-auth/providers/google";
 import { PrismaAdapter } from "@auth/prisma-adapter";
 import bcrypt from "bcryptjs";
 import { prisma } from "@/lib/prisma";
 import { ensureOrganizationForUser } from "@/lib/organization";
 import { normalizeRole } from "@/lib/roles";
-
-const googleClientId = process.env.GOOGLE_CLIENT_ID;
-const googleClientSecret = process.env.GOOGLE_CLIENT_SECRET;
-const googleEnabled = Boolean(googleClientId && googleClientSecret);
 
 export const authOptions: NextAuthOptions = {
   adapter: PrismaAdapter(prisma),
@@ -17,15 +12,6 @@ export const authOptions: NextAuthOptions = {
   secret: process.env.NEXTAUTH_SECRET ?? process.env.AUTH_SECRET,
 
   providers: [
-    ...(googleEnabled
-      ? [
-          GoogleProvider({
-            clientId: googleClientId!,
-            clientSecret: googleClientSecret!,
-            allowDangerousEmailAccountLinking: true,
-          }),
-        ]
-      : []),
     Credentials({
       name: "Credentials",
       credentials: {
@@ -57,24 +43,7 @@ export const authOptions: NextAuthOptions = {
   ],
 
   callbacks: {
-    async signIn({ user, account }) {
-      if (account?.provider !== "google") {
-        return true;
-      }
-
-      if (!user.email) {
-        return false;
-      }
-
-      const existingUser = await prisma.user.findUnique({
-        where: { email: user.email },
-      });
-
-      if (!existingUser || !existingUser.isActive) {
-        return false;
-      }
-
-      (user as any).role = normalizeRole(existingUser.role);
+    async signIn() {
       return true;
     },
 
