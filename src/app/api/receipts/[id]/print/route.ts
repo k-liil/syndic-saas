@@ -1,11 +1,11 @@
-import { NextResponse } from "next/server";
+import { NextRequest, NextResponse } from "next/server";
 import { prisma } from "@/lib/prisma";
 import { requireAuth } from "@/lib/authz";
 import { getOrgIdFromRequest } from "@/lib/org-utils";
 
 export async function GET(
-  req: Request,
-  { params }: { params: { id: string } }
+  req: NextRequest,
+  { params }: { params: Promise<{ id: string }> }
 ) {
   const gate = await requireAuth();
   if (!gate.ok) {
@@ -17,8 +17,10 @@ export async function GET(
     return NextResponse.json({ error: "No organization" }, { status: 400 });
   }
 
+  const { id } = await params;
+
   const receipt = await prisma.receipt.findFirst({
-    where: { id: params.id, organizationId: orgId },
+    where: { id, organizationId: orgId },
     include: {
       owner: { select: { id: true, name: true, firstName: true } },
       unit: { select: { id: true, lotNumber: true, reference: true, type: true } },
