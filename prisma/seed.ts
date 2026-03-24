@@ -1,89 +1,101 @@
 import { PrismaClient } from "@prisma/client";
 import bcrypt from "bcryptjs";
+import { ensureOrganizationAccountingPosts } from "../src/lib/accounting-post-defaults";
 
 const prisma = new PrismaClient();
 
-function assert(condition: any, message: string) {
-  if (!condition) throw new Error(message);
-}
+async function seedSuperAdmin() {
+  const superAdminEmail = process.env.SUPER_ADMIN_EMAIL || "super@syndic.local";
+  const superAdminPassword = process.env.SUPER_ADMIN_PASSWORD || "SuperAdmin123!";
 
-async function safeDeleteMany(fn: () => Promise<unknown>) {
-  try {
-    await fn();
-  } catch (e: any) {
-    if (e?.code === "P2021") return; // table does not exist
-    if (String(e?.message || "").includes("does not exist")) return;
-    throw e;
-  }
-}
+  const passwordHash = await bcrypt.hash(superAdminPassword, 12);
 
-async function seedAuthAdmin() {
-  const adminEmail = process.env.ADMIN_EMAIL || "admin@syndic.local";
-  const adminPassword = process.env.ADMIN_PASSWORD || "Admin123!";
-  const organizationName = process.env.ORGANIZATION_NAME || "Syndic";
-  const organizationSlug = process.env.ORGANIZATION_SLUG || "default";
-
-  const passwordHash = await bcrypt.hash(adminPassword, 12);
-  const organization = await prisma.organization.upsert({
-    where: { slug: organizationSlug },
+  const superAdmin = await prisma.user.upsert({
+    where: { email: superAdminEmail },
     update: {
-      name: organizationName,
+      role: "SUPER_ADMIN",
       isActive: true,
+      passwordHash,
+      name: "Super Admin",
     },
     create: {
-      name: organizationName,
-      slug: organizationSlug,
+      email: superAdminEmail,
+      role: "SUPER_ADMIN",
       isActive: true,
+      passwordHash,
+      name: "Super Admin",
     },
   });
 
-  await prisma.user.upsert({
-    where: { email: adminEmail },
+  console.log("Super Admin ready:", superAdminEmail);
+  return superAdmin;
+}
+
+async function seedCherratOrg(superAdmin: { id: string }) {
+  const org = await prisma.organization.upsert({
+    where: { slug: "les-jardins-de-cherrat" },
     update: {
-      role: "ADMIN",
-      isActive: true,
-      passwordHash,
-      name: "Admin",
-      organizationId: organization.id,
+      name: "Les Jardins de Cherrat",
+      address: "-Route cotiere Ouad Cherrat - Bouznika",
+      city: "Bouznika",
+      zipCode: "13100",
+      email: "syndic.j.cherrat@gmail.com",
+      phone: "0653545853",
+      srmContact: "0653545853",
+      rib: "230810466368922100540095",
+      logoUrl: "/cherrat-logo.png",
     },
     create: {
-      email: adminEmail,
-      role: "ADMIN",
-      isActive: true,
-      passwordHash,
-      name: "Admin",
-      organization: {
-        connect: { id: organization.id },
+      name: "Les Jardins de Cherrat",
+      slug: "les-jardins-de-cherrat",
+      address: "-Route cotiere Ouad Cherrat - Bouznika",
+      city: "Bouznika",
+      zipCode: "13100",
+      email: "syndic.j.cherrat@gmail.com",
+      phone: "0653545853",
+      srmContact: "0653545853",
+      rib: "230810466368922100540095",
+      logoUrl: "/cherrat-logo.png",
+      settings: {
+        create: {
+          brandName: "Les Jardins de Cherrat",
+          contributionType: "GLOBAL_FIXED",
+          globalFixedAmount: 0,
+        },
       },
     },
   });
 
-  console.log("✅ Admin ready:", adminEmail);
+  await prisma.userOrganization.upsert({
+    where: {
+      userId_organizationId: {
+        userId: superAdmin.id,
+        organizationId: org.id,
+      },
+    },
+    update: { role: "ADMIN" },
+    create: {
+      userId: superAdmin.id,
+      organizationId: org.id,
+      role: "ADMIN",
+    },
+  });
+
+  await ensureOrganizationAccountingPosts(prisma, org.id);
+
+  console.log("Org 'Les Jardins de Cherrat' ready");
 }
 
 async function main() {
-  // Nettoyage soft (ignore si tables absentes)
-  await safeDeleteMany(() => prisma.receiptAllocation.deleteMany());
-  await safeDeleteMany(() => prisma.receipt.deleteMany());
-  await safeDeleteMany(() => prisma.payment.deleteMany());
-  await safeDeleteMany(() => prisma.monthlyDue.deleteMany());
-  await safeDeleteMany(() => prisma.ownership.deleteMany());
-  await safeDeleteMany(() => prisma.unit.deleteMany());
-  await safeDeleteMany(() => prisma.owner.deleteMany());
-  await safeDeleteMany(() => prisma.supplier.deleteMany());
-  await safeDeleteMany(() => prisma.internalBank.deleteMany());
-  await safeDeleteMany(() => prisma.fiscalYear.deleteMany());
-  await safeDeleteMany(() => prisma.building.deleteMany());
-
-  // 1) Auth
-  await seedAuthAdmin();
-
-  console.log("✅ Seed terminé");
+  console.log("Seed starting...");
+  const superAdmin = await seedSuperAdmin();
+  await seedCherratOrg(superAdmin);
+  console.log("Seed completed!");
 }
 
 main()
-  .catch((e) => {
-    console.error("❌ Seed failed:", e);
+  .catch((error) => {
+    console.error("Seed failed:", error);
     process.exit(1);
   })
   .finally(async () => {

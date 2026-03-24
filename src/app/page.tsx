@@ -51,15 +51,15 @@ export default function HomePage() {
       <div className="soft-orb bottom-[6rem] right-[18%] h-60 w-60 bg-teal-300/40" />
       <div className="mx-auto flex min-h-screen max-w-7xl flex-col px-6 py-6 sm:px-8 lg:px-10">
         <header className="flex items-center justify-between py-4">
-          <div className="flex items-center gap-3">
-            <div className="flex h-11 w-11 items-center justify-center rounded-2xl bg-gradient-to-br from-sky-500 to-cyan-600 text-white shadow-lg shadow-sky-500/25">
-              <Building2 size={20} />
+          <div className="flex items-center gap-4">
+            <div className="flex h-16 w-16 items-center justify-center rounded-2xl bg-white p-2 shadow-md border border-slate-100">
+              <img src="/logo.png" alt="Syndicly Logo" className="h-12 w-12 object-contain" />
             </div>
             <div>
-              <div className="eyebrow text-sky-700">
-                Syndic SaaS
+              <div className="text-2xl font-bold tracking-tight text-slate-900">
+                Syndicly
               </div>
-              <div className="text-sm text-slate-500">
+              <div className="text-sm text-slate-500 font-medium">
                 Gestion de syndic simple, nette et exploitable
               </div>
             </div>

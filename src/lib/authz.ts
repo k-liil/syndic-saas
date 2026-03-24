@@ -1,32 +1,133 @@
 import { getServerSession } from "next-auth";
 import { authOptions } from "@/lib/auth-options";
-import { ensureOrganizationForUser } from "@/lib/organization";
+import { prisma } from "@/lib/prisma";
+import { AppRole, hasMinRole, isSuperAdmin, normalizeRole } from "@/lib/roles";
+
+export type UserOrganizationAccess = {
+  organizationId: string;
+  role: AppRole;
+};
+
+export type AuthGateSuccess = {
+  ok: true;
+  session: Awaited<ReturnType<typeof getServerSession>>;
+  userId: string | undefined;
+  isSuperAdmin: boolean;
+  organizationId: string | null;
+  userOrganizations?: UserOrganizationAccess[];
+};
+
+export type AuthGateFailure = {
+  ok: false;
+  status: number;
+  error: string;
+};
+
+export type AuthGateResult = AuthGateSuccess | AuthGateFailure;
 
 export async function requireAuth() {
   const session = await getServerSession(authOptions);
   if (!session?.user) {
     return { ok: false as const, status: 401, error: "UNAUTHENTICATED" };
   }
-  let organizationId = (session.user as any)?.organizationId;
-  if (!organizationId) {
-    const organization = await ensureOrganizationForUser((session.user as any)?.id);
-    organizationId = organization.id;
-    (session.user as any).organizationId = organizationId;
+
+  const role = normalizeRole(session.user.role);
+  const userId = session.user.id;
+
+  if (isSuperAdmin(role)) {
+    return { 
+      ok: true as const, 
+      session, 
+      userId,
+      isSuperAdmin: true,
+      organizationId: null,
+    };
   }
-  if (!organizationId) {
+  
+  const userOrgsRaw = await prisma.userOrganization.findMany({
+    where: { userId },
+    select: { organizationId: true, role: true },
+  });
+  const userOrgs = userOrgsRaw.map((item) => ({
+    organizationId: item.organizationId,
+    role: normalizeRole(item.role),
+  }));
+  
+  if (userOrgs.length === 0) {
     return { ok: false as const, status: 403, error: "NO_ORGANIZATION" };
   }
-  return { ok: true as const, session, organizationId };
+  
+  return { 
+    ok: true as const, 
+    session, 
+    userId,
+    isSuperAdmin: false,
+    organizationId: userOrgs[0].organizationId,
+    userOrganizations: userOrgs,
+  };
+}
+
+export async function requireSuperAdmin() {
+  const r = await requireAuth();
+  if (!r.ok) return r;
+  
+  if (!r.isSuperAdmin) {
+    return { ok: false as const, status: 403, error: "SUPER_ADMIN_REQUIRED" };
+  }
+
+  return { ok: true as const, session: r.session, userId: r.userId, isSuperAdmin: true };
 }
 
 export async function requireAdmin() {
+  return requireRole("MANAGER");
+}
+
+export async function requireManager() {
+  return requireRole("MANAGER");
+}
+
+export async function requireRole(minimumRole: AppRole) {
   const r = await requireAuth();
   if (!r.ok) return r;
 
-  const role = (r.session.user as any)?.role;
-  if (role !== "ADMIN") {
+  if (r.isSuperAdmin) {
+    return { 
+      ok: true as const, 
+      session: r.session, 
+      userId: r.userId,
+      isSuperAdmin: true,
+      organizationId: null,
+    };
+  }
+
+  const hasRole = r.userOrganizations?.some((uo) =>
+    hasMinRole(uo.role, minimumRole)
+  );
+
+  if (!hasRole) {
     return { ok: false as const, status: 403, error: "FORBIDDEN" };
   }
 
-  return { ok: true as const, session: r.session, organizationId: r.organizationId };
+  return { 
+    ok: true as const, 
+    session: r.session, 
+    userId: r.userId,
+    isSuperAdmin: false,
+    organizationId: r.organizationId,
+  };
+}
+
+export function getOrganizationIdsForRole(
+  gate: AuthGateSuccess,
+  minimumRole: Exclude<AppRole, "SUPER_ADMIN"> = "OWNER"
+) {
+  if (gate.isSuperAdmin) {
+    return [];
+  }
+
+  const orgIds = (gate.userOrganizations ?? [])
+    .filter((uo) => hasMinRole(uo.role, minimumRole))
+    .map((uo) => uo.organizationId);
+
+  return Array.from(new Set(orgIds));
 }

@@ -1,8 +1,9 @@
 "use client";
 
-import { Suspense, useEffect, useState } from "react";
+import { Suspense, useCallback, useEffect, useState } from "react";
 import { useSearchParams } from "next/navigation";
 import { ContributionsYearTable } from "@/components/contributions/ContributionsYearTable";
+import { useApiUrl } from "@/lib/org-context";
 
 type DueStatus = "PAID" | "PARTIAL" | "UNPAID";
 
@@ -15,6 +16,7 @@ type ApiBuilding = {
     reference: string;
     ownerships: {
       owner: {
+        firstName: string | null;
         name: string;
       };
     }[];
@@ -52,38 +54,45 @@ type RowData = {
 function ContributionsYearPageContent() {
   const searchParams = useSearchParams();
   const year = Number(searchParams.get("year"));
+  const apiUrl = useApiUrl();
 
   const [data, setData] = useState<ApiBuilding[]>([]);
   const [buildings, setBuildings] = useState<BuildingOption[]>([]);
   const [buildingId, setBuildingId] = useState("");
 
-  async function load() {
+  const load = useCallback(async () => {
     if (!year) return;
 
     const url = buildingId
-      ? `/api/contributions/year?year=${year}&buildingId=${buildingId}`
-      : `/api/contributions/year?year=${year}`;
+      ? apiUrl(`/api/contributions/year?year=${year}&buildingId=${buildingId}`)
+      : apiUrl(`/api/contributions/year?year=${year}`);
 
     const res = await fetch(url, { cache: "no-store" });
     const json = await res.json();
 
     setData(Array.isArray(json) ? json : []);
-  }
+  }, [apiUrl, buildingId, year]);
 
-  async function loadBuildings() {
-    const res = await fetch("/api/buildings/options", { cache: "no-store" });
+  const loadBuildings = useCallback(async () => {
+    const res = await fetch(apiUrl("/api/buildings/options"), { cache: "no-store" });
     const json = await res.json();
 
     setBuildings(Array.isArray(json) ? json : []);
-  }
+  }, [apiUrl]);
 
   useEffect(() => {
-    loadBuildings();
-  }, []);
+    const timer = window.setTimeout(() => {
+      void loadBuildings();
+    }, 0);
+    return () => window.clearTimeout(timer);
+  }, [loadBuildings]);
 
   useEffect(() => {
-    load();
-  }, [year, buildingId]);
+    const timer = window.setTimeout(() => {
+      void load();
+    }, 0);
+    return () => window.clearTimeout(timer);
+  }, [load]);
 
   function convertUnits(building: ApiBuilding): RowData[] {
     return building.units.map((u) => {
@@ -100,7 +109,9 @@ function ContributionsYearPageContent() {
 
       return {
         lot: u.lotNumber || u.reference || "",
-        owner: u.ownerships?.[0]?.owner?.name || "",
+        owner: [u.ownerships?.[0]?.owner?.firstName, u.ownerships?.[0]?.owner?.name]
+          .filter(Boolean)
+          .join(" "),
         jan: get(0),
         feb: get(1),
         mar: get(2),
@@ -131,7 +142,7 @@ function ContributionsYearPageContent() {
   }
 
   return (
-    <div className="space-y-8">
+    <div className="mx-auto w-full max-w-[85vw] space-y-8">
       <div className="flex items-start justify-between gap-4">
         <div>
           <h1 className="text-2xl font-semibold">Cotisations annuelles</h1>
@@ -143,7 +154,7 @@ function ContributionsYearPageContent() {
           onChange={(e) => setBuildingId(e.target.value)}
           className="h-10 min-w-[240px] rounded-lg border border-zinc-300 bg-white px-3 text-sm shadow-sm"
         >
-          <option value="">Tous les immeubles</option>
+          <option value="">Tous les bâtiments</option>
           {buildings.map((b) => (
             <option key={b.id} value={b.id}>
               {b.name}

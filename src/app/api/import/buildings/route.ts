@@ -1,6 +1,6 @@
 import { NextResponse } from "next/server";
 import { prisma } from "@/lib/prisma";
-import { requireAdmin } from "@/lib/authz";
+import { requireManager } from "@/lib/authz";
 
 type Row = { name: string; address?: string | null };
 
@@ -40,7 +40,7 @@ function parseCsv(text: string): Row[] {
 }
 
 export async function POST(req: Request) {
-  const gate = await requireAdmin();
+  const gate = await requireManager();
   if (!gate.ok) {
     return NextResponse.json({ error: gate.error }, { status: gate.status });
   }
@@ -71,15 +71,19 @@ export async function POST(req: Request) {
     const errors: { row: number; error: string }[] = [];
     let imported = 0;
 
+    if (!gate.organizationId) {
+      return NextResponse.json({ error: "No organization" }, { status: 400 });
+    }
+
     await prisma.$transaction(async (tx) => {
       for (let i = 0; i < rows.length; i++) {
         const r = rows[i];
         try {
           await tx.building.create({
             data: {
-              organizationId: gate.organizationId,
+              organizationId: gate.organizationId ?? "",
               name: r.name,
-              address: r.address ?? null,
+              address: r.address ?? undefined,
             },
           });
           imported++;

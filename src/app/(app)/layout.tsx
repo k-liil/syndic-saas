@@ -1,4 +1,5 @@
 import { AppShell } from "@/components/AppShell";
+import { OrgProvider } from "@/lib/org-context";
 import { prisma } from "@/lib/prisma";
 
 export default async function AppLayout({
@@ -9,8 +10,10 @@ export default async function AppLayout({
   const settings = await prisma.appSettings.findFirst();
 
   return (
-    <AppShell brandName={settings?.brandName ?? "Syndic"}>
-      {children}
-    </AppShell>
+    <OrgProvider>
+      <AppShell brandName={settings?.brandName ?? "Syndic"}>
+        {children}
+      </AppShell>
+    </OrgProvider>
   );
 }

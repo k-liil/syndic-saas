@@ -1,12 +1,15 @@
 "use client";
 
 import { useEffect, useMemo, useRef, useState } from "react";
-import SuppliersPage, {
+import { useSession } from "next-auth/react";
+import {
+  SuppliersContent,
   SuppliersPageHandle,
-} from "@/app/(app)/setup/suppliers/page";
-import PaymentCategoriesPage, {
-  PaymentCategoriesPageHandle,
-} from "@/app/(app)/setup/payment-categories/page";
+} from "@/app/(app)/setup/suppliers/SuppliersContent";
+import { canAccessSettings } from "@/lib/roles";
+import { useApiUrl } from "@/lib/org-context";
+import { Save, Loader2, ArrowRight, Activity, HandCoins, Building2, UserRound, Trash2, Pencil, Plus } from "lucide-react";
+import { Modal } from "@/components/ui/Modal";
 
 type Settings = {
   id: string;
@@ -27,9 +30,19 @@ type Settings = {
   paymentPrefix: string | null;
   openingCashBalance: number;
   openingBankBalance: number;
+  contributionType: ContributionType;
+  globalFixedAmount: number | null;
 };
 
 type InternalBank = {
+  id: string;
+  name: string;
+  isActive: boolean;
+  createdAt: string;
+  updatedAt: string;
+};
+
+type SupplierSector = {
   id: string;
   name: string;
   isActive: boolean;
@@ -42,9 +55,65 @@ type StatusState = {
   text: string;
 };
 
+type ContributionType = "GLOBAL_FIXED" | "GROUP_FIXED" | "SURFACE";
+
+type Group = {
+  id: string;
+  name: string;
+  units: Array<{
+    id: string;
+    unit: {
+      id: string;
+      lotNumber: string | null;
+      reference: string;
+      surface: number | null;
+    };
+  }>;
+};
+
+type Period = {
+  id: string;
+  contributionType: ContributionType;
+  groupId: string | null;
+  unitId: string | null;
+  startPeriod: string;
+  endPeriod: string | null;
+  amount: number;
+};
+
+type Unit = {
+  id: string;
+  lotNumber: string | null;
+  reference: string;
+  surface: number | null;
+};
+
+type SimulationResult = {
+  period: string;
+  contributionType: ContributionType;
+  configured: Array<{
+    unitId: string;
+    lotNumber: string | null;
+    reference: string;
+    surface: number | null;
+    calculatedAmount: number | null;
+    method: string;
+  }>;
+  unconfigured: Array<{
+    unitId: string;
+    lotNumber: string | null;
+    reference: string;
+    surface: number | null;
+    calculatedAmount: number | null;
+    method: string;
+  }>;
+  totalConfigured: number;
+};
+
 export default function SettingsPage() {
-  const categoriesRef = useRef<PaymentCategoriesPageHandle>(null);
+  const { data: session, status: sessionStatus } = useSession();
   const suppliersRef = useRef<SuppliersPageHandle>(null);
+  const apiUrl = useApiUrl();
 
   const [s, setS] = useState<Settings | null>(null);
   const [brandName, setBrandName] = useState("");
@@ -63,15 +132,38 @@ export default function SettingsPage() {
   const [newBankName, setNewBankName] = useState("");
   const [savingBank, setSavingBank] = useState(false);
   const [savingSettings, setSavingSettings] = useState(false);
-  const [categoriesDirty, setCategoriesDirty] = useState(false);
-  const [suppliersDirty, setSuppliersDirty] = useState(false);
   const [status, setStatus] = useState<StatusState>({
     type: "idle",
     text: "",
   });
   const [tab, setTab] = useState<
-    "general" | "numbering" | "banks" | "categories" | "suppliers"
+    "general" | "numbering" | "banks" | "contributions"
   >("general");
+
+  // Contributions state
+  const [groups, setGroups] = useState<Group[]>([]);
+  const [units, setUnits] = useState<Unit[]>([]);
+  const [periods, setPeriods] = useState<Period[]>([]);
+  const [showGroupModal, setShowGroupModal] = useState(false);
+  const [groupName, setGroupName] = useState("");
+  const [selectedUnitIds, setSelectedUnitIds] = useState<string[]>([]);
+  const [showPeriodModal, setShowPeriodModal] = useState(false);
+  const [periodType, setPeriodType] = useState<ContributionType>("GLOBAL_FIXED");
+  const [periodGroupId, setPeriodGroupId] = useState("");
+  const [periodUnitId, setPeriodUnitId] = useState("");
+  const [periodStart, setPeriodStart] = useState("");
+  const [periodEnd, setPeriodEnd] = useState("");
+  const [periodAmount, setPeriodAmount] = useState("");
+  const [simulationPeriod, setSimulationPeriod] = useState("");
+  const [simulationResult, setSimulationResult] = useState<SimulationResult | null>(null);
+  const [simLoading, setSimLoading] = useState(false);
+  const [contributionType, setContributionType] = useState<ContributionType>("GLOBAL_FIXED");
+  const [globalFixedAmount, setGlobalFixedAmount] = useState<number | null>(null);
+
+  const [deleteTarget, setDeleteTarget] = useState<{ id: string, name: string, type: "bank" | "sector" } | null>(null);
+  const [isDeleting, setIsDeleting] = useState(false);
+  const role = (session?.user as any)?.role;
+  const allowed = canAccessSettings(role);
 
   const settingsDirty = useMemo(() => {
     if (!s) return false;
@@ -114,17 +206,12 @@ export default function SettingsPage() {
       };
     }
 
-    if (tab === "categories") {
+    if (tab === "contributions") {
       return {
-        label: "Enregistrer",
-        disabled: !categoriesDirty,
-      };
-    }
-
-    if (tab === "suppliers") {
-      return {
-        label: "Enregistrer",
-        disabled: !suppliersDirty,
+        label: savingSettings ? "Enregistrement..." : "Enregistrer les réglages",
+        disabled: savingSettings || 
+          (contributionType === (s?.contributionType ?? "GLOBAL_FIXED") && 
+           globalFixedAmount === (s?.globalFixedAmount ?? null)),
       };
     }
 
@@ -133,13 +220,14 @@ export default function SettingsPage() {
       disabled: savingSettings || !settingsDirty,
     };
   }, [
-    categoriesDirty,
     newBankName,
     savingBank,
     savingSettings,
     settingsDirty,
-    suppliersDirty,
     tab,
+    contributionType,
+    globalFixedAmount,
+    s,
   ]);
 
   function showStatus(type: StatusState["type"], text: string) {
@@ -166,7 +254,7 @@ export default function SettingsPage() {
   }
 
   async function loadSettings() {
-    const res = await fetch("/api/settings");
+    const res = await fetch(apiUrl("/api/settings"));
     const json = await res.json();
 
     setS(json);
@@ -182,24 +270,164 @@ export default function SettingsPage() {
     setPaymentPrefix(json.paymentPrefix ?? "");
     setOpeningCashBalance(Number(json.openingCashBalance ?? 0));
     setOpeningBankBalance(Number(json.openingBankBalance ?? 0));
+    setContributionType(json.contributionType ?? "GLOBAL_FIXED");
+    setGlobalFixedAmount(json.globalFixedAmount ?? null);
   }
 
   async function loadBanks() {
-    const res = await fetch("/api/internal-banks");
+    const res = await fetch(apiUrl("/api/internal-banks"));
     const json = await res.json();
     setBanks(Array.isArray(json) ? json : []);
   }
 
+  async function loadContributions() {
+    const [groupsRes, unitsRes, periodsRes] = await Promise.all([
+      fetch(apiUrl("/api/contribution-groups")).then(r => r.json()),
+      fetch(apiUrl("/api/units")).then(r => r.json()),
+      fetch(apiUrl("/api/contribution-periods")).then(r => r.json()),
+    ]);
+    setGroups(Array.isArray(groupsRes) ? groupsRes : []);
+    setUnits(Array.isArray(unitsRes) ? unitsRes : []);
+    setPeriods(Array.isArray(periodsRes) ? periodsRes : []);
+  }
+
+  // Contributions Actions
+  async function saveContributionSettings() {
+    setSavingSettings(true);
+    showStatus("saving", "Enregistrement...");
+    try {
+      const res = await fetch(apiUrl("/api/settings"), {
+        method: "PATCH",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          contributionType,
+          globalFixedAmount,
+        }),
+      });
+      if (!res.ok) throw new Error();
+      await loadSettings();
+      showStatus("success", "Calcul des cotisations mis à jour.");
+    } catch {
+      showStatus("error", "Erreur lors de l'enregistrement");
+    } finally {
+      setSavingSettings(false);
+    }
+  }
+
+  async function createGroup() {
+    if (!groupName.trim()) return;
+    setSavingSettings(true);
+    showStatus("saving", "Création du groupe...");
+    try {
+      const res = await fetch(apiUrl("/api/contribution-groups"), {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          name: groupName.trim(),
+          unitIds: selectedUnitIds,
+        }),
+      });
+      if (!res.ok) throw new Error();
+      setShowGroupModal(false);
+      setGroupName("");
+      setSelectedUnitIds([]);
+      await loadContributions();
+      showStatus("success", "Groupe créé.");
+    } catch {
+      showStatus("error", "Erreur lors de la création");
+    } finally {
+      setSavingSettings(false);
+    }
+  }
+
+  async function deleteGroup(groupId: string) {
+    if (!confirm("Supprimer ce groupe ?")) return;
+    showStatus("saving", "Suppression...");
+    await fetch(apiUrl(`/api/contribution-groups/${groupId}`), { method: "DELETE" });
+    await loadContributions();
+    showStatus("success", "Groupe supprimé.");
+  }
+
+  async function addPeriod() {
+    if (!periodStart || !periodAmount) return;
+    setSavingSettings(true);
+    showStatus("saving", "Ajout de la période...");
+    try {
+      const res = await fetch(apiUrl("/api/contribution-periods"), {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          contributionType: periodType,
+          groupId: periodType === "GROUP_FIXED" ? periodGroupId : null,
+          unitId: periodType === "SURFACE" ? periodUnitId : null,
+          startPeriod: periodStart + "-01",
+          endPeriod: periodEnd ? periodEnd + "-01" : null,
+          amount: Number(periodAmount),
+        }),
+      });
+      if (!res.ok) {
+        const data = await res.json();
+        throw new Error(data.error);
+      }
+      setShowPeriodModal(false);
+      setPeriodStart("");
+      setPeriodEnd("");
+      setPeriodAmount("");
+      await loadContributions();
+      showStatus("success", "Période ajoutée.");
+    } catch (e: any) {
+      showStatus("error", e?.message || "Erreur");
+    } finally {
+      setSavingSettings(false);
+    }
+  }
+
+  async function deletePeriod(periodId: string) {
+    if (!confirm("Supprimer cette période ?")) return;
+    showStatus("saving", "Suppression...");
+    await fetch(apiUrl(`/api/contribution-periods?id=${periodId}`), { method: "DELETE" });
+    await loadContributions();
+    showStatus("success", "Période supprimée.");
+  }
+
+  async function runSimulation() {
+    if (!simulationPeriod) return;
+    setSimLoading(true);
+    showStatus("saving", "Simulation en cours...");
+    try {
+      const res = await fetch(apiUrl("/api/contributions/simulate"), {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ period: simulationPeriod }),
+      });
+      if (!res.ok) throw new Error();
+      const data = await res.json();
+      setSimulationResult(data);
+      showStatus("success", "Simulation terminée.");
+    } catch {
+      showStatus("error", "Erreur de simulation");
+    } finally {
+      setSimLoading(false);
+    }
+  }
+
+  function formatPeriod(dateStr: string) {
+    const d = new Date(dateStr);
+    return `${d.toLocaleDateString("fr-FR", { month: "2-digit", year: "numeric" })}`;
+  }
+
   useEffect(() => {
+    if (!allowed) return;
     loadSettings();
     loadBanks();
-  }, []);
+    loadContributions();
+  }, [allowed, apiUrl]);
 
   async function save() {
     setSavingSettings(true);
     showStatus("saving", "Enregistrement...");
 
-    const res = await fetch("/api/settings", {
+    const res = await fetch(apiUrl("/api/settings"), {
       method: "PUT",
       headers: { "Content-Type": "application/json" },
       body: JSON.stringify({
@@ -238,7 +466,7 @@ export default function SettingsPage() {
     setSavingBank(true);
     showStatus("saving", "Enregistrement...");
 
-    const res = await fetch("/api/internal-banks", {
+    const res = await fetch(apiUrl("/api/internal-banks"), {
       method: "POST",
       headers: {
         "Content-Type": "application/json",
@@ -262,7 +490,7 @@ export default function SettingsPage() {
   async function toggleBank(bank: InternalBank) {
     showStatus("idle", "");
 
-    const res = await fetch("/api/internal-banks", {
+    const res = await fetch(apiUrl("/api/internal-banks"), {
       method: "PUT",
       headers: {
         "Content-Type": "application/json",
@@ -282,26 +510,33 @@ export default function SettingsPage() {
     await loadBanks();
   }
 
-  async function deleteBank(bankId: string) {
+  function requestDeleteBank(bankId: string, bankName: string) {
+    setDeleteTarget({ id: bankId, name: bankName, type: "bank" });
+  }
+
+  async function confirmDelete() {
+    if (!deleteTarget || isDeleting) return;
+    setIsDeleting(true);
     showStatus("idle", "");
 
-    const res = await fetch("/api/internal-banks", {
+    const res = await fetch(apiUrl("/api/internal-banks"), {
       method: "DELETE",
-      headers: {
-        "Content-Type": "application/json",
-      },
-      body: JSON.stringify({ id: bankId }),
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ id: deleteTarget.id }),
     });
 
     if (!res.ok) {
       const err = await res.json().catch(() => ({}));
-      showStatus("error", `Erreur: ${err?.error ?? "delete bank failed"}`);
-      return;
+      showStatus("error", `Erreur: ${err?.error ?? "delete failed"}`);
+    } else {
+      await loadBanks();
+      showStatus("success", "Élément supprimé.");
     }
 
-    await loadBanks();
-    showStatus("success", "Banque desactivee.");
+    setIsDeleting(false);
+    setDeleteTarget(null);
   }
+
 
   async function handlePrimaryAction() {
     if (primaryAction.disabled) return;
@@ -311,17 +546,31 @@ export default function SettingsPage() {
       return;
     }
 
-    if (tab === "categories") {
-      await categoriesRef.current?.submit();
-      return;
-    }
-
-    if (tab === "suppliers") {
-      await suppliersRef.current?.submit();
+    if (tab === "contributions") {
+      await saveContributionSettings();
       return;
     }
 
     await save();
+  }
+
+  if (sessionStatus === "loading") {
+    return (
+      <div className="rounded-3xl border border-zinc-200 bg-white p-8 text-sm text-zinc-500 shadow-sm">
+        Chargement...
+      </div>
+    );
+  }
+
+  if (!allowed) {
+    return (
+      <div className="rounded-3xl border border-red-200 bg-white p-8 shadow-sm">
+        <h1 className="text-2xl font-semibold text-zinc-900">Parametres</h1>
+        <p className="mt-3 text-sm leading-6 text-zinc-500">
+          Cette section est reservee a l&apos;administrateur et au gerant.
+        </p>
+      </div>
+    );
   }
 
   return (
@@ -361,25 +610,14 @@ export default function SettingsPage() {
         </button>
 
         <button
-          onClick={() => setTab("categories")}
+          onClick={() => setTab("contributions")}
           className={`px-4 py-2 text-sm font-medium rounded-xl ${
-            tab === "categories"
+            tab === "contributions"
               ? "bg-indigo-600 text-white"
               : "bg-zinc-100 text-zinc-700 hover:bg-zinc-200"
           }`}
         >
-          Categories depenses
-        </button>
-
-        <button
-          onClick={() => setTab("suppliers")}
-          className={`px-4 py-2 text-sm font-medium rounded-xl ${
-            tab === "suppliers"
-              ? "bg-indigo-600 text-white"
-              : "bg-zinc-100 text-zinc-700 hover:bg-zinc-200"
-          }`}
-        >
-          Fournisseurs
+          Cotisations
         </button>
       </div>
 
@@ -763,21 +1001,29 @@ export default function SettingsPage() {
                       </div>
                     </div>
 
-                    <div className="flex flex-wrap gap-2">
+                    <div className="flex items-center gap-3">
                       <button
                         type="button"
                         onClick={() => toggleBank(bank)}
-                        className="rounded-2xl border border-zinc-200 bg-white px-4 py-2 text-sm font-medium text-zinc-700 shadow-sm"
+                        className={`relative inline-flex h-6 w-11 items-center rounded-full transition ${
+                          bank.isActive ? "bg-emerald-500" : "bg-zinc-300"
+                        }`}
+                        title={bank.isActive ? "Désactiver" : "Réactiver"}
                       >
-                        {bank.isActive ? "Desactiver" : "Reactiver"}
+                        <span
+                          className={`inline-block h-4 w-4 transform rounded-full bg-white transition ${
+                            bank.isActive ? "translate-x-6" : "translate-x-1"
+                          }`}
+                        />
                       </button>
 
                       <button
                         type="button"
-                        onClick={() => deleteBank(bank.id)}
-                        className="rounded-2xl border border-red-200 bg-red-50 px-4 py-2 text-sm font-medium text-red-700 shadow-sm"
+                        onClick={() => requestDeleteBank(bank.id, bank.name)}
+                        className="rounded-full p-2 text-red-500 hover:bg-red-50 transition"
+                        title="Supprimer"
                       >
-                        Supprimer
+                        <Trash2 className="h-5 w-5" />
                       </button>
                     </div>
                   </div>
@@ -787,24 +1033,437 @@ export default function SettingsPage() {
           </div>
         ) : null}
 
-        {tab === "categories" ? (
-          <PaymentCategoriesPage
-            ref={categoriesRef}
-            hidePageHeader
-            onDirtyChange={setCategoriesDirty}
-            onStatusChange={handleSectionStatus}
-          />
-        ) : null}
+        {tab === "contributions" ? (
+          <div className="space-y-8 animate-in fade-in slide-in-from-bottom-2 duration-300">
+            {/* Mode de cotisation */}
+            <div className="rounded-3xl border border-zinc-200 bg-white p-6 shadow-sm">
+              <h2 className="text-lg font-semibold text-zinc-900 mb-4">Mode de calcul par défaut</h2>
+              <div className="space-y-4">
+                <div className="flex flex-wrap gap-6">
+                  <label className="flex items-center gap-2 cursor-pointer">
+                    <input
+                      type="radio"
+                      name="contributionType"
+                      checked={contributionType === "GLOBAL_FIXED"}
+                      onChange={() => setContributionType("GLOBAL_FIXED")}
+                      className="h-4 w-4 text-indigo-600 focus:ring-indigo-500"
+                    />
+                    <span className="text-sm font-medium text-zinc-700">Montant fixe global</span>
+                  </label>
+                  <label className="flex items-center gap-2 cursor-pointer">
+                    <input
+                      type="radio"
+                      name="contributionType"
+                      checked={contributionType === "GROUP_FIXED"}
+                      onChange={() => setContributionType("GROUP_FIXED")}
+                      className="h-4 w-4 text-indigo-600 focus:ring-indigo-500"
+                    />
+                    <span className="text-sm font-medium text-zinc-700">Par groupe de lots</span>
+                  </label>
+                  <label className="flex items-center gap-2 cursor-pointer">
+                    <input
+                      type="radio"
+                      name="contributionType"
+                      checked={contributionType === "SURFACE"}
+                      onChange={() => setContributionType("SURFACE")}
+                      className="h-4 w-4 text-indigo-600 focus:ring-indigo-500"
+                    />
+                    <span className="text-sm font-medium text-zinc-700">Au prorata de la surface</span>
+                  </label>
+                </div>
 
-        {tab === "suppliers" ? (
-          <SuppliersPage
-            ref={suppliersRef}
-            hidePageHeader
-            onDirtyChange={setSuppliersDirty}
-            onStatusChange={handleSectionStatus}
-          />
+                {contributionType === "GLOBAL_FIXED" && (
+                  <div className="pt-2 max-w-xs">
+                    <label className="block text-sm font-medium text-zinc-700 mb-2">Montant annuel par lot (DH)</label>
+                    <input
+                      type="number"
+                      value={globalFixedAmount || ""}
+                      onChange={(e) => setGlobalFixedAmount(e.target.value ? Number(e.target.value) : null)}
+                      className="h-10 w-full rounded-xl border border-zinc-200 bg-white px-3 text-sm"
+                      placeholder="Ex: 1200"
+                    />
+                  </div>
+                )}
+                
+                <p className="text-xs text-zinc-500 italic">
+                  Note: Les réglages spécifiques (périodes) priment sur ce réglage par défaut.
+                </p>
+              </div>
+            </div>
+
+            {/* Groupes de lots */}
+            <div className="rounded-3xl border border-zinc-200 bg-white p-6 shadow-sm">
+              <div className="flex items-center justify-between mb-6">
+                <div>
+                  <h2 className="text-lg font-semibold text-zinc-900">Groupes de lots</h2>
+                  <p className="text-sm text-zinc-500">Regroupez des lots pour leur appliquer un montant commun.</p>
+                </div>
+                <button
+                  onClick={() => setShowGroupModal(true)}
+                  className="inline-flex h-10 items-center gap-2 rounded-xl bg-indigo-50 px-4 text-sm font-medium text-indigo-700 hover:bg-indigo-100 transition"
+                >
+                  <Plus className="h-4 w-4" />
+                  Nouveau groupe
+                </button>
+              </div>
+
+              <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
+                {groups.map((group) => (
+                  <div key={group.id} className="rounded-2xl border border-zinc-200 p-4 hover:border-indigo-200 transition bg-zinc-50/50">
+                    <div className="flex items-center justify-between mb-3">
+                      <h3 className="font-semibold text-zinc-900">{group.name}</h3>
+                      <button onClick={() => deleteGroup(group.id)} className="text-zinc-400 hover:text-red-500 transition">
+                        <Trash2 className="h-4 w-4" />
+                      </button>
+                    </div>
+                    <div className="flex flex-wrap gap-1.5">
+                      {group.units.map((u) => (
+                        <span key={u.id} className="px-2 py-0.5 rounded-lg bg-white border border-zinc-200 text-[10px] font-medium text-zinc-600">
+                          Lot {u.unit.lotNumber || u.unit.reference}
+                        </span>
+                      ))}
+                    </div>
+                  </div>
+                ))}
+                {groups.length === 0 && (
+                  <div className="col-span-full py-8 text-center text-zinc-400 border-2 border-dashed border-zinc-100 rounded-2xl">
+                    Aucun groupe créé
+                  </div>
+                )}
+              </div>
+            </div>
+
+            {/* Périodes spécifiques */}
+            <div className="rounded-3xl border border-zinc-200 bg-white p-6 shadow-sm">
+              <div className="flex items-center justify-between mb-6">
+                <div>
+                  <h2 className="text-lg font-semibold text-zinc-900">Exceptions et Périodes</h2>
+                  <p className="text-sm text-zinc-500">Configurez des montants spécifiques pour des périodes données.</p>
+                </div>
+                <button
+                  onClick={() => setShowPeriodModal(true)}
+                  className="inline-flex h-10 items-center gap-2 rounded-xl bg-indigo-50 px-4 text-sm font-medium text-indigo-700 hover:bg-indigo-100 transition"
+                >
+                  <Plus className="h-4 w-4" />
+                  Ajouter une période
+                </button>
+              </div>
+
+              <div className="overflow-hidden rounded-2xl border border-zinc-200">
+                <table className="w-full text-left text-sm">
+                  <thead className="bg-zinc-50 text-zinc-500 font-medium">
+                    <tr>
+                      <th className="px-4 py-3">Cible</th>
+                      <th className="px-4 py-3">Type</th>
+                      <th className="px-4 py-3">Début</th>
+                      <th className="px-4 py-3">Fin</th>
+                      <th className="px-4 py-3 text-right">Montant (DH)</th>
+                      <th className="px-4 py-3"></th>
+                    </tr>
+                  </thead>
+                  <tbody className="divide-y divide-zinc-200">
+                    {periods.map((p) => (
+                      <tr key={p.id} className="hover:bg-zinc-50/50 transition">
+                        <td className="px-4 py-3 font-medium">
+                          {p.contributionType === "GLOBAL_FIXED" ? "Tous les lots" : 
+                           p.contributionType === "GROUP_FIXED" ? `Groupe: ${groups.find(g => g.id === p.groupId)?.name}` :
+                           `Lot: ${units.find(u => u.id === p.unitId)?.lotNumber || "N/A"}`}
+                        </td>
+                        <td className="px-4 py-3">
+                          <span className="px-2 py-0.5 rounded-full bg-zinc-100 text-[10px] font-semibold text-zinc-600">
+                            {p.contributionType === "SURFACE" ? "Surface" : "Fixe"}
+                          </span>
+                        </td>
+                        <td className="px-4 py-3">{formatPeriod(p.startPeriod)}</td>
+                        <td className="px-4 py-3">{p.endPeriod ? formatPeriod(p.endPeriod) : "Indéterminée"}</td>
+                        <td className="px-4 py-3 text-right font-semibold">{p.amount.toLocaleString()} DH</td>
+                        <td className="px-4 py-3 text-right">
+                          <button onClick={() => deletePeriod(p.id)} className="text-zinc-400 hover:text-red-500 transition p-1">
+                            <Trash2 className="h-4 w-4" />
+                          </button>
+                        </td>
+                      </tr>
+                    ))}
+                    {periods.length === 0 && (
+                      <tr>
+                        <td colSpan={6} className="px-4 py-8 text-center text-zinc-400 italic">
+                          Aucune période spécifique configurée
+                        </td>
+                      </tr>
+                    )}
+                  </tbody>
+                </table>
+              </div>
+            </div>
+
+            {/* Simulation */}
+            <div className="rounded-3xl border border-zinc-200 bg-white p-6 shadow-sm overflow-hidden">
+               <div className="mb-6">
+                  <h2 className="text-lg font-semibold text-zinc-900">Simulateur de calcul</h2>
+                  <p className="text-sm text-zinc-500 font-medium mt-1">Vérifiez les montants qui seront générés pour une date donnée.</p>
+                </div>
+              
+              <div className="flex items-center gap-3 p-4 bg-indigo-50/50 rounded-2xl mb-6">
+                <input
+                  type="month"
+                  value={simulationPeriod}
+                  onChange={(e) => setSimulationPeriod(e.target.value)}
+                  className="h-10 rounded-xl border border-zinc-200 bg-white px-3 text-sm focus:ring-2 focus:ring-indigo-500 outline-none"
+                />
+                <button
+                  onClick={runSimulation}
+                  disabled={simLoading || !simulationPeriod}
+                  className="btn-brand h-10 rounded-xl px-6 text-sm font-semibold disabled:opacity-50"
+                >
+                  {simLoading ? "Calcul..." : "Lancer la simulation"}
+                </button>
+              </div>
+
+              {simulationResult && (
+                <div className="space-y-6 animate-in slide-in-from-top-4 duration-500">
+                  <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                    <div className="p-4 rounded-2xl bg-emerald-50 border border-emerald-100">
+                      <div className="text-emerald-600 text-xs font-bold uppercase tracking-wider mb-1">Total calculé</div>
+                      <div className="text-2xl font-bold text-emerald-900">{simulationResult.totalConfigured.toLocaleString()} DH</div>
+                    </div>
+                    <div className="p-4 rounded-2xl bg-zinc-50 border border-zinc-200">
+                      <div className="text-zinc-500 text-xs font-bold uppercase tracking-wider mb-1">Nombre de lots</div>
+                      <div className="text-2xl font-bold text-zinc-900">{simulationResult.configured.length + simulationResult.unconfigured.length}</div>
+                    </div>
+                  </div>
+
+                  <div className="border border-zinc-200 rounded-2xl overflow-hidden shadow-sm bg-white">
+                    <div className="bg-zinc-50 px-4 py-3 border-b border-zinc-200 font-semibold text-zinc-800 text-sm">Détails des calculs</div>
+                    <div className="max-h-96 overflow-auto">
+                      <table className="w-full text-left text-sm">
+                        <thead className="bg-zinc-50/50 text-zinc-500 sticky top-0 backdrop-blur-md z-10">
+                          <tr>
+                            <th className="px-4 py-2 font-medium border-b border-zinc-200 text-[11px]">N° Lot</th>
+                            <th className="px-4 py-2 font-medium border-b border-zinc-200 text-[11px]">Méthode appliquée</th>
+                            <th className="px-4 py-2 font-medium border-b border-zinc-200 text-[11px] text-right">Montant</th>
+                          </tr>
+                        </thead>
+                        <tbody className="divide-y divide-zinc-100">
+                          {simulationResult.configured.map((item) => (
+                            <tr key={item.unitId} className="hover:bg-zinc-50/50">
+                              <td className="px-4 py-2 font-medium text-zinc-900 font-mono text-xs">Lot {item.lotNumber || item.reference}</td>
+                              <td className="px-4 py-2 text-zinc-500 text-[11px]">
+                                {item.method === "PERIOD" ? <span className="text-indigo-600 font-medium">Règle spécifique</span> : "Réglage par défaut"}
+                              </td>
+                              <td className="px-4 py-2 text-right font-bold text-zinc-900">{item.calculatedAmount?.toLocaleString()} DH</td>
+                            </tr>
+                          ))}
+                          {simulationResult.unconfigured.map((item) => (
+                            <tr key={item.unitId} className="bg-red-50/30">
+                              <td className="px-4 py-2 font-medium text-red-900 font-mono text-xs">Lot {item.lotNumber || item.reference}</td>
+                              <td className="px-4 py-2 text-red-500 text-[11px]">Non configuré</td>
+                              <td className="px-4 py-2 text-right font-bold text-red-600">0 DH</td>
+                            </tr>
+                          ))}
+                        </tbody>
+                      </table>
+                    </div>
+                  </div>
+                </div>
+              )}
+            </div>
+          </div>
         ) : null}
       </div>
+
+      {deleteTarget ? (
+        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/30 p-4" onClick={() => setDeleteTarget(null)}>
+          <div className="w-full max-w-sm rounded-[30px] bg-white p-6 shadow-2xl" onClick={(e) => e.stopPropagation()}>
+            <h3 className="text-xl font-semibold text-slate-900">
+              {deleteTarget.type === "bank" ? "Supprimer la banque ?" : "Supprimer le secteur ?"}
+            </h3>
+            <p className="mt-2 text-sm text-slate-500">
+              Souhaitez-vous vraiment supprimer <strong>{deleteTarget.name}</strong> ? Cette action est définitive.
+            </p>
+            <div className="mt-6 flex justify-end gap-3">
+              <button
+                onClick={() => setDeleteTarget(null)}
+                disabled={isDeleting}
+                className="rounded-xl border border-slate-200 px-4 py-2 text-sm font-medium text-slate-700 hover:bg-slate-50 disabled:opacity-50"
+              >
+                Annuler
+              </button>
+              <button
+                onClick={confirmDelete}
+                disabled={isDeleting}
+                className="rounded-xl bg-red-600 px-5 py-2 text-sm font-semibold text-white shadow-sm hover:bg-red-700 disabled:opacity-50"
+              >
+                {isDeleting ? "Suppression..." : "Supprimer"}
+              </button>
+            </div>
+          </div>
+        </div>
+      ) : null}
+
+      {/* Group Modal */}
+      <Modal
+        open={showGroupModal}
+        onClose={() => setShowGroupModal(false)}
+        title="Nouveau groupe de lots"
+      >
+        <div className="p-4 space-y-4">
+          <div>
+            <label className="block text-sm font-medium text-zinc-700 mb-1">Nom du groupe</label>
+            <input
+              className="h-10 w-full rounded-xl border border-zinc-200 px-3 text-sm"
+              value={groupName}
+              onChange={(e) => setGroupName(e.target.value)}
+              placeholder="Ex: Bloc A, Commerces..."
+            />
+          </div>
+          <div>
+            <label className="block text-sm font-medium text-zinc-700 mb-2">Lots à inclure</label>
+            <div className="max-h-60 overflow-auto border border-zinc-200 rounded-xl p-2 bg-zinc-50/50">
+              <div className="grid grid-cols-2 gap-2">
+                {units.map((u) => {
+                  const isInGroup = groups.some(g => g.units.some(gu => gu.unit.id === u.id));
+                  const isSelected = selectedUnitIds.includes(u.id);
+                  return (
+                    <label key={u.id} className={`flex items-center gap-3 p-2 rounded-lg border transition cursor-pointer ${
+                      isSelected ? "border-indigo-200 bg-indigo-50" : 
+                      isInGroup ? "opacity-50 border-zinc-100 bg-zinc-100 cursor-not-allowed" : "border-zinc-200 bg-white hover:border-zinc-300"
+                    }`}>
+                      <input
+                        type="checkbox"
+                        disabled={isInGroup && !isSelected}
+                        checked={isSelected}
+                        onChange={(e) => {
+                          if (e.target.checked) setSelectedUnitIds([...selectedUnitIds, u.id]);
+                          else setSelectedUnitIds(selectedUnitIds.filter(id => id !== u.id));
+                        }}
+                        className="h-4 w-4 rounded text-indigo-600 focus:ring-indigo-500"
+                      />
+                      <span className="text-xs font-semibold text-zinc-800">Lot {u.lotNumber || u.reference}</span>
+                    </label>
+                  );
+                })}
+              </div>
+            </div>
+          </div>
+          <div className="flex justify-end gap-3 pt-4 pt-2">
+            <button
+              onClick={() => setShowGroupModal(false)}
+              className="px-4 py-2 text-sm font-medium text-zinc-600 hover:bg-zinc-100 rounded-xl"
+            >
+              Annuler
+            </button>
+            <button
+              onClick={createGroup}
+              disabled={!groupName.trim() || selectedUnitIds.length === 0}
+              className="btn-brand rounded-xl px-6 py-2 text-sm font-semibold disabled:opacity-50"
+            >
+              Créer le groupe
+            </button>
+          </div>
+        </div>
+      </Modal>
+
+      {/* Period Modal */}
+      <Modal
+        open={showPeriodModal}
+        onClose={() => setShowPeriodModal(false)}
+        title="Ajouter une période spécifique"
+      >
+        <div className="p-4 space-y-4">
+          <div className="grid grid-cols-2 gap-4">
+            <div className="col-span-full">
+              <label className="block text-sm font-medium text-zinc-700 mb-1">Cible</label>
+              <select
+                className="h-10 w-full rounded-xl border border-zinc-200 px-3 text-sm"
+                value={periodType}
+                onChange={(e) => setPeriodType(e.target.value as ContributionType)}
+              >
+                <option value="GLOBAL_FIXED">Tous les lots</option>
+                <option value="GROUP_FIXED">Un groupe spécifique</option>
+                <option value="SURFACE">Un lot spécifique (prorata surface)</option>
+              </select>
+            </div>
+
+            {periodType === "GROUP_FIXED" && (
+              <div className="col-span-full">
+                <label className="block text-sm font-medium text-zinc-700 mb-1">Groupe</label>
+                <select
+                  className="h-10 w-full rounded-xl border border-zinc-200 px-3 text-sm"
+                  value={periodGroupId}
+                  onChange={(e) => setPeriodGroupId(e.target.value)}
+                >
+                  <option value="">Sélectionner un groupe</option>
+                  {groups.map(g => (
+                    <option key={g.id} value={g.id}>{g.name}</option>
+                  ))}
+                </select>
+              </div>
+            )}
+
+            {periodType === "SURFACE" && (
+              <div className="col-span-full">
+                <label className="block text-sm font-medium text-zinc-700 mb-1">Lot</label>
+                <select
+                  className="h-10 w-full rounded-xl border border-zinc-200 px-3 text-sm"
+                  value={periodUnitId}
+                  onChange={(e) => setPeriodUnitId(e.target.value)}
+                >
+                  <option value="">Sélectionner un lot</option>
+                  {units.map(u => (
+                    <option key={u.id} value={u.id}>Lot {u.lotNumber || u.reference}</option>
+                  ))}
+                </select>
+              </div>
+            )}
+
+            <div>
+              <label className="block text-sm font-medium text-zinc-700 mb-1">Mois début</label>
+              <input
+                type="month"
+                className="h-10 w-full rounded-xl border border-zinc-200 px-3 text-sm"
+                value={periodStart}
+                onChange={(e) => setPeriodStart(e.target.value)}
+              />
+            </div>
+            <div>
+              <label className="block text-sm font-medium text-zinc-700 mb-1">Mois fin (opt.)</label>
+              <input
+                type="month"
+                className="h-10 w-full rounded-xl border border-zinc-200 px-3 text-sm"
+                value={periodEnd}
+                onChange={(e) => setPeriodEnd(e.target.value)}
+              />
+            </div>
+            <div className="col-span-full">
+              <label className="block text-sm font-medium text-zinc-700 mb-1">
+                {periodType === "SURFACE" ? "Montant par m² annuel (DH)" : "Montant annuel fixe (DH)"}
+              </label>
+              <input
+                type="number"
+                className="h-10 w-full rounded-xl border border-zinc-200 px-3 text-sm font-bold"
+                value={periodAmount}
+                onChange={(e) => setPeriodAmount(e.target.value)}
+                placeholder="Ex: 1200"
+              />
+            </div>
+          </div>
+          <div className="flex justify-end gap-3 pt-4">
+            <button
+              onClick={() => setShowPeriodModal(false)}
+              className="px-4 py-2 text-sm font-medium text-zinc-600 hover:bg-zinc-100 rounded-xl"
+            >
+              Annuler
+            </button>
+            <button
+              onClick={addPeriod}
+              disabled={!periodStart || !periodAmount}
+              className="btn-brand rounded-xl px-6 py-2 text-sm font-semibold disabled:opacity-50"
+            >
+              Ajouter
+            </button>
+          </div>
+        </div>
+      </Modal>
     </div>
   );
 }

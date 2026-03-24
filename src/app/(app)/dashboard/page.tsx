@@ -3,6 +3,8 @@
 import Link from "next/link";
 import { Suspense, useEffect, useMemo, useState } from "react";
 import { useSearchParams } from "next/navigation";
+import { useApiUrl } from "@/lib/org-context";
+import { useActiveYear } from "@/lib/use-active-year";
 import {
   AlertTriangle,
   ArrowDownRight,
@@ -26,6 +28,7 @@ import {
 } from "recharts";
 
 type DashboardData = {
+  year?: number;
   totalReceipts: number;
   totalPayments: number;
   cashBalance: number;
@@ -42,6 +45,7 @@ type DashboardData = {
 };
 
 const emptyData: DashboardData = {
+  year: undefined,
   totalReceipts: 0,
   totalPayments: 0,
   cashBalance: 0,
@@ -73,9 +77,9 @@ function Card({
 }) {
   return (
     <section
-      className={`overflow-hidden border border-slate-200 bg-white shadow-[0_10px_24px_rgba(15,23,42,0.05)] ${className}`}
+      className={`overflow-hidden rounded-2xl border border-slate-200 bg-white shadow-[0_10px_24px_rgba(15,23,42,0.05)] ${className}`}
     >
-      <div className="border-b border-slate-200 px-5 py-4">
+      <div className="border-b border-slate-100 px-5 py-4">
         <h2 className="text-[18px] font-semibold tracking-tight text-slate-900">
           {title}
         </h2>
@@ -106,7 +110,7 @@ function KpiCard({
   };
 
   return (
-    <div className="border border-slate-200 bg-white p-4 shadow-[0_8px_20px_rgba(15,23,42,0.04)]">
+    <div className="rounded-2xl border border-slate-200 bg-white p-4 shadow-[0_8px_20px_rgba(15,23,42,0.04)]">
       <div className="flex items-start justify-between gap-4">
         <div className="min-w-0">
           <div className="text-[11px] font-semibold uppercase tracking-[0.16em] text-slate-400">
@@ -119,7 +123,7 @@ function KpiCard({
         </div>
 
         <div
-          className={`flex h-10 w-10 shrink-0 items-center justify-center ${tones[tone]}`}
+          className={`flex h-10 w-10 shrink-0 items-center justify-center rounded-xl ${tones[tone]}`}
         >
           <Icon size={18} />
         </div>
@@ -131,16 +135,21 @@ function KpiCard({
 function DashboardPageContent() {
   const searchParams = useSearchParams();
   const year = searchParams.get("year");
-  const hasYear = Boolean(year);
+  const activeYear = useActiveYear();
+  const apiUrl = useApiUrl();
   const [data, setData] = useState<DashboardData>(emptyData);
+  const requestedYear = year || activeYear || null;
 
   useEffect(() => {
-    if (!year) return;
+    const endpoint = requestedYear
+      ? apiUrl(`/api/dashboard?year=${requestedYear}`)
+      : apiUrl("/api/dashboard");
 
-    fetch(`/api/dashboard?year=${year}`, { cache: "no-store" })
+    fetch(endpoint, { cache: "no-store" })
       .then((r) => r.json())
       .then((json) => {
         setData({
+          year: Number(json?.year ?? requestedYear ?? 0) || undefined,
           totalReceipts: Number(json?.totalReceipts ?? 0),
           totalPayments: Number(json?.totalPayments ?? 0),
           cashBalance: Number(json?.cashBalance ?? 0),
@@ -160,7 +169,9 @@ function DashboardPageContent() {
         });
       })
       .catch(() => setData(emptyData));
-  }, [year]);
+  }, [requestedYear, apiUrl]);
+
+  const displayYear = data.year ?? (requestedYear ? Number(requestedYear) : undefined);
 
   const totalBalance = useMemo(
     () => data.cashBalance + data.bankBalance,
@@ -193,7 +204,7 @@ function DashboardPageContent() {
     0
   );
 
-  if (!hasYear) {
+  if (!displayYear) {
     return (
       <div className="flex h-[65vh] items-center justify-center">
         <div className="max-w-lg border border-slate-200 bg-white p-8 text-center shadow-[0_10px_26px_rgba(15,23,42,0.06)]">
@@ -214,7 +225,7 @@ function DashboardPageContent() {
 
   return (
     <div className="space-y-6">
-      <section className="border border-slate-200 bg-[linear-gradient(135deg,_rgba(248,250,252,0.98)_0%,_rgba(239,244,250,0.96)_100%)] p-6 text-slate-900 shadow-[0_12px_28px_rgba(15,23,42,0.05)] sm:p-7">
+      <section className="rounded-2xl border border-slate-200 bg-[linear-gradient(135deg,_rgba(248,250,252,0.98)_0%,_rgba(239,244,250,0.96)_100%)] p-6 text-slate-900 shadow-[0_12px_28px_rgba(15,23,42,0.05)] sm:p-7">
         <div className="flex flex-col gap-6 xl:flex-row xl:items-end xl:justify-between">
           <div className="max-w-2xl">
             <div className="eyebrow text-sky-700">
@@ -230,13 +241,13 @@ function DashboardPageContent() {
           </div>
 
           <div className="grid gap-3 sm:grid-cols-3">
-            <div className="border border-slate-200 bg-white px-4 py-3">
+            <div className="rounded-xl border border-slate-200 bg-white px-4 py-3">
               <div className="text-xs uppercase tracking-[0.16em] text-slate-500">
                 Taux d'encaissement
               </div>
               <div className="mt-2 text-2xl font-semibold text-slate-950">{data.collectionRate}%</div>
             </div>
-            <div className="border border-slate-200 bg-white px-4 py-3">
+            <div className="rounded-xl border border-slate-200 bg-white px-4 py-3">
               <div className="text-xs uppercase tracking-[0.16em] text-slate-500">
                 Coproprietaires payes
               </div>
@@ -244,7 +255,7 @@ function DashboardPageContent() {
                 {paidOwners}/{data.ownersCount}
               </div>
             </div>
-            <div className="border border-slate-200 bg-white px-4 py-3">
+            <div className="rounded-xl border border-slate-200 bg-white px-4 py-3">
               <div className="text-xs uppercase tracking-[0.16em] text-slate-500">
                 Tresorerie totale
               </div>
@@ -289,7 +300,7 @@ function DashboardPageContent() {
 
       <div className="grid gap-5 xl:grid-cols-[1.45fr_1fr]">
         <Card title={`Flux de tresorerie (${year})`}>
-          <div className="border border-slate-200 bg-gradient-to-b from-slate-50 to-white p-4">
+          <div className="rounded-xl border border-slate-200 bg-gradient-to-b from-slate-50 to-white p-4">
             <ResponsiveContainer width="100%" height={320}>
               <BarChart
                 data={chartData}

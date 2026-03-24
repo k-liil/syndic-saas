@@ -1,7 +1,6 @@
 import { prisma } from "@/lib/prisma";
+import { normalizeRole } from "@/lib/roles";
 
-const DEFAULT_ORG_ID = "org_default";
-const DEFAULT_ORG_NAME = "Organisation par defaut";
 const DEFAULT_ORG_SLUG = "default";
 
 function slugify(value: string) {
@@ -16,7 +15,7 @@ function slugify(value: string) {
 
 async function ensureDefaultOrganizationRecord() {
   const existing = await prisma.organization.findFirst({
-    where: { id: DEFAULT_ORG_ID },
+    where: { slug: DEFAULT_ORG_SLUG },
     select: { id: true, name: true, slug: true },
   });
 
@@ -26,8 +25,7 @@ async function ensureDefaultOrganizationRecord() {
 
   return prisma.organization.create({
     data: {
-      id: DEFAULT_ORG_ID,
-      name: DEFAULT_ORG_NAME,
+      name: "Organisation par defaut",
       slug: DEFAULT_ORG_SLUG,
       isActive: true,
     },
@@ -93,31 +91,51 @@ async function ensureFiscalYearsForOrganization(organizationId: string) {
 }
 
 export async function ensureOrganizationForUser(userId?: string | null) {
-  const organization = await ensureDefaultOrganizationRecord();
-  await ensureFiscalYearsForOrganization(organization.id);
-
   if (!userId) {
-    return organization;
+    const org = await ensureDefaultOrganizationRecord();
+    await ensureFiscalYearsForOrganization(org.id);
+    return org;
   }
 
   const user = await prisma.user.findFirst({
     where: { id: userId },
     select: {
       id: true,
-      organizationId: true,
+      role: true,
+      organizations: {
+        select: {
+          organizationId: true,
+        },
+      },
     },
   });
 
   if (!user) {
-    return organization;
+    const org = await ensureDefaultOrganizationRecord();
+    await ensureFiscalYearsForOrganization(org.id);
+    return org;
   }
 
-  if (!user.organizationId) {
-    await prisma.user.update({
-      where: { id: user.id },
-      data: { organizationId: organization.id },
-    });
+  if (normalizeRole(user.role) === "SUPER_ADMIN") {
+    return { id: "", name: "Super Admin", slug: "" };
   }
+
+  if (user.organizations.length > 0) {
+    const orgId = user.organizations[0].organizationId;
+    await ensureFiscalYearsForOrganization(orgId);
+    return { id: orgId, name: "", slug: "" };
+  }
+
+  const organization = await ensureDefaultOrganizationRecord();
+  await ensureFiscalYearsForOrganization(organization.id);
+
+  await prisma.userOrganization.create({
+    data: {
+      userId: user.id,
+      organizationId: organization.id,
+      role: normalizeRole(user.role),
+    },
+  });
 
   return organization;
 }
@@ -129,20 +147,21 @@ export async function getOrganizationForUser(userId?: string | null) {
     return organization;
   }
 
-  const user = await prisma.user.findFirst({
-    where: { id: userId },
-    select: {
+  const userOrg = await prisma.userOrganization.findFirst({
+    where: { userId },
+    include: {
       organization: {
-        select: {
-          id: true,
-          name: true,
-          slug: true,
-        },
+        select: { id: true, name: true, slug: true },
       },
     },
   });
 
-  const organization = user?.organization ?? (await ensureDefaultOrganizationRecord());
+  if (userOrg?.organization) {
+    await ensureFiscalYearsForOrganization(userOrg.organization.id);
+    return userOrg.organization;
+  }
+
+  const organization = await ensureDefaultOrganizationRecord();
   await ensureFiscalYearsForOrganization(organization.id);
   return organization;
 }

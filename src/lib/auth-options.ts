@@ -5,6 +5,7 @@ import { PrismaAdapter } from "@auth/prisma-adapter";
 import bcrypt from "bcryptjs";
 import { prisma } from "@/lib/prisma";
 import { ensureOrganizationForUser } from "@/lib/organization";
+import { normalizeRole } from "@/lib/roles";
 
 const googleClientId = process.env.GOOGLE_CLIENT_ID;
 const googleClientSecret = process.env.GOOGLE_CLIENT_SECRET;
@@ -49,8 +50,7 @@ export const authOptions: NextAuthOptions = {
           id: user.id,
           email: user.email,
           name: user.name ?? user.email,
-          role: user.role,
-          organizationId: user.organizationId,
+          role: normalizeRole(user.role),
         } as any;
       },
     }),
@@ -74,19 +74,18 @@ export const authOptions: NextAuthOptions = {
         return false;
       }
 
-      (user as any).role = existingUser.role;
-      (user as any).organizationId = existingUser.organizationId;
+      (user as any).role = normalizeRole(existingUser.role);
       return true;
     },
 
     async jwt({ token, user }) {
       if (user) {
         token.id = (user as any).id;
-        token.role = (user as any).role;
-        token.organizationId = (user as any).organizationId;
-      } else if (token.id && !token.organizationId) {
-        const organization = await ensureOrganizationForUser(String(token.id));
-        token.organizationId = organization.id;
+        token.role = normalizeRole((user as any).role);
+      } else if (token.id) {
+        const org = await ensureOrganizationForUser(String(token.id));
+        token.organizationId = org.id;
+        token.organizationName = org.name;
       }
       return token;
     },
@@ -96,6 +95,7 @@ export const authOptions: NextAuthOptions = {
         (session.user as any).id = token.id;
         (session.user as any).role = token.role;
         (session.user as any).organizationId = token.organizationId;
+        (session.user as any).organizationName = token.organizationName;
       }
       return session;
     },

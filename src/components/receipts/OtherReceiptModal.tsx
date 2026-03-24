@@ -2,6 +2,7 @@
 
 import { useEffect, useState } from "react";
 import { Modal } from "@/components/ui/Modal";
+import { useApiUrl } from "@/lib/org-context";
 
 type Method = "CASH" | "TRANSFER" | "CHECK";
 type OtherReceiptType = "RENT" | "OTHER";
@@ -31,6 +32,7 @@ export function OtherReceiptModal({
   receipt: OtherReceipt | null;
 }) {
   const isEdit = Boolean(receipt);
+  const apiUrl = useApiUrl();
 
   const [type, setType] = useState<OtherReceiptType>("OTHER");
   const [description, setDescription] = useState("");
@@ -41,6 +43,7 @@ export function OtherReceiptModal({
   const [bankRef, setBankRef] = useState("");
   const [note, setNote] = useState("");
   const [busy, setBusy] = useState(false);
+  const [error, setError] = useState("");
 
   useEffect(() => {
     if (!open) return;
@@ -54,6 +57,7 @@ export function OtherReceiptModal({
       setBankName("");
       setBankRef("");
       setNote("");
+      setError("");
       return;
     }
 
@@ -65,6 +69,7 @@ export function OtherReceiptModal({
     setBankName(receipt.bankName ?? "");
     setBankRef(receipt.bankRef ?? "");
     setNote(receipt.note ?? "");
+    setError("");
   }, [open, receipt]);
 
   async function save() {
@@ -75,10 +80,13 @@ export function OtherReceiptModal({
     if (method === "CHECK" && !bankRef.trim()) return;
 
     setBusy(true);
+    setError("");
 
     try {
       const res = await fetch(
-        isEdit ? `/api/other-receipts/${receipt!.id}` : "/api/other-receipts",
+        apiUrl(
+          isEdit ? `/api/other-receipts/${receipt!.id}` : "/api/other-receipts"
+        ),
         {
           method: isEdit ? "PUT" : "POST",
           headers: { "Content-Type": "application/json" },
@@ -95,9 +103,13 @@ export function OtherReceiptModal({
         }
       );
 
-      if (!res.ok) return;
+      if (!res.ok) {
+        const data = await res.json().catch(() => null);
+        setError(data?.error ?? "Impossible d'enregistrer cette recette");
+        return;
+      }
 
-      onSaved();
+      await Promise.resolve(onSaved());
       onClose();
     } finally {
       setBusy(false);
@@ -111,6 +123,12 @@ export function OtherReceiptModal({
       title={isEdit ? "Modifier une autre recette" : "Ajouter une autre recette"}
     >
       <div className="grid gap-4">
+        {error ? (
+          <div className="rounded-xl border border-red-200 bg-red-50 px-3 py-2 text-sm text-red-700">
+            {error}
+          </div>
+        ) : null}
+
         <div>
           <label className="text-sm font-medium">Type</label>
           <select
@@ -222,7 +240,7 @@ export function OtherReceiptModal({
             ((method === "TRANSFER" || method === "CHECK") && !bankName.trim()) ||
             (method === "CHECK" && !bankRef.trim())
           }
-          className="h-11 rounded-xl bg-blue-600 text-white disabled:opacity-50"
+          className="btn-brand h-11 rounded-xl disabled:opacity-50"
         >
           {busy ? "Enregistrement..." : isEdit ? "Mettre à jour" : "Enregistrer"}
         </button>

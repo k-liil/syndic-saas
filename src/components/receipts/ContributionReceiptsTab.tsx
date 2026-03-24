@@ -1,9 +1,12 @@
 "use client";
 
 import { useEffect, useState } from "react";
+import { useApiUrl, useOrganization } from "@/lib/org-context";
+import { useSession } from "next-auth/react";
 import { useSearchParams } from "next/navigation";
 import { Modal } from "@/components/ui/Modal";
 import { Table, THead, TR, TH, TD } from "@/components/ui/Table";
+import { canManage } from "@/lib/roles";
 
 type Method = "CASH" | "TRANSFER" | "CHECK";
 
@@ -29,7 +32,9 @@ type Receipt = {
 };
 
 function fmtDate(d: string) {
-  return new Date(d).toLocaleDateString();
+  return new Date(d).toLocaleDateString("fr-FR", {
+    timeZone: "UTC",
+  });
 }
 
 function fmtMonth(d: string) {
@@ -59,9 +64,19 @@ function fmtReceiptNumber(
   return String(receiptNumber);
 }
 
-export function ContributionReceiptsTab() {
+export function ContributionReceiptsTab({
+  monthFilter,
+  onMonthFilterChange,
+}: {
+  monthFilter: number;
+  onMonthFilterChange: (month: number) => void;
+}) {
+  const { data: session } = useSession();
+  const { org } = useOrganization();
+  const apiUrl = useApiUrl();
   const searchParams = useSearchParams();
   const year = searchParams.get("year");
+  const canEdit = canManage((session?.user as any)?.role);
 
   const [receipts, setReceipts] = useState<Receipt[]>([]);
   const [totalReceipts, setTotalReceipts] = useState(0);
@@ -86,6 +101,7 @@ const [totalPages, setTotalPages] = useState(1);
   >("ALL");
 
   const [search, setSearch] = useState("");
+  const [lotFilter, setLotFilter] = useState("");
 
 const totalAll = totals.all;
 const totalCash = totals.cash;
@@ -94,9 +110,18 @@ const totalCheck = totals.check;
 
 const filteredReceipts = receipts.filter((r) => {
   const q = search.toLowerCase();
+  const lotQuery = lotFilter.toLowerCase().trim();
+
+  if (lotQuery) {
+    const receiptLot = (r.unit?.lotNumber ?? r.unit?.reference ?? "").toLowerCase();
+    if (!receiptLot.includes(lotQuery)) {
+      return false;
+    }
+  }
 
   return (
     r.owner?.name?.toLowerCase().includes(q) ||
+    r.unit?.lotNumber?.toLowerCase().includes(q) ||
     r.unit?.reference?.toLowerCase().includes(q) ||
     r.building?.name?.toLowerCase().includes(q)
   );
@@ -172,7 +197,11 @@ async function loadReceipts() {
     params.append("method", methodFilter);
   }
 
-  const res = await fetch(`/api/receipts?${params.toString()}`, {
+  if (monthFilter > 0) {
+    params.append("month", String(monthFilter));
+  }
+
+  const res = await fetch(apiUrl(`/api/receipts?${params.toString()}`), {
     cache: "no-store",
   });
 
@@ -204,7 +233,11 @@ async function loadReceiptsTotalCount() {
     params.append("method", methodFilter);
   }
 
-  const res = await fetch(`/api/receipts?${params.toString()}`, {
+  if (monthFilter > 0) {
+    params.append("month", String(monthFilter));
+  }
+
+  const res = await fetch(apiUrl(`/api/receipts?${params.toString()}`), {
     cache: "no-store",
   });
 
@@ -219,7 +252,7 @@ async function deleteSelected() {
 
   if (selectAllAcrossResults) {
     for (let attempt = 0; attempt < 5; attempt += 1) {
-      const res = await fetch("/api/receipts/bulk", {
+      const res = await fetch(apiUrl("/api/receipts/bulk"), {
         method: "DELETE",
         headers: {
           "Content-Type": "application/json",
@@ -228,6 +261,7 @@ async function deleteSelected() {
           deleteAll: true,
           type: "CONTRIBUTION",
           year,
+          month: monthFilter > 0 ? monthFilter : undefined,
           method: methodFilter === "ALL" ? undefined : methodFilter,
         }),
       });
@@ -258,7 +292,7 @@ async function deleteSelected() {
       }
     }
   } else {
-    const res = await fetch("/api/receipts/bulk", {
+    const res = await fetch(apiUrl("/api/receipts/bulk"), {
       method: "DELETE",
       headers: {
         "Content-Type": "application/json",
@@ -347,7 +381,7 @@ setImportResult(null);
 
     setImportTotal(rows.length);
 
-    const start = await fetch("/api/import/receipts", {
+    const start = await fetch(apiUrl("/api/import/receipts"), {
       method: "POST",
       headers: { "Content-Type": "application/json" },
       body: JSON.stringify({
@@ -372,7 +406,7 @@ setImportResult(null);
     while (processed < rows.length) {
       const batch = rows.slice(processed, processed + batchSize);
 
-      const res = await fetch("/api/import/receipts", {
+      const res = await fetch(apiUrl("/api/import/receipts"), {
         method: "POST",
         headers: {
           "Content-Type": "application/json",
@@ -450,7 +484,7 @@ useEffect(() => {
 }, [importBusy, importStartedAt]);
 
   async function openDetail(id: string) {
-    const res = await fetch(`/api/receipts/${id}`, { cache: "no-store" });
+    const res = await fetch(apiUrl(`/api/receipts/${id}`), { cache: "no-store" });
     const data = await res.json().catch(() => null);
 
     if (!res.ok) {
@@ -471,7 +505,7 @@ useEffect(() => {
   }
 
   async function openEditInForm(id: string) {
-    const res = await fetch(`/api/receipts/${id}`, { cache: "no-store" });
+    const res = await fetch(apiUrl(`/api/receipts/${id}`), { cache: "no-store" });
     const data = await res.json().catch(() => null);
 
     if (!res.ok) {
@@ -511,7 +545,7 @@ useEffect(() => {
 
     setDeleting(true);
 
-    const res = await fetch(`/api/receipts/${receiptToDelete}`, {
+    const res = await fetch(apiUrl(`/api/receipts/${receiptToDelete}`), {
       method: "DELETE",
     });
 
@@ -546,7 +580,7 @@ useEffect(() => {
   async function updateReceipt() {
     if (!detail) return;
 
-    const res = await fetch(`/api/receipts/${detail.id}`, {
+    const res = await fetch(apiUrl(`/api/receipts/${detail.id}`), {
       method: "PUT",
       headers: {
         "Content-Type": "application/json",
@@ -589,7 +623,7 @@ useEffect(() => {
   }
 
   async function loadSettings() {
-    const res = await fetch("/api/settings", { cache: "no-store" });
+    const res = await fetch(apiUrl("/api/settings"), { cache: "no-store" });
     const data = await res.json().catch(() => null);
 
     setReceiptUsePrefix(Boolean(data?.receiptUsePrefix));
@@ -597,7 +631,7 @@ useEffect(() => {
   }
 
   async function loadBanks() {
-    const res = await fetch("/api/internal-banks");
+    const res = await fetch(apiUrl("/api/internal-banks"));
     const data = await res.json().catch(() => []);
     setBanks(Array.isArray(data) ? data.filter((b: any) => b.isActive) : []);
   }
@@ -605,7 +639,7 @@ useEffect(() => {
 useEffect(() => {
   if (!year) return;
   loadReceipts();
-}, [page, methodFilter, year]);
+}, [page, methodFilter, monthFilter, year]);
 
 useEffect(() => {
   loadBanks();
@@ -616,7 +650,7 @@ useEffect(() => {
   setPage(1);
   setSelectedReceipts([]);
   setSelectAllAcrossResults(false);
-}, [year]);
+}, [year, monthFilter]);
 
 useEffect(() => {
   setSelectedReceipts([]);
@@ -632,9 +666,11 @@ useEffect(() => {
     }
 
     const res = await fetch(
-      mode === "UNIT"
-        ? `/api/units/search?q=${encodeURIComponent(q)}`
-        : `/api/owners/search?q=${encodeURIComponent(q)}`
+      apiUrl(
+        mode === "UNIT"
+          ? `/api/units/search?q=${encodeURIComponent(q)}`
+          : `/api/owners/search?q=${encodeURIComponent(q)}`
+      )
     );
     const data = await res.json().catch(() => []);
     setUnits(Array.isArray(data) ? data : []);
@@ -668,7 +704,7 @@ useEffect(() => {
       const isEdit = Boolean(editingReceiptId);
 
       const res = await fetch(
-        isEdit ? `/api/receipts/${editingReceiptId}` : "/api/receipts",
+        apiUrl(isEdit ? `/api/receipts/${editingReceiptId}` : "/api/receipts"),
         {
           method: isEdit ? "PUT" : "POST",
           headers: {
@@ -805,6 +841,69 @@ useEffect(() => {
           </button>
         </div>
 
+        <div className="flex items-center gap-2">
+          <span className="text-xs font-medium text-zinc-500">Lot :</span>
+          <input
+            type="text"
+            value={lotFilter}
+            onChange={(e) => {
+              setPage(1);
+              setLotFilter(e.target.value);
+            }}
+            placeholder="Ex: E12"
+            className="h-9 w-28 rounded-xl border border-zinc-200 bg-white px-3 text-sm text-zinc-700 shadow-sm outline-none transition focus:border-zinc-900"
+          />
+          {lotFilter.trim() ? (
+            <button
+              onClick={() => {
+                setPage(1);
+                setLotFilter("");
+              }}
+              className="rounded-xl border border-zinc-200 bg-white px-2 py-1 text-xs text-zinc-500 hover:bg-zinc-50"
+            >
+              ×
+            </button>
+          ) : null}
+        </div>
+
+        {/* Filtre par mois */}
+        <div className="hidden items-center gap-2">
+          <span className="text-xs font-medium text-zinc-500">Mois :</span>
+          <select
+            value={monthFilter}
+            onChange={(e) => {
+              setPage(1);
+              onMonthFilterChange(Number(e.target.value));
+            }}
+            className="h-9 rounded-xl border border-zinc-200 bg-white px-3 text-sm text-zinc-700 shadow-sm"
+          >
+            <option value={0}>Tous les mois</option>
+            <option value={1}>Janvier</option>
+            <option value={2}>Février</option>
+            <option value={3}>Mars</option>
+            <option value={4}>Avril</option>
+            <option value={5}>Mai</option>
+            <option value={6}>Juin</option>
+            <option value={7}>Juillet</option>
+            <option value={8}>Août</option>
+            <option value={9}>Septembre</option>
+            <option value={10}>Octobre</option>
+            <option value={11}>Novembre</option>
+            <option value={12}>Décembre</option>
+          </select>
+          {monthFilter > 0 && (
+            <button
+              onClick={() => {
+                setPage(1);
+                onMonthFilterChange(0);
+              }}
+              className="rounded-xl border border-zinc-200 bg-white px-2 py-1 text-xs text-zinc-500 hover:bg-zinc-50"
+            >
+              ✕
+            </button>
+          )}
+        </div>
+
         <div className="grid grid-cols-2 gap-4 xl:grid-cols-4">
           <div className="rounded-[24px] border border-white/70 bg-white/90 p-5 shadow-[0_10px_30px_rgba(15,23,42,0.06)]">
             <div className="text-[11px] font-semibold uppercase tracking-[0.12em] text-zinc-400">Total encaissé</div>
@@ -835,78 +934,80 @@ useEffect(() => {
           </div>
         </div>
 
-        <div className="inline-flex rounded-2xl border border-zinc-200 bg-white p-1 shadow-sm">
-          <button
-            onClick={() => {
-  setImportOpen(true);
-  setImportFile(null);
-  setImportResult(null);
-  setImportProgress(0);
-  setImportTotal(0);
-  setImportPercent(0);
-}}
-            className="rounded-2xl border border-zinc-200 bg-white px-4 py-2.5 text-sm font-medium text-zinc-700 shadow-sm transition hover:bg-zinc-50"
-          >
-            Importer
-          </button>
+        {canEdit ? (
+          <div className="inline-flex rounded-2xl border border-zinc-200 bg-white p-1 shadow-sm">
+            <button
+              onClick={() => {
+                setImportOpen(true);
+                setImportFile(null);
+                setImportResult(null);
+                setImportProgress(0);
+                setImportTotal(0);
+                setImportPercent(0);
+              }}
+              className="rounded-2xl border border-zinc-200 bg-white px-4 py-2.5 text-sm font-medium text-zinc-700 shadow-sm transition hover:bg-zinc-50"
+            >
+              Importer
+            </button>
 
-          <button
-            onClick={openCreate}
-            className="rounded-2xl bg-blue-600 px-5 py-2.5 text-sm font-medium text-white shadow-sm transition hover:bg-blue-700"
-          >
-            + Encaisser
-          </button>
-        </div>
+            <button
+              onClick={openCreate}
+              className="btn-brand rounded-2xl px-5 py-2.5 text-sm font-medium"
+            >
+              + Encaisser
+            </button>
+          </div>
+        ) : null}
       </div>
 
-{(selectedReceipts.length > 0 || selectAllAcrossResults) && (
+      {canEdit && (selectedReceipts.length > 0 || selectAllAcrossResults) && (
 
-  <div className="flex items-center justify-between rounded-2xl border border-zinc-200 bg-white p-3 shadow-sm">
+        <div className="flex items-center justify-between rounded-2xl border border-zinc-200 bg-white p-3 shadow-sm">
 
-    <div className="text-sm text-zinc-600">
-      {selectAllAcrossResults
-        ? `${totalReceipts} encaissement(s) sélectionné(s)`
-        : `${selectedReceipts.length} encaissement(s) sélectionné(s)`}
-    </div>
+          <div className="text-sm text-zinc-600">
+            {selectAllAcrossResults
+              ? `${totalReceipts} encaissement(s) sélectionné(s)`
+              : `${selectedReceipts.length} encaissement(s) sélectionné(s)`}
+          </div>
 
-    {!selectAllAcrossResults && totalReceipts > selectedReceipts.length ? (
-      <button
-        type="button"
-        onClick={() => setSelectAllAcrossResults(true)}
-        className="rounded-xl border border-zinc-200 bg-zinc-50 px-3 py-2 text-xs font-medium text-zinc-700 transition hover:bg-zinc-100"
-      >
-        Selectionner toute la base ({totalReceipts})
-      </button>
-    ) : null}
+          {!selectAllAcrossResults && totalReceipts > selectedReceipts.length ? (
+            <button
+              type="button"
+              onClick={() => setSelectAllAcrossResults(true)}
+              className="rounded-xl border border-zinc-200 bg-zinc-50 px-3 py-2 text-xs font-medium text-zinc-700 transition hover:bg-zinc-100"
+            >
+              Selectionner toute la base ({totalReceipts})
+            </button>
+          ) : null}
 
-    {selectAllAcrossResults ? (
-      <button
-        type="button"
-        onClick={() => setSelectAllAcrossResults(false)}
-        className="rounded-xl border border-red-200 bg-red-50 px-3 py-2 text-xs font-medium text-red-800 transition hover:bg-red-100"
-      >
-        Revenir a la page courante
-      </button>
-    ) : null}
+          {selectAllAcrossResults ? (
+            <button
+              type="button"
+              onClick={() => setSelectAllAcrossResults(false)}
+              className="rounded-xl border border-red-200 bg-red-50 px-3 py-2 text-xs font-medium text-red-800 transition hover:bg-red-100"
+            >
+              Revenir a la page courante
+            </button>
+          ) : null}
 
-    <button
-      onClick={deleteSelected}
-      disabled={bulkDeleting}
-      className="rounded-xl bg-red-600 px-4 py-2 text-sm font-medium text-white shadow-sm transition hover:bg-red-700 disabled:cursor-not-allowed disabled:opacity-60"
-    >
-      {bulkDeleting ? "Suppression..." : "Supprimer"}
-    </button>
+          <button
+            onClick={deleteSelected}
+            disabled={bulkDeleting}
+            className="rounded-xl bg-red-600 px-4 py-2 text-sm font-medium text-white shadow-sm transition hover:bg-red-700 disabled:cursor-not-allowed disabled:opacity-60"
+          >
+            {bulkDeleting ? "Suppression..." : "Supprimer"}
+          </button>
 
-  </div>
+        </div>
 
-)}
+      )}
 
-{bulkDeleting ? (
-  <div className="flex items-center gap-3 rounded-2xl border border-amber-200 bg-amber-50 px-4 py-3 text-sm text-amber-900 shadow-sm">
-    <span className="h-4 w-4 animate-spin rounded-full border-2 border-amber-300 border-t-amber-700" />
-    <span>Suppression en cours, merci de patienter...</span>
-  </div>
-) : null}
+      {bulkDeleting ? (
+        <div className="flex items-center gap-3 rounded-2xl border border-amber-200 bg-amber-50 px-4 py-3 text-sm text-amber-900 shadow-sm">
+          <span className="h-4 w-4 animate-spin rounded-full border-2 border-amber-300 border-t-amber-700" />
+          <span>Suppression en cours, merci de patienter...</span>
+        </div>
+      ) : null}
 
 {false && selectedReceipts.length > 0 && !selectAllAcrossResults && totalReceipts > selectedReceipts.length ? (
   <div className="flex items-center justify-between rounded-2xl border border-zinc-200 bg-amber-50 px-4 py-3 text-sm text-amber-900 shadow-sm">
@@ -980,13 +1081,13 @@ useEffect(() => {
     onChange={() => toggleSelect(r.id)}
   />
 </TD>
-                <TD className="font-semibold text-zinc-900 group-hover:underline">
+                <TD className="font-semibold text-zinc-900">
                   {fmtReceiptNumber(r.receiptNumber, receiptUsePrefix, receiptPrefix)}
                 </TD>
 
                 <TD className="text-zinc-600">{fmtDate(r.date)}</TD>
                 <TD>
-  <span className="font-medium text-zinc-900">{r.unit?.reference ?? "—"}</span>
+  <span className="font-medium text-zinc-900">{r.unit?.lotNumber ?? r.unit?.reference ?? "—"}</span>
 </TD>
                 <TD className="text-zinc-700">{r.building?.name ?? "—"}</TD>
                 <TD className="font-medium text-zinc-800">{r.owner?.name ?? "—"}</TD>
@@ -1040,6 +1141,20 @@ useEffect(() => {
                       >
                         <path d="M12 20h9" />
                         <path d="M16.5 3.5a2.1 2.1 0 0 1 3 3L7 19l-4 1 1-4 12.5-12.5z" />
+                      </svg>
+                    </button>
+
+                    {/* Bouton imprimer reçu */}
+                    <button
+                      type="button"
+                      onClick={() => window.open(apiUrl(`/api/receipts/${r.id}/print`), "_blank")}
+                      className="flex h-8 w-8 items-center justify-center rounded-lg text-zinc-400 transition hover:bg-teal-50 hover:text-teal-600"
+                      title="Imprimer le reçu"
+                    >
+                      <svg xmlns="http://www.w3.org/2000/svg" className="h-4 w-4" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
+                        <path d="M6 9V2h12v7" />
+                        <path d="M6 18H4a2 2 0 0 1-2-2v-5a2 2 0 0 1 2-2h16a2 2 0 0 1 2 2v5a2 2 0 0 1-2 2h-2" />
+                        <rect x="6" y="14" width="12" height="8" rx="1" />
                       </svg>
                     </button>
 
@@ -1362,7 +1477,7 @@ useEffect(() => {
               ((method === "TRANSFER" || method === "CHECK") && !bankName.trim()) ||
               (method === "CHECK" && !checkNumber.trim())
             }
-            className="h-12 rounded-2xl bg-blue-600 text-sm font-medium text-white shadow-sm transition hover:bg-zinc-800 disabled:opacity-50"
+            className="btn-brand h-12 rounded-2xl text-sm font-medium disabled:opacity-50"
           >
             {busy ? "Enregistrement..." : editingReceiptId ? "Mettre à jour" : "Encaisser"}
           </button>
@@ -1566,7 +1681,7 @@ useEffect(() => {
           <div className="flex justify-end">
             <button
               onClick={updateReceipt}
-              className="rounded-2xl bg-blue-600 px-4 py-2 text-sm text-white shadow-sm hover:bg-blue-700"
+              className="btn-brand rounded-2xl px-4 py-2 text-sm"
             >
               Enregistrer
             </button>

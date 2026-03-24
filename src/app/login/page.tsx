@@ -104,9 +104,9 @@ function LoginPageContent() {
       <div className="mx-auto grid min-h-screen max-w-7xl gap-10 px-6 py-8 lg:grid-cols-[1.05fr_0.95fr] lg:px-10">
         <section className="glass-panel flex flex-col justify-between rounded-[40px] p-8 text-slate-900 lg:p-10">
           <div>
-            <div className="inline-flex items-center gap-3 rounded-full border border-slate-200 bg-white/75 px-4 py-2 text-sm text-slate-700">
-              <Building2 size={18} />
-              Syndic SaaS
+            <div className="inline-flex items-center gap-2.5 rounded-full border border-slate-200 bg-white/75 px-3.5 py-1.5 text-sm font-semibold text-slate-800 shadow-sm">
+              <img src="/logo.png" alt="" className="h-5 w-5 object-contain" />
+              Syndicly
             </div>
 
             <h1 className="display-title mt-8 max-w-xl text-5xl font-semibold leading-[0.96] text-slate-950 sm:text-6xl">

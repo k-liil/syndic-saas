@@ -1,7 +1,7 @@
 import { NextResponse } from "next/server";
 import { prisma } from "@/lib/prisma";
 import { DueStatus, ReceiptType } from "@prisma/client";
-import { requireAdmin } from "@/lib/authz";
+import { requireAuth } from "@/lib/authz";
 
 function firstDayOfMonth(d: Date) {
   return new Date(Date.UTC(d.getUTCFullYear(), d.getUTCMonth(), 1, 0, 0, 0));
@@ -12,7 +12,7 @@ export async function GET(
   ctx: { params: Promise<{ ownerId: string }> }
 ) {
   try {
-    const gate = await requireAdmin();
+    const gate = await requireAuth();
     if (!gate.ok) {
       return NextResponse.json({ error: gate.error }, { status: gate.status });
     }
@@ -23,8 +23,8 @@ export async function GET(
       return NextResponse.json({ error: "ownerId missing" }, { status: 400 });
     }
 
-    const owner = await prisma.owner.findUnique({
-      where: { id: ownerId, organizationId: gate.organizationId },
+    const owner = await prisma.owner.findFirst({
+      where: { id: ownerId, organizationId: gate.organizationId ?? undefined },
       select: { id: true, name: true },
     });
 
@@ -34,7 +34,7 @@ export async function GET(
 
     const dues = await prisma.monthlyDue.findMany({
       where: {
-        organizationId: gate.organizationId,
+        organizationId: gate.organizationId ?? undefined,
         unit: { ownerships: { some: { ownerId } } },
       },
       orderBy: { period: "asc" },
@@ -72,7 +72,7 @@ export async function GET(
 
     const payments = await prisma.receipt.findMany({
       where: {
-        organizationId: gate.organizationId,
+        organizationId: gate.organizationId ?? undefined,
         ownerId,
         type: ReceiptType.CONTRIBUTION,
       },

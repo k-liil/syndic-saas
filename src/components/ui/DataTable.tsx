@@ -20,7 +20,7 @@ export function DataTable<T>({ columns, data }: Props<T>) {
   })
 
   return (
-    <div className="rounded-xl border border-zinc-200 bg-white">
+    <div className="page-sticky-table page-section-inline">
       <table className="w-full text-sm">
         <thead className="border-b bg-zinc-50">
           {table.getHeaderGroups().map(headerGroup => (

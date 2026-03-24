@@ -13,10 +13,22 @@ model Organization {
   name      String
   slug      String   @unique
   isActive  Boolean  @default(true)
+
+  address    String?
+  city       String?
+  zipCode    String?
+  email      String?
+  phone      String?
+  landTitle  String?
+  srmContact String?
+  rib        String?
+  logoUrl    String?
+  logoSize   String?
+
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
 
-  users             User[]
+  userOrganizations UserOrganization[]
   owners            Owner[]
   buildings         Building[]
   units             Unit[]
@@ -29,13 +41,27 @@ model Organization {
   fiscalYears       FiscalYear[]
   internalBanks     InternalBank[]
   suppliers         Supplier[]
-  paymentCategories PaymentCategory[]
+  supplierSectors   SupplierSector[]
+  accountingPosts   AccountingPost[]
+  budgets           Budget[]
   importJobs        ImportJob[]
+  contributionGroups ContributionGroup[]
+  contributionPeriods ContributionPeriod[]
+  claims            Claim[]
+  claimComments     ClaimComment[]
+  incidents         Incident[]
+  meetings          Meeting[]
+  digitalVaultDocuments DigitalVaultDocument[]
+  notifications     Notification[]
 }
 
 enum UserRole {
+  SUPER_ADMIN
   ADMIN
+  MANAGER
+  VIEWER
   OPERATOR
+  OWNER
 }
 
 enum UnitType {
@@ -62,16 +88,24 @@ model Owner {
   organizationId String
   organization   Organization @relation(fields: [organizationId], references: [id])
   cin       String?
+  firstName String?
   name      String
   email     String?
   phone     String?
+  notes     String?
+  contributionStartAt DateTime?
   createdAt DateTime @default(now())
+
+  userId    String?  @unique
+  user      User?    @relation(fields: [userId], references: [id])
 
   receipts   Receipt[]
   ownerships Ownership[]
+  claims     Claim[]
 
   @@unique([organizationId, cin])
   @@index([organizationId])
+  @@index([userId])
 }
 
 enum ReceiptType {
@@ -91,7 +125,14 @@ model Building {
   units    Unit[]
   receipts Receipt[]
 
+  @@unique([organizationId, name])
   @@index([organizationId])
+}
+
+enum ContributionType {
+  GLOBAL_FIXED
+  GROUP_FIXED
+  SURFACE
 }
 
 model Unit {
@@ -107,7 +148,9 @@ model Unit {
   buildingId String?
   building   Building? @relation(fields: [buildingId], references: [id])
 
-  monthlyDueAmount Decimal? @db.Decimal(10,2)
+  floor   Int?
+  surface Decimal? @db.Decimal(10,2)
+
   dues             MonthlyDue[]
 
   parentUnitId String?
@@ -116,12 +159,70 @@ model Unit {
 
   ownerships Ownership[]
   receipts   Receipt[]
+  groupUnits  ContributionGroupUnit[]
+  contributionPeriods ContributionPeriod[]
+  claims              Claim[]
 
   @@unique([organizationId, lotNumber])
   @@index([buildingId])
   @@index([organizationId])
   @@index([parentUnitId])
   @@index([lotNumber])
+}
+
+model ContributionGroup {
+  id        String   @id @default(cuid())
+  organizationId String
+  organization   Organization @relation(fields: [organizationId], references: [id])
+  name      String
+  isActive  Boolean  @default(true)
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  units    ContributionGroupUnit[]
+  periods  ContributionPeriod[]
+
+  @@index([organizationId])
+}
+
+model ContributionGroupUnit {
+  id      String @id @default(cuid())
+  groupId String
+  group   ContributionGroup @relation(fields: [groupId], references: [id], onDelete: Cascade)
+  unitId  String
+  unit    Unit   @relation(fields: [unitId], references: [id], onDelete: Cascade)
+
+  @@unique([groupId, unitId])
+  @@index([groupId])
+  @@index([unitId])
+}
+
+model ContributionPeriod {
+  id     String @id @default(uuid())
+  organizationId String
+  organization   Organization @relation(fields: [organizationId], references: [id])
+
+  contributionType ContributionType
+
+  groupId String?
+  group   ContributionGroup? @relation(fields: [groupId], references: [id], onDelete: Cascade)
+
+  unitId String?
+  unit   Unit?   @relation(fields: [unitId], references: [id], onDelete: Cascade)
+
+  startPeriod DateTime
+  endPeriod   DateTime?
+
+  amount Decimal @db.Decimal(10,2)
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  @@index([organizationId])
+  @@index([contributionType])
+  @@index([groupId])
+  @@index([unitId])
+  @@index([startPeriod])
 }
 
 model Ownership {
@@ -174,13 +275,14 @@ model Payment {
   supplierId String
   supplier   Supplier @relation(fields: [supplierId], references: [id])
 
-  categoryId String?
-  category   PaymentCategory? @relation(fields: [categoryId], references: [id])
+  accountingPostId String?
+  accountingPost   AccountingPost? @relation(fields: [accountingPostId], references: [id])
 
   date   DateTime      @default(now())
   method PaymentMethod
   amount Decimal @db.Decimal(10,2)
   note   String?
+  attachments Json @default("[]")
 
   bankName String?
   bankRef  String?
@@ -190,7 +292,7 @@ model Payment {
   @@unique([organizationId, paymentNumber])
   @@index([organizationId])
   @@index([supplierId])
-  @@index([categoryId])
+  @@index([accountingPostId])
   @@index([date])
   @@index([paymentNumber])
 }
@@ -257,8 +359,6 @@ model ReceiptAllocation {
 
 model User {
   id            String    @id @default(cuid())
-  organizationId String
-  organization   Organization @relation(fields: [organizationId], references: [id])
   name          String?
   email         String    @unique
   emailVerified DateTime?
@@ -274,6 +374,23 @@ model User {
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
 
+  organizations UserOrganization[]
+  owner         Owner?
+  notifications Notification[]
+  claimComments ClaimComment[]
+}
+
+model UserOrganization {
+  id        String @id @default(cuid())
+  userId    String
+  user      User   @relation(fields: [userId], references: [id], onDelete: Cascade)
+  organizationId String
+  organization Organization @relation(fields: [organizationId], references: [id], onDelete: Cascade)
+  role      UserRole @default(OPERATOR)
+  createdAt DateTime @default(now())
+
+  @@unique([userId, organizationId])
+  @@index([userId])
   @@index([organizationId])
 }
 
@@ -337,6 +454,9 @@ model AppSettings {
   openingCashBalance Int @default(0)
   openingBankBalance Int @default(0)
 
+  contributionType    ContributionType @default(GLOBAL_FIXED)
+  globalFixedAmount  Decimal? @db.Decimal(10,2)
+
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
 
@@ -378,10 +498,13 @@ model Supplier {
   organizationId String
   organization   Organization @relation(fields: [organizationId], references: [id])
   name     String
+  sector   String?
+  contactName String?
   phone    String?
   email    String?
   address  String?
   note     String?
+  photoUrl String?
   isActive Boolean @default(true)
 
   payments Payment[]
@@ -392,20 +515,61 @@ model Supplier {
   @@index([organizationId])
 }
 
-model PaymentCategory {
+model SupplierSector {
+  id             String       @id @default(cuid())
+  organizationId String
+  organization   Organization @relation(fields: [organizationId], references: [id])
+  name           String
+  isActive       Boolean      @default(true)
+  createdAt      DateTime     @default(now())
+  updatedAt      DateTime     @updatedAt
+
+  @@index([organizationId])
+}
+
+enum PostType {
+  CHARGE
+  PRODUCT
+}
+
+model AccountingPost {
   id       String  @id @default(cuid())
   organizationId String
   organization   Organization @relation(fields: [organizationId], references: [id])
+  code     String
   name     String
+  postType PostType
   note     String?
-  isActive Boolean @default(true)
+  isActive Boolean @default(false)
 
   payments Payment[]
+  budgets  Budget[]
 
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
 
+  @@unique([organizationId, code])
   @@index([organizationId])
+  @@index([postType])
+}
+
+model Budget {
+  id       String  @id @default(cuid())
+  organizationId String
+  organization   Organization @relation(fields: [organizationId], references: [id])
+  accountingPostId String
+  accountingPost   AccountingPost @relation(fields: [accountingPostId], references: [id])
+  year     Int
+  amount   Decimal @db.Decimal(10,2)
+  isActive Boolean @default(true)
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  @@unique([organizationId, accountingPostId, year])
+  @@index([organizationId])
+  @@index([accountingPostId])
+  @@index([year])
 }
 
 model OtherReceipt {
@@ -450,4 +614,233 @@ model ImportJob {
   updatedAt DateTime @updatedAt
 
   @@index([organizationId])
+}
+
+model DigitalVaultDocument {
+  id String @id @default(uuid())
+
+  organizationId String
+  organization   Organization @relation(fields: [organizationId], references: [id])
+
+  name       String
+  category   String
+  fileName   String
+  fileUrl    String @db.Text
+  mimeType   String
+  sizeBytes  Int
+  tags       String[] @default([])
+  isVisibleToOwners Boolean @default(false)
+  documentDate DateTime?
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  @@index([organizationId])
+  @@index([category])
+  @@index([isVisibleToOwners])
+  @@index([documentDate])
+}
+
+model Claim {
+  id             String       @id @default(uuid())
+  organizationId String
+  organization   Organization @relation(fields: [organizationId], references: [id])
+  ownerId        String
+  owner          Owner        @relation(fields: [ownerId], references: [id])
+  unitId         String?
+  unit           Unit?        @relation(fields: [unitId], references: [id])
+  
+  title          String
+  description    String
+  category       String       @default("Général")
+  status         ClaimStatus  @default(OPEN)
+  priority       ClaimPriority @default(NORMAL)
+  photos         String[]     @default([])
+  notifications  Notification[]
+  comments       ClaimComment[]
+  
+  createdAt      DateTime     @default(now())
+  updatedAt      DateTime     @updatedAt
+
+  @@index([organizationId])
+  @@index([ownerId])
+  @@index([unitId])
+}
+
+model ClaimComment {
+  id             String       @id @default(uuid())
+  claimId         String
+  claim           Claim        @relation(fields: [claimId], references: [id], onDelete: Cascade)
+  organizationId  String
+  organization    Organization @relation(fields: [organizationId], references: [id], onDelete: Cascade)
+  userId          String
+  user            User         @relation(fields: [userId], references: [id], onDelete: Cascade)
+  message         String       @db.Text
+  createdAt       DateTime     @default(now())
+
+  @@index([claimId, createdAt])
+  @@index([organizationId, createdAt])
+  @@index([userId, createdAt])
+}
+
+model Notification {
+  id             String       @id @default(uuid())
+  userId         String
+  user           User         @relation(fields: [userId], references: [id], onDelete: Cascade)
+  organizationId String
+  organization   Organization @relation(fields: [organizationId], references: [id], onDelete: Cascade)
+  claimId        String?
+  claim          Claim?       @relation(fields: [claimId], references: [id], onDelete: SetNull)
+
+  type           String
+  title          String
+  message        String?      @db.Text
+  link           String?
+  isRead         Boolean      @default(false)
+  createdAt      DateTime     @default(now())
+  readAt         DateTime?
+
+  @@index([userId, organizationId, isRead, createdAt])
+  @@index([organizationId, createdAt])
+  @@index([claimId])
+}
+
+enum ClaimStatus {
+  OPEN
+  IN_PROGRESS
+  RESOLVED
+}
+
+enum ClaimPriority {
+  LOW
+  NORMAL
+  HIGH
+}
+
+model Incident {
+  id             String       @id @default(uuid())
+  organizationId String
+  organization   Organization @relation(fields: [organizationId], references: [id])
+  title          String
+  description    String
+  location       String?      // Apartment or Common Area
+  status         String       @default("OPEN")
+  createdAt      DateTime     @default(now())
+  updatedAt      DateTime     @updatedAt
+
+  @@index([organizationId])
+}
+
+model Meeting {
+  id             String       @id @default(uuid())
+  organizationId String
+  organization   Organization @relation(fields: [organizationId], references: [id])
+  title          String
+  date           DateTime
+  type           MeetingType   @default(ORDINARY)
+  status         MeetingStatus @default(SCHEDULED)
+  description    String?
+  location       String?
+  convocationSentAt DateTime?
+  minutesGeneratedAt DateTime?
+  createdAt      DateTime     @default(now())
+  updatedAt      DateTime     @updatedAt
+
+  resolutions    MeetingResolution[]
+  documents      MeetingDocument[]
+
+  @@index([organizationId])
+}
+
+enum MeetingType {
+  ORDINARY
+  EXTRAORDINARY
+}
+
+enum MeetingStatus {
+  SCHEDULED
+  CONVOCATIONS_SENT
+  MINUTES_READY
+  COMPLETED
+}
+
+enum MeetingVoteRule {
+  SIMPLE
+  ABSOLUTE
+  DOUBLE
+  UNANIMOUS
+}
+
+enum MeetingResolutionStatus {
+  PENDING
+  ADOPTED
+  REJECTED
+}
+
+enum MeetingDocumentType {
+  ATTENDANCE_SHEET
+  MINUTES
+  OTHER
+}
+
+enum MeetingDocumentSourceType {
+  UPLOAD
+  VAULT
+}
+
+model MeetingResolution {
+  id          String                  @id @default(uuid())
+  meetingId   String
+  meeting     Meeting                 @relation(fields: [meetingId], references: [id], onDelete: Cascade)
+  title       String
+  description String?
+  voteRule    MeetingVoteRule
+  status      MeetingResolutionStatus @default(PENDING)
+  votesFor    Int                     @default(0)
+  votesAgainst Int                    @default(0)
+  abstentions Int                     @default(0)
+  orderIndex  Int                     @default(0)
+  createdAt   DateTime                @default(now())
+  updatedAt   DateTime                @updatedAt
+
+  @@index([meetingId, orderIndex])
+}
+
+model MeetingDocument {
+  id             String                    @id @default(uuid())
+  meetingId      String
+  meeting        Meeting                   @relation(fields: [meetingId], references: [id], onDelete: Cascade)
+  type           MeetingDocumentType
+  sourceType     MeetingDocumentSourceType @default(UPLOAD)
+  title          String
+  fileName       String?
+  fileUrl        String?                   @db.Text
+  mimeType       String?
+  sizeBytes      Int                       @default(0)
+  vaultDocumentId String?
+  createdAt      DateTime                  @default(now())
+  updatedAt      DateTime                  @updatedAt
+
+  @@index([meetingId, type])
+  @@index([vaultDocumentId])
+}
+
+model PageVisibilitySetting {
+  id         String   @id @default(cuid())
+  href       String   @unique
+  title      String
+  section    String
+  icon       String
+  isEnabled  Boolean  @default(true)
+  superAdmin Boolean  @default(true)
+  admin      Boolean  @default(true)
+  manager    Boolean  @default(true)
+  operator   Boolean  @default(true)
+  viewer     Boolean  @default(true)
+  owner      Boolean  @default(false)
+  createdAt  DateTime @default(now())
+  updatedAt  DateTime @updatedAt
+
+  @@index([section])
+  @@index([isEnabled])
 }

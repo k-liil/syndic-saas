@@ -1,0 +1,3 @@
+ALTER TABLE "Owner"
+ADD COLUMN IF NOT EXISTS "contributionStartAt" TIMESTAMP(3);
+

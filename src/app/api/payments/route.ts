@@ -1,17 +1,74 @@
 import { NextResponse } from "next/server";
+import type { Prisma } from "@prisma/client";
 import { prisma } from "@/lib/prisma";
-import { requireAdmin } from "@/lib/authz";
+import { requireAuth, requireManager } from "@/lib/authz";
 import { ensureFiscalYear } from "@/lib/fiscalYear";
+import { getOrgIdFromRequest } from "@/lib/org-utils";
+import { resolveActiveFiscalYear } from "@/lib/active-fiscal-year";
+
+function getErrorDetail(error: unknown) {
+  return error instanceof Error ? error.message : String(error);
+}
+
+type PaymentAttachment = {
+  name: string;
+  url: string;
+  type: string;
+};
+
+function parseAttachments(value: unknown): PaymentAttachment[] {
+  if (!Array.isArray(value)) {
+    return [];
+  }
+
+  return value
+    .map((item) => {
+      if (!item || typeof item !== "object") {
+        return null;
+      }
+
+      const candidate = item as {
+        name?: unknown;
+        url?: unknown;
+        type?: unknown;
+      };
+
+      if (typeof candidate.name !== "string" || typeof candidate.url !== "string") {
+        return null;
+      }
+
+      const name = candidate.name.trim();
+      const url = candidate.url.trim();
+      const type =
+        typeof candidate.type === "string" ? candidate.type.trim() : "";
+
+      if (!name || !url) {
+        return null;
+      }
+
+      return {
+        name,
+        url,
+        type,
+      };
+    })
+    .filter((item): item is PaymentAttachment => item !== null);
+}
 
 export async function GET(req: Request) {
-  const gate = await requireAdmin();
+  const gate = await requireAuth();
   if (!gate.ok) {
     return NextResponse.json({ error: gate.error }, { status: gate.status });
   }
 
+  const orgId = await getOrgIdFromRequest(req, gate);
+  if (!orgId) {
+    return NextResponse.json({ payments: [], suppliers: [], banks: [], settings: null });
+  }
+
   const { searchParams } = new URL(req.url);
   const yearParam = searchParams.get("year");
-  const year = yearParam ? Number(yearParam) : null;
+  const year = await resolveActiveFiscalYear(orgId, yearParam);
 
   const startDate =
     year && Number.isFinite(year) ? new Date(Date.UTC(year, 0, 1)) : undefined;
@@ -26,31 +83,31 @@ export async function GET(req: Request) {
       where:
         startDate && endDate
           ? {
-              organizationId: gate.organizationId,
+              organizationId: orgId!,
               date: {
                 gte: startDate,
                 lt: endDate,
               },
             }
-          : { organizationId: gate.organizationId },
+          : { organizationId: orgId! },
       orderBy: [{ date: "desc" }, { paymentNumber: "desc" }],
       include: {
         supplier: true,
-        category: true,
+        accountingPost: true,
       },
     }),
 
     prisma.supplier.findMany({
-      where: { organizationId: gate.organizationId, isActive: true },
+      where: { organizationId: orgId!, isActive: true },
       orderBy: { name: "asc" },
     }),
 
     prisma.internalBank.findMany({
-      where: { organizationId: gate.organizationId, isActive: true },
+      where: { organizationId: orgId!, isActive: true },
       orderBy: { name: "asc" },
     }),
 
-    prisma.appSettings.findFirst({ where: { organizationId: gate.organizationId } }),
+    prisma.appSettings.findFirst({ where: { organizationId: orgId! } }),
   ]);
 
   return NextResponse.json({
@@ -62,9 +119,14 @@ export async function GET(req: Request) {
 }
 
 export async function POST(req: Request) {
-  const gate = await requireAdmin();
+  const gate = await requireManager();
   if (!gate.ok) {
     return NextResponse.json({ error: gate.error }, { status: gate.status });
+  }
+
+  const orgId = await getOrgIdFromRequest(req, gate);
+  if (!orgId) {
+    return NextResponse.json({ error: "No organization" }, { status: 400 });
   }
 
   try {
@@ -73,16 +135,16 @@ export async function POST(req: Request) {
     const supplierId =
       typeof body.supplierId === "string" ? body.supplierId : "";
 
-    const categoryId =
-      typeof body.categoryId === "string" && body.categoryId.trim()
-        ? body.categoryId
+    const accountingPostId =
+      typeof body.accountingPostId === "string" && body.accountingPostId.trim()
+        ? body.accountingPostId
         : null;
 
     const amount = Number(
-  String(body.amount ?? "0")
-    .replace(/\s/g, "")
-    .replace(",", ".")
-);
+      String(body.amount ?? "0")
+        .replace(/\s/g, "")
+        .replace(",", ".")
+    );
 
     if (!supplierId) {
       return NextResponse.json(
@@ -99,7 +161,7 @@ export async function POST(req: Request) {
     }
 
     const supplier = await prisma.supplier.findFirst({
-      where: { id: supplierId, organizationId: gate.organizationId },
+      where: { id: supplierId, organizationId: orgId! },
       select: { id: true },
     });
 
@@ -107,25 +169,25 @@ export async function POST(req: Request) {
       return NextResponse.json({ error: "SUPPLIER_NOT_FOUND" }, { status: 404 });
     }
 
-    if (categoryId) {
-      const category = await prisma.paymentCategory.findFirst({
-        where: { id: categoryId, organizationId: gate.organizationId },
+    if (accountingPostId) {
+      const post = await prisma.accountingPost.findFirst({
+        where: { id: accountingPostId, organizationId: orgId! },
         select: { id: true },
       });
 
-      if (!category) {
-        return NextResponse.json({ error: "CATEGORY_NOT_FOUND" }, { status: 404 });
+      if (!post) {
+        return NextResponse.json({ error: "POST_NOT_FOUND" }, { status: 404 });
       }
     }
 
     const settings = await prisma.appSettings.findFirst({
-      where: { organizationId: gate.organizationId },
+      where: { organizationId: orgId! },
     });
 
     const paymentStartNumber = settings?.paymentStartNumber ?? 1;
 
     const lastPayment = await prisma.payment.findFirst({
-      where: { organizationId: gate.organizationId },
+      where: { organizationId: orgId! },
       orderBy: { paymentNumber: "desc" },
       select: { paymentNumber: true },
     });
@@ -140,44 +202,50 @@ export async function POST(req: Request) {
       nextNumber = lastPayment.paymentNumber + 1;
     }
 
+    const paymentDate = body.date ? new Date(body.date) : new Date();
+    const attachments = parseAttachments(body.attachments) as Prisma.InputJsonValue;
+    await ensureFiscalYear(prisma, orgId!, paymentDate);
 
-const paymentDate = body.date ? new Date(body.date) : new Date();
-await ensureFiscalYear(prisma, gate.organizationId, paymentDate);
-
-const payment = await prisma.payment.create({
-  data: {
-    organizationId: gate.organizationId,
-    supplierId,
-    categoryId,
-    method: body.method ?? "CASH",
-    amount,
-    note: typeof body.note === "string" ? body.note : null,
-    bankName: typeof body.bankName === "string" ? body.bankName : null,
-    bankRef: typeof body.bankRef === "string" ? body.bankRef : null,
-    date: paymentDate,
-    paymentNumber: nextNumber,
-  },
-  include: {
-    supplier: true,
-    category: true,
-  },
-});
+    const payment = await prisma.payment.create({
+      data: {
+        organizationId: orgId!,
+        supplierId,
+        accountingPostId,
+        method: body.method ?? "CASH",
+        amount,
+        note: typeof body.note === "string" ? body.note : null,
+        attachments,
+        bankName: typeof body.bankName === "string" ? body.bankName : null,
+        bankRef: typeof body.bankRef === "string" ? body.bankRef : null,
+        date: paymentDate,
+        paymentNumber: nextNumber,
+      },
+      include: {
+        supplier: true,
+        accountingPost: true,
+      },
+    });
 
     return NextResponse.json(payment);
-  } catch (e: any) {
+  } catch (e) {
     console.error("POST /api/payments failed:", e);
 
     return NextResponse.json(
-      { error: "INTERNAL_ERROR", detail: String(e?.message ?? e) },
+      { error: "INTERNAL_ERROR", detail: getErrorDetail(e) },
       { status: 500 }
     );
   }
 }
 
 export async function DELETE(req: Request) {
-  const gate = await requireAdmin();
+  const gate = await requireManager();
   if (!gate.ok) {
     return NextResponse.json({ error: gate.error }, { status: gate.status });
+  }
+
+  const orgId = await getOrgIdFromRequest(req, gate);
+  if (!orgId) {
+    return NextResponse.json({ error: "No organization" }, { status: 400 });
   }
 
   const body = await req.json();
@@ -195,7 +263,7 @@ export async function DELETE(req: Request) {
   }
 
   const existing = await prisma.payment.findFirst({
-    where: { id, organizationId: gate.organizationId },
+    where: { id, organizationId: orgId! },
     select: { id: true },
   });
 
@@ -209,9 +277,14 @@ export async function DELETE(req: Request) {
 }
 
 export async function PUT(req: Request) {
-  const gate = await requireAdmin();
+  const gate = await requireManager();
   if (!gate.ok) {
     return NextResponse.json({ error: gate.error }, { status: gate.status });
+  }
+
+  const orgId = await getOrgIdFromRequest(req, gate);
+  if (!orgId) {
+    return NextResponse.json({ error: "No organization" }, { status: 400 });
   }
 
   const body = await req.json();
@@ -233,43 +306,41 @@ export async function PUT(req: Request) {
       ? body.supplierId
       : null;
 
-  const categoryId =
-    typeof body.categoryId === "string" && body.categoryId.trim()
-      ? body.categoryId
+  const accountingPostId =
+    typeof body.accountingPostId === "string" && body.accountingPostId.trim()
+      ? body.accountingPostId
       : null;
 
   const amount = Number(
-  String(body.amount ?? "0")
-    .replace(/\s/g, "")
-    .replace(",", ".")
-);
-
-console.log("BODY AMOUNT:", body.amount);
-console.log("PARSED AMOUNT:", amount);
+    String(body.amount ?? "0")
+      .replace(/\s/g, "")
+      .replace(",", ".")
+  );
 
   const method =
-  typeof body.method === "string" ? body.method : "CASH";
+    typeof body.method === "string" ? body.method : "CASH";
+  const attachments = parseAttachments(body.attachments) as Prisma.InputJsonValue;
 
-if (!["CASH", "TRANSFER", "CHECK", "DEBIT"].includes(method)) {
-  return NextResponse.json(
-    { error: "INVALID_METHOD" },
-    { status: 400 }
-  );
-}
+  if (!["CASH", "TRANSFER", "CHECK", "DEBIT"].includes(method)) {
+    return NextResponse.json(
+      { error: "INVALID_METHOD" },
+      { status: 400 }
+    );
+  }
 
-if (method !== "CASH" && !body.bankName) {
-  return NextResponse.json(
-    { error: "BANK_REQUIRED" },
-    { status: 400 }
-  );
-}
+  if (method !== "CASH" && !body.bankName) {
+    return NextResponse.json(
+      { error: "BANK_REQUIRED" },
+      { status: 400 }
+    );
+  }
 
-if (method === "CHECK" && !body.bankRef) {
-  return NextResponse.json(
-    { error: "CHECK_REF_REQUIRED" },
-    { status: 400 }
-  );
-}
+  if (method === "CHECK" && !body.bankRef) {
+    return NextResponse.json(
+      { error: "CHECK_REF_REQUIRED" },
+      { status: 400 }
+    );
+  }
 
   if (!supplierId) {
     return NextResponse.json(
@@ -285,29 +356,8 @@ if (method === "CHECK" && !body.bankRef) {
     );
   }
 
-  if (!["CASH", "TRANSFER", "CHECK", "DEBIT"].includes(body.method ?? "CASH")) {
-  return NextResponse.json(
-    { error: "INVALID_METHOD" },
-    { status: 400 }
-  );
-}
-
-  if (body.method !== "CASH" && !body.bankName) {
-    return NextResponse.json(
-      { error: "BANK_REQUIRED" },
-      { status: 400 }
-    );
-  }
-
-  if (body.method === "CHECK" && !body.bankRef) {
-    return NextResponse.json(
-      { error: "CHECK_REF_REQUIRED" },
-      { status: 400 }
-    );
-  }
-
   const supplier = await prisma.supplier.findFirst({
-    where: { id: supplierId, organizationId: gate.organizationId },
+    where: { id: supplierId, organizationId: orgId! },
     select: { id: true },
   });
 
@@ -315,19 +365,19 @@ if (method === "CHECK" && !body.bankRef) {
     return NextResponse.json({ error: "SUPPLIER_NOT_FOUND" }, { status: 404 });
   }
 
-  if (categoryId) {
-    const category = await prisma.paymentCategory.findFirst({
-      where: { id: categoryId, organizationId: gate.organizationId },
+  if (accountingPostId) {
+    const post = await prisma.accountingPost.findFirst({
+      where: { id: accountingPostId, organizationId: orgId! },
       select: { id: true },
     });
 
-    if (!category) {
-      return NextResponse.json({ error: "CATEGORY_NOT_FOUND" }, { status: 404 });
+    if (!post) {
+      return NextResponse.json({ error: "POST_NOT_FOUND" }, { status: 404 });
     }
   }
 
   const existing = await prisma.payment.findFirst({
-    where: { id, organizationId: gate.organizationId },
+    where: { id, organizationId: orgId! },
     select: { id: true },
   });
 
@@ -339,17 +389,18 @@ if (method === "CHECK" && !body.bankRef) {
     where: { id },
     data: {
       supplierId,
-      categoryId,
+      accountingPostId,
       method,
       amount,
       note: typeof body.note === "string" ? body.note : null,
+      attachments,
       bankName: typeof body.bankName === "string" ? body.bankName : null,
       bankRef: typeof body.bankRef === "string" ? body.bankRef : null,
       date: body.date ? new Date(body.date) : undefined,
     },
     include: {
       supplier: true,
-      category: true,
+      accountingPost: true,
     },
   });
 

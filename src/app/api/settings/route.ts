@@ -1,7 +1,8 @@
 import { NextResponse } from "next/server";
 import { prisma } from "@/lib/prisma";
-import { requireAdmin } from "@/lib/authz";
-import { getOrganizationForUser, syncOrganizationName } from "@/lib/organization";
+import { requireManager } from "@/lib/authz";
+import { syncOrganizationName } from "@/lib/organization";
+import { getOrgIdFromRequest } from "@/lib/org-utils";
 
 async function getSingleton(organizationId: string) {
   const existing = await prisma.appSettings.findFirst({
@@ -15,14 +16,26 @@ async function getSingleton(organizationId: string) {
   });
 }
 
-export async function GET() {
-  const gate = await requireAdmin();
+function getErrorDetail(error: unknown) {
+  return error instanceof Error ? error.message : String(error);
+}
+
+export async function GET(req: Request) {
+  const gate = await requireManager();
   if (!gate.ok) {
     return NextResponse.json({ error: gate.error }, { status: gate.status });
   }
 
-  const s = await getSingleton(gate.organizationId);
-  const organization = await getOrganizationForUser((gate.session.user as any)?.id);
+  const orgId = await getOrgIdFromRequest(req, gate);
+  if (!orgId) {
+    return NextResponse.json({ error: "No organization" }, { status: 400 });
+  }
+
+  const s = await getSingleton(orgId);
+  const organization = await prisma.organization.findUnique({
+    where: { id: orgId },
+    select: { id: true, name: true, slug: true },
+  });
 
   return NextResponse.json({
     ...s,
@@ -32,14 +45,19 @@ export async function GET() {
 
 export async function PUT(req: Request) {
   try {
-    const gate = await requireAdmin();
+    const gate = await requireManager();
     if (!gate.ok) {
       return NextResponse.json({ error: gate.error }, { status: gate.status });
     }
 
+    const orgId = await getOrgIdFromRequest(req, gate);
+    if (!orgId) {
+      return NextResponse.json({ error: "No organization" }, { status: 400 });
+    }
+
     const body = await req.json();
 
-    const current = await getSingleton(gate.organizationId);
+    const current = await getSingleton(orgId);
 
     const updated = await prisma.appSettings.update({
       where: { id: current.id },
@@ -100,23 +118,86 @@ export async function PUT(req: Request) {
           Number.isFinite(Number(body.openingBankBalance))
             ? Number(body.openingBankBalance)
             : current.openingBankBalance,
+        
+        contributionType:
+          typeof body.contributionType === "string"
+            ? body.contributionType
+            : current.contributionType,
+
+        globalFixedAmount:
+          Number.isFinite(Number(body.globalFixedAmount))
+            ? Number(body.globalFixedAmount)
+            : current.globalFixedAmount,
       },
     });
 
     if (typeof body.brandName === "string" && body.brandName.trim()) {
-      await syncOrganizationName(gate.organizationId, body.brandName.trim());
+      await syncOrganizationName(orgId!, body.brandName.trim());
     }
 
-    const organization = await getOrganizationForUser((gate.session.user as any)?.id);
+    const organization = await prisma.organization.findUnique({
+      where: { id: orgId },
+      select: { id: true, name: true, slug: true },
+    });
 
     return NextResponse.json({
       ...updated,
       organization,
     });
-  } catch (e: any) {
+  } catch (e) {
     console.error("PUT /api/settings failed:", e);
     return NextResponse.json(
-      { error: "INTERNAL_ERROR", detail: String(e?.message ?? e) },
+      { error: "INTERNAL_ERROR", detail: getErrorDetail(e) },
+      { status: 500 }
+    );
+  }
+}
+
+export async function PATCH(req: Request) {
+  try {
+    const gate = await requireManager();
+    if (!gate.ok) {
+      return NextResponse.json({ error: gate.error }, { status: gate.status });
+    }
+
+    const orgId = await getOrgIdFromRequest(req, gate);
+    if (!orgId) {
+      return NextResponse.json({ error: "No organization" }, { status: 400 });
+    }
+
+    const body = await req.json();
+    const current = await getSingleton(orgId);
+
+    const data: any = {};
+    if (body.brandName !== undefined) data.brandName = body.brandName;
+    if (body.brandColor !== undefined) data.brandColor = body.brandColor;
+    if (body.startYear !== undefined) data.startYear = body.startYear;
+    if (body.startMonth !== undefined) data.startMonth = body.startMonth;
+    if (body.receiptStartNumber !== undefined) data.receiptStartNumber = body.receiptStartNumber;
+    if (body.receiptUsePrefix !== undefined) data.receiptUsePrefix = body.receiptUsePrefix;
+    if (body.receiptPrefix !== undefined) data.receiptPrefix = body.receiptPrefix;
+    if (body.paymentStartNumber !== undefined) data.paymentStartNumber = body.paymentStartNumber;
+    if (body.paymentUsePrefix !== undefined) data.paymentUsePrefix = body.paymentUsePrefix;
+    if (body.paymentPrefix !== undefined) data.paymentPrefix = body.paymentPrefix;
+    if (body.openingCashBalance !== undefined) data.openingCashBalance = body.openingCashBalance;
+    if (body.openingBankBalance !== undefined) data.openingBankBalance = body.openingBankBalance;
+    if (body.contributionType !== undefined) data.contributionType = body.contributionType;
+    if (body.globalFixedAmount !== undefined) data.globalFixedAmount = body.globalFixedAmount;
+
+    const updated = await prisma.appSettings.update({
+      where: { id: current.id },
+      data,
+    });
+
+    if (data.brandName) {
+      await syncOrganizationName(orgId!, data.brandName);
+    }
+
+    return NextResponse.json(updated);
+  } catch (e) {
+    console.error("PATCH /api/settings failed:", e);
+    return NextResponse.json(
+      { error: "INTERNAL_ERROR", detail: getErrorDetail(e) },
       { status: 500 }
     );
   }

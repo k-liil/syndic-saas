@@ -2,9 +2,12 @@
 
 import { useEffect, useState } from "react";
 import { useSearchParams } from "next/navigation";
+import { useSession } from "next-auth/react";
 import { Table, THead, TR, TH, TD } from "@/components/ui/Table";
 import { OtherReceiptModal } from "./OtherReceiptModal";
 import { Modal } from "@/components/ui/Modal";
+import { canManage } from "@/lib/roles";
+import { useApiUrl } from "@/lib/org-context";
 
 type Method = "CASH" | "TRANSFER" | "CHECK";
 type OtherReceiptType = "RENT" | "OTHER";
@@ -34,9 +37,16 @@ function fmtElapsed(ms: number) {
   return `${minutes}:${String(seconds).padStart(2, "0")}`;
 }
 
-export function OtherReceiptsTab() {
+export function OtherReceiptsTab({
+  monthFilter,
+}: {
+  monthFilter: number;
+}) {
+  const { data: session } = useSession();
   const searchParams = useSearchParams();
   const year = searchParams.get("year");
+  const canEdit = canManage(session?.user?.role);
+  const apiUrl = useApiUrl();
   const [items, setItems] = useState<OtherReceipt[]>([]);
   const [page, setPage] = useState(1);
   const [pageSize] = useState(50);
@@ -50,6 +60,7 @@ export function OtherReceiptsTab() {
   const [importTotal, setImportTotal] = useState(0);
   const [importPercent, setImportPercent] = useState(0);
   const [importStartedAt, setImportStartedAt] = useState<number | null>(null);
+  const [importElapsedMs, setImportElapsedMs] = useState(0);
   const [importResult, setImportResult] = useState<null | {
     imported: number;
     errors: { row: number; error: string }[];
@@ -59,10 +70,20 @@ export function OtherReceiptsTab() {
   async function load() {
     if (!year) return;
 
-    const res = await fetch(
-      `/api/other-receipts?page=${page}&pageSize=${pageSize}&type=OTHER&year=${year}`,
-      { cache: "no-store" }
-    );
+    const params = new URLSearchParams({
+      page: String(page),
+      pageSize: String(pageSize),
+      type: "OTHER",
+      year,
+    });
+
+    if (monthFilter > 0) {
+      params.append("month", String(monthFilter));
+    }
+
+    const res = await fetch(apiUrl(`/api/other-receipts?${params.toString()}`), {
+      cache: "no-store",
+    });
     const data = await res.json().catch(() => null);
     setItems(Array.isArray(data?.items) ? data.items : []);
     setTotalPages(Number(data?.pagination?.totalPages ?? 1));
@@ -71,17 +92,17 @@ export function OtherReceiptsTab() {
   useEffect(() => {
     if (!year) return;
     load();
-  }, [page, year]);
+  }, [page, year, monthFilter]);
 
   useEffect(() => {
     setPage(1);
-  }, [year]);
+  }, [year, monthFilter]);
 
   async function remove(id: string) {
     const ok = window.confirm("Supprimer cette autre recette ?");
     if (!ok) return;
 
-    const res = await fetch(`/api/other-receipts/${id}`, {
+    const res = await fetch(apiUrl(`/api/other-receipts/${id}`), {
       method: "DELETE",
     });
 
@@ -120,7 +141,7 @@ export function OtherReceiptsTab() {
 
     setImportTotal(rows.length);
 
-    const start = await fetch("/api/import/other-receipts", {
+    const start = await fetch(apiUrl("/api/import/other-receipts"), {
       method: "POST",
       headers: { "Content-Type": "application/json" },
       body: JSON.stringify({
@@ -139,7 +160,7 @@ export function OtherReceiptsTab() {
     while (processed < rows.length) {
       const batch = rows.slice(processed, processed + batchSize);
 
-      const res = await fetch("/api/import/other-receipts", {
+      const res = await fetch(apiUrl("/api/import/other-receipts"), {
         method: "POST",
         headers: {
           "Content-Type": "application/json",
@@ -177,10 +198,27 @@ export function OtherReceiptsTab() {
     setImportFile(null);
     setImportBusy(false);
     setImportStartedAt(null);
+    setImportElapsedMs(0);
   }
+
+  useEffect(() => {
+    if (!importBusy || !importStartedAt) {
+      setImportElapsedMs(0);
+      return;
+    }
+
+    setImportElapsedMs(Date.now() - importStartedAt);
+
+    const timer = window.setInterval(() => {
+      setImportElapsedMs(Date.now() - importStartedAt);
+    }, 1000);
+
+    return () => window.clearInterval(timer);
+  }, [importBusy, importStartedAt]);
 
   return (
     <div className="space-y-4">
+      {canEdit ? (
       <div className="flex justify-end gap-3">
         <button
           onClick={() => {
@@ -201,11 +239,12 @@ export function OtherReceiptsTab() {
             setEditing(null);
             setOpen(true);
           }}
-          className="rounded-xl bg-blue-600 px-4 py-2 text-white"
+          className="btn-brand rounded-xl px-4 py-2"
         >
           + Ajouter
         </button>
       </div>
+      ) : null}
 
       <Table>
         <THead>
@@ -232,6 +271,7 @@ export function OtherReceiptsTab() {
                 {Number(r.amount).toLocaleString("fr-FR")} MAD
               </TD>
               <TD className="text-right">
+                {canEdit ? (
                 <div className="flex justify-end gap-2">
                   <button
                     onClick={() => {
@@ -250,6 +290,9 @@ export function OtherReceiptsTab() {
                     Supprimer
                   </button>
                 </div>
+                ) : (
+                  <span className="text-xs text-zinc-400">Lecture seule</span>
+                )}
               </TD>
             </TR>
           ))}
@@ -270,7 +313,7 @@ export function OtherReceiptsTab() {
         </button>
       </div>
 
-      <OtherReceiptModal
+      {canEdit ? <OtherReceiptModal
         open={open}
         receipt={editing}
         onClose={() => {
@@ -278,9 +321,9 @@ export function OtherReceiptsTab() {
           setEditing(null);
         }}
         onSaved={load}
-      />
+      /> : null}
 
-      <Modal
+      {canEdit ? <Modal
         open={importOpen}
         onClose={() => {
           setImportOpen(false);
@@ -319,7 +362,7 @@ export function OtherReceiptsTab() {
               <div className="flex justify-between text-xs text-zinc-500">
                 <span>{importPercent}%</span>
                 <span>
-                  Temps ecoule : {fmtElapsed(importStartedAt ? Date.now() - importStartedAt : 0)}
+                  Temps ecoule : {fmtElapsed(importElapsedMs)}
                 </span>
               </div>
             </div>
@@ -328,7 +371,7 @@ export function OtherReceiptsTab() {
           <div className="rounded-2xl bg-zinc-50 p-3 text-xs text-zinc-600">
             type,description,amount,method,date,bankName,bankRef,note
             <br />
-            OTHER,Location salle commune,900,CASH,2026-03-01,,,"Paiement comptant"
+            OTHER,Location salle commune,900,CASH,2026-03-01,,,&quot;Paiement comptant&quot;
             <br />
             RENT,Loyer local,2500,TRANSFER,2026-03-02,BMCE,VIR-123,Loyer mars
           </div>
@@ -381,7 +424,7 @@ export function OtherReceiptsTab() {
             </div>
           ) : null}
         </div>
-      </Modal>
+      </Modal> : null}
     </div>
   );
 }

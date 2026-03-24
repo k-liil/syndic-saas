@@ -1,33 +1,46 @@
 import { NextResponse } from "next/server";
 import { prisma } from "@/lib/prisma";
-import { requireAdmin } from "@/lib/authz";
+import { requireAuth, requireManager } from "@/lib/authz";
+import { getOrgIdFromRequest } from "@/lib/org-utils";
 
-export async function GET() {
-  const gate = await requireAdmin();
+function getErrorMessage(error: unknown) {
+  return error instanceof Error ? error.message : "Unknown error";
+}
+
+export async function GET(req: Request) {
+  const gate = await requireAuth();
   if (!gate.ok) {
     return NextResponse.json({ error: gate.error }, { status: gate.status });
   }
 
+  const orgId = await getOrgIdFromRequest(req, gate);
+
+  if (!orgId) {
+    return NextResponse.json([]);
+  }
+
   const items = await prisma.building.findMany({
-    where: { organizationId: gate.organizationId },
-    orderBy: { createdAt: "desc" },
+    where: { organizationId: orgId },
+    orderBy: { name: "asc" },
   });
 
   return NextResponse.json(items);
 }
 
 export async function POST(req: Request) {
-  const gate = await requireAdmin();
+  const gate = await requireManager();
   if (!gate.ok) {
-    return NextResponse.json({ error: gate.error }, { status: gate.status });
+    return NextResponse.json({ error: "Unauthorized" }, { status: gate.status });
+  }
+  if (!gate.organizationId) {
+    return NextResponse.json({ error: "No organization" }, { status: 400 });
   }
 
   const body = await req.json();
-  
 
   const created = await prisma.building.create({
     data: {
-      organizationId: gate.organizationId,
+      organizationId: gate.organizationId ?? undefined,
       name: body.name,
       address: body.address ?? null,
     },
@@ -37,9 +50,13 @@ export async function POST(req: Request) {
 }
 
 export async function DELETE(req: Request) {
-  const gate = await requireAdmin();
+  const gate = await requireManager();
   if (!gate.ok) {
     return NextResponse.json({ error: gate.error }, { status: gate.status });
+  }
+
+  if (!gate.organizationId) {
+    return NextResponse.json({ error: "No organization" }, { status: 400 });
   }
 
   try {
@@ -51,7 +68,7 @@ export async function DELETE(req: Request) {
     }
 
     const existing = await prisma.building.findFirst({
-      where: { id, organizationId: gate.organizationId },
+      where: { id, organizationId: gate.organizationId ?? undefined },
       select: { id: true },
     });
     if (!existing) {
@@ -60,18 +77,22 @@ export async function DELETE(req: Request) {
 
     await prisma.building.delete({ where: { id } });
     return NextResponse.json({ ok: true });
-  } catch (e: any) {
+  } catch (e) {
     return NextResponse.json(
-      { error: e?.message ?? "Delete failed" },
+      { error: getErrorMessage(e) || "Delete failed" },
       { status: 500 }
     );
   }
 }
 
 export async function PATCH(req: Request) {
-  const gate = await requireAdmin();
+  const gate = await requireManager();
   if (!gate.ok) {
     return NextResponse.json({ error: gate.error }, { status: gate.status });
+  }
+
+  if (!gate.organizationId) {
+    return NextResponse.json({ error: "No organization" }, { status: 400 });
   }
 
   try {
@@ -89,7 +110,7 @@ export async function PATCH(req: Request) {
     if (!name) return NextResponse.json({ error: "Missing name" }, { status: 400 });
 
     const existing = await prisma.building.findFirst({
-      where: { id, organizationId: gate.organizationId },
+      where: { id, organizationId: gate.organizationId ?? undefined },
       select: { id: true },
     });
 
@@ -106,9 +127,9 @@ export async function PATCH(req: Request) {
     });
 
     return NextResponse.json(updated);
-  } catch (e: any) {
+  } catch (e) {
     return NextResponse.json(
-      { error: e?.message ?? "Update failed" },
+      { error: getErrorMessage(e) || "Update failed" },
       { status: 500 }
     );
   }

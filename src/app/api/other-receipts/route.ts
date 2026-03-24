@@ -1,18 +1,24 @@
 import { NextResponse } from "next/server";
 import { prisma } from "@/lib/prisma";
-import { requireAdmin } from "@/lib/authz";
+import { requireAuth, requireManager } from "@/lib/authz";
+import { getOrgIdFromRequest } from "@/lib/org-utils";
 
 function asString(v: unknown) {
   return typeof v === "string" ? v : "";
 }
 
 export async function GET(req: Request) {
-  const gate = await requireAdmin();
+  const gate = await requireAuth();
   if (!gate.ok) {
     return NextResponse.json(
       { error: gate.error },
       { status: gate.status }
     );
+  }
+
+  const orgId = await getOrgIdFromRequest(req, gate);
+  if (!orgId) {
+    return NextResponse.json([]);
   }
 
   const { searchParams } = new URL(req.url);
@@ -22,6 +28,8 @@ export async function GET(req: Request) {
   const type = asString(searchParams.get("type")).trim();
   const rawYear = searchParams.get("year");
   const year = rawYear ? Number(rawYear) : null;
+  const rawMonth = searchParams.get("month");
+  const month = rawMonth ? Number(rawMonth) : null;
   const q = asString(searchParams.get("q")).trim();
 
   const method = asString(searchParams.get("method")).trim();
@@ -29,7 +37,7 @@ export async function GET(req: Request) {
   const skip = (page - 1) * pageSize;
 
   const where: any = {};
-  where.organizationId = gate.organizationId;
+  where.organizationId = orgId;
 if (method) {
   where.method = method;
 }
@@ -39,10 +47,17 @@ if (method) {
   }
 
   if (year && Number.isFinite(year)) {
-    where.date = {
-      gte: new Date(Date.UTC(year, 0, 1)),
-      lt: new Date(Date.UTC(year + 1, 0, 1)),
-    };
+    if (month && Number.isFinite(month) && month >= 1 && month <= 12) {
+      where.date = {
+        gte: new Date(Date.UTC(year, month - 1, 1)),
+        lt: new Date(Date.UTC(year, month, 1)),
+      };
+    } else {
+      where.date = {
+        gte: new Date(Date.UTC(year, 0, 1)),
+        lt: new Date(Date.UTC(year + 1, 0, 1)),
+      };
+    }
   }
 
   if (q) {
@@ -80,13 +95,18 @@ if (method) {
 
 export async function POST(req: Request) {
 
-  const gate = await requireAdmin();
+  const gate = await requireManager();
 
   if (!gate.ok) {
     return NextResponse.json(
       { error: gate.error },
       { status: gate.status }
     );
+  }
+
+  const orgId = await getOrgIdFromRequest(req, gate);
+  if (!orgId) {
+    return NextResponse.json({ error: "No organization" }, { status: 400 });
   }
 
   try {
@@ -142,7 +162,7 @@ export async function POST(req: Request) {
     }
 
     const last = await prisma.otherReceipt.findFirst({
-      where: { organizationId: gate.organizationId },
+      where: { organizationId: orgId },
       orderBy: { receiptNumber: "desc" },
       select: { receiptNumber: true }
     });
@@ -153,7 +173,7 @@ export async function POST(req: Request) {
 
     const created = await prisma.otherReceipt.create({
       data: {
-        organizationId: gate.organizationId,
+        organizationId: orgId,
         receiptNumber,
         type: type as any,
         description,

@@ -1,15 +1,21 @@
 import { NextResponse } from "next/server";
 import { prisma } from "@/lib/prisma";
-import { requireAdmin } from "@/lib/authz";
+import { requireAuth, requireManager } from "@/lib/authz";
+import { getOrgIdFromRequest } from "@/lib/org-utils";
 
-export async function GET() {
-  const gate = await requireAdmin();
+export async function GET(req: Request) {
+  const gate = await requireAuth();
   if (!gate.ok) {
     return NextResponse.json({ error: gate.error }, { status: gate.status });
   }
 
+  const orgId = await getOrgIdFromRequest(req, gate);
+  if (!orgId) {
+    return NextResponse.json([]);
+  }
+
   const items = await prisma.ownership.findMany({
-    where: { organizationId: gate.organizationId },
+    where: { organizationId: orgId! },
     orderBy: { startDate: "desc" },
     include: {
       owner: true,
@@ -21,9 +27,14 @@ export async function GET() {
 }
 
 export async function POST(req: Request) {
-  const gate = await requireAdmin();
+  const gate = await requireManager();
   if (!gate.ok) {
     return NextResponse.json({ error: gate.error }, { status: gate.status });
+  }
+
+  const orgId = await getOrgIdFromRequest(req, gate);
+  if (!orgId) {
+    return NextResponse.json({ error: "No organization" }, { status: 400 });
   }
 
   const body = await req.json();
@@ -45,7 +56,7 @@ export async function POST(req: Request) {
   // prevent duplicate active ownership for same owner+unit
   const existing = await prisma.ownership.findFirst({
     where: {
-      organizationId: gate.organizationId,
+      organizationId: orgId,
       ownerId,
       unitId,
       endDate: null,
@@ -61,7 +72,7 @@ export async function POST(req: Request) {
 
   const created = await prisma.ownership.create({
     data: {
-      organizationId: gate.organizationId,
+      organizationId: orgId,
       ownerId,
       unitId,
       startDate,
@@ -69,4 +80,43 @@ export async function POST(req: Request) {
   });
 
   return NextResponse.json(created);
+}
+
+export async function PATCH(req: Request) {
+  const gate = await requireManager();
+  if (!gate.ok) {
+    return NextResponse.json({ error: gate.error }, { status: gate.status });
+  }
+
+  const orgId = await getOrgIdFromRequest(req, gate);
+  if (!orgId) {
+    return NextResponse.json({ error: "No organization" }, { status: 400 });
+  }
+
+  const body = await req.json();
+  const id = typeof body.id === "string" ? body.id : "";
+  const startDate = body.startDate ? new Date(body.startDate) : null;
+
+  if (!id) {
+    return NextResponse.json({ error: "id is required" }, { status: 400 });
+  }
+  if (!startDate || Number.isNaN(startDate.getTime())) {
+    return NextResponse.json({ error: "Invalid startDate" }, { status: 400 });
+  }
+
+  const existing = await prisma.ownership.findFirst({
+    where: { id, organizationId: orgId, endDate: null },
+    select: { id: true },
+  });
+
+  if (!existing) {
+    return NextResponse.json({ error: "Active ownership not found" }, { status: 404 });
+  }
+
+  const updated = await prisma.ownership.update({
+    where: { id },
+    data: { startDate },
+  });
+
+  return NextResponse.json(updated);
 }

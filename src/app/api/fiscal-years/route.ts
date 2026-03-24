@@ -1,19 +1,27 @@
 import { NextResponse } from "next/server";
 import { prisma } from "@/lib/prisma";
-import { requireAdmin } from "@/lib/authz";
+import { requireAuth } from "@/lib/authz";
+import { getOrgIdFromRequest } from "@/lib/org-utils";
 
-export async function GET() {
+export async function GET(req: Request) {
   try {
-    const gate = await requireAdmin();
+    const gate = await requireAuth();
     if (!gate.ok) {
       return NextResponse.json({ error: gate.error }, { status: gate.status });
     }
 
-    const items = await prisma.fiscalYear.findMany({
-      where: { organizationId: gate.organizationId },
-      orderBy: [{ year: "desc" }],
-      select: { id: true, year: true },
-    });
+    const orgId = await getOrgIdFromRequest(req, gate);
+    let items: { id: string; year: number }[];
+
+    if (orgId) {
+      items = await prisma.fiscalYear.findMany({
+        where: { organizationId: orgId },
+        orderBy: [{ year: "desc" }],
+        select: { id: true, year: true },
+      });
+    } else {
+      items = [];
+    }
 
     return NextResponse.json(items);
   } catch (e) {

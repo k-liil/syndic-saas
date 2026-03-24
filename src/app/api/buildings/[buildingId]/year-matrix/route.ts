@@ -1,5 +1,6 @@
 import { NextResponse } from "next/server";
 import { prisma } from "@/lib/prisma";
+import { resolveActiveFiscalYear } from "@/lib/active-fiscal-year";
 
 function startOfYearUTC(year: number) {
   return new Date(Date.UTC(year, 0, 1, 0, 0, 0));
@@ -28,24 +29,24 @@ export async function GET(
     const { buildingId } = await ctx.params;
 
     const url = new URL(req.url);
-    const yearParam = url.searchParams.get("year");
-    const year = yearParam ? Number(yearParam) : new Date().getUTCFullYear();
-
     if (!buildingId) {
       return NextResponse.json({ error: "buildingId missing" }, { status: 400 });
     }
 
-    if (!Number.isFinite(year) || year < 2000 || year > 2100) {
-      return NextResponse.json({ error: "invalid year" }, { status: 400 });
-    }
-
     const building = await prisma.building.findUnique({
       where: { id: buildingId },
-      select: { id: true, name: true },
+      select: { id: true, name: true, organizationId: true },
     });
 
     if (!building) {
       return NextResponse.json({ error: "Building not found" }, { status: 404 });
+    }
+
+    const yearParam = url.searchParams.get("year");
+    const year = await resolveActiveFiscalYear(building.organizationId, yearParam);
+
+    if (year === undefined || !Number.isFinite(year) || year < 2000 || year > 2100) {
+      return NextResponse.json({ error: "invalid year" }, { status: 400 });
     }
 
     const owners = await prisma.owner.findMany({
