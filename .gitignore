@@ -12,3 +12,11 @@ node_modules
 dist
 build
 prisma/dev.db
+
+# Local data files
+*.xlsx
+*.xls
+*.tsbuildinfo
+nul
+error_import.txt
+biens_out.json

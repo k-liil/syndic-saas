@@ -1,6 +1,6 @@
 import { NextResponse } from "next/server";
 import { prisma } from "@/lib/prisma";
-import { requireAdmin } from "@/lib/authz";
+import { requireManager } from "@/lib/authz";
 import type { ImportUnitRow, ImportUnitError } from "@/lib/imports/units-csv";
 
 type StartBody = {
@@ -19,7 +19,7 @@ type BatchBody = {
 type Body = StartBody | BatchBody;
 
 export async function POST(req: Request) {
-  const gate = await requireAdmin();
+  const gate = await requireManager();
   if (!gate.ok) {
     return NextResponse.json({ error: gate.error }, { status: gate.status });
   }
@@ -36,7 +36,7 @@ export async function POST(req: Request) {
 
       const job = await prisma.importJob.create({
         data: {
-          organizationId: gate.organizationId,
+          organizationId: gate.organizationId ?? "",
           type: "units",
           totalRows,
           processed: 0,
@@ -72,7 +72,7 @@ export async function POST(req: Request) {
     }
 
     const buildings = await prisma.building.findMany({
-      where: { organizationId: gate.organizationId },
+      where: { organizationId: gate.organizationId ?? "" },
       select: { id: true, name: true },
     });
 
@@ -82,7 +82,7 @@ export async function POST(req: Request) {
     }
 
     const existingUnits = await prisma.unit.findMany({
-      where: { organizationId: gate.organizationId },
+      where: { organizationId: gate.organizationId ?? "" },
       select: { lotNumber: true },
     });
 
@@ -144,12 +144,12 @@ export async function POST(req: Request) {
 
         await prisma.unit.create({
           data: {
-            organizationId: gate.organizationId,
+            organizationId: gate.organizationId ?? "",
             lotNumber: r.lotNumber,
             reference: r.reference?.trim() || `Lot ${r.lotNumber}`,
             type: r.type,
             ...(buildingId ? { buildingId } : {}),
-            monthlyDueAmount: r.monthlyDueAmount ?? null,
+            surface: r.surface ?? null,
           },
         });
 

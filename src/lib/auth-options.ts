@@ -1,14 +1,10 @@
 import type { NextAuthOptions } from "next-auth";
 import Credentials from "next-auth/providers/credentials";
-import GoogleProvider from "next-auth/providers/google";
 import { PrismaAdapter } from "@auth/prisma-adapter";
 import bcrypt from "bcryptjs";
 import { prisma } from "@/lib/prisma";
 import { ensureOrganizationForUser } from "@/lib/organization";
-
-const googleClientId = process.env.GOOGLE_CLIENT_ID;
-const googleClientSecret = process.env.GOOGLE_CLIENT_SECRET;
-const googleEnabled = Boolean(googleClientId && googleClientSecret);
+import { normalizeRole } from "@/lib/roles";
 
 export const authOptions: NextAuthOptions = {
   adapter: PrismaAdapter(prisma),
@@ -16,15 +12,6 @@ export const authOptions: NextAuthOptions = {
   secret: process.env.NEXTAUTH_SECRET ?? process.env.AUTH_SECRET,
 
   providers: [
-    ...(googleEnabled
-      ? [
-          GoogleProvider({
-            clientId: googleClientId!,
-            clientSecret: googleClientSecret!,
-            allowDangerousEmailAccountLinking: true,
-          }),
-        ]
-      : []),
     Credentials({
       name: "Credentials",
       credentials: {
@@ -49,44 +36,25 @@ export const authOptions: NextAuthOptions = {
           id: user.id,
           email: user.email,
           name: user.name ?? user.email,
-          role: user.role,
-          organizationId: user.organizationId,
+          role: normalizeRole(user.role),
         } as any;
       },
     }),
   ],
 
   callbacks: {
-    async signIn({ user, account }) {
-      if (account?.provider !== "google") {
-        return true;
-      }
-
-      if (!user.email) {
-        return false;
-      }
-
-      const existingUser = await prisma.user.findUnique({
-        where: { email: user.email },
-      });
-
-      if (!existingUser || !existingUser.isActive) {
-        return false;
-      }
-
-      (user as any).role = existingUser.role;
-      (user as any).organizationId = existingUser.organizationId;
+    async signIn() {
       return true;
     },
 
     async jwt({ token, user }) {
       if (user) {
         token.id = (user as any).id;
-        token.role = (user as any).role;
-        token.organizationId = (user as any).organizationId;
-      } else if (token.id && !token.organizationId) {
-        const organization = await ensureOrganizationForUser(String(token.id));
-        token.organizationId = organization.id;
+        token.role = normalizeRole((user as any).role);
+      } else if (token.id) {
+        const org = await ensureOrganizationForUser(String(token.id));
+        token.organizationId = org.id;
+        token.organizationName = org.name;
       }
       return token;
     },
@@ -96,6 +64,7 @@ export const authOptions: NextAuthOptions = {
         (session.user as any).id = token.id;
         (session.user as any).role = token.role;
         (session.user as any).organizationId = token.organizationId;
+        (session.user as any).organizationName = token.organizationName;
       }
       return session;
     },

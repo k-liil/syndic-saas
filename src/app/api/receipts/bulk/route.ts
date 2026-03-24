@@ -1,7 +1,7 @@
 import { prisma } from "@/lib/prisma";
 import { NextResponse } from "next/server";
 import { DueStatus, Prisma } from "@prisma/client";
-import { requireAdmin } from "@/lib/authz";
+import { requireManager } from "@/lib/authz";
 
 type DeleteBody = {
   ids?: string[];
@@ -106,19 +106,24 @@ async function deleteReceiptsByIds(ids: string[], organizationId: string) {
 }
 
 export async function DELETE(req: Request) {
-  const gate = await requireAdmin();
+  const gate = await requireManager();
   if (!gate.ok) {
     return NextResponse.json({ error: gate.error }, { status: gate.status });
   }
 
+  if (!gate.organizationId) {
+    return NextResponse.json({ error: "No organization" }, { status: 400 });
+  }
+
+  const orgId: string = gate.organizationId;
+
   try {
     const body = (await req.json()) as DeleteBody;
     const ids = Array.isArray(body?.ids) ? body.ids : null;
-    const organizationId = gate.organizationId;
 
     if (body?.deleteAll) {
       const where = buildReceiptWhere(body);
-      where.organizationId = organizationId;
+      where.organizationId = orgId;
       let deleted = 0;
 
       while (true) {
@@ -135,7 +140,7 @@ export async function DELETE(req: Request) {
 
         deleted += await deleteReceiptsByIds(
           receipts.map((receipt) => receipt.id),
-          organizationId
+          orgId
         );
       }
 
@@ -152,7 +157,7 @@ export async function DELETE(req: Request) {
 
     const scopedIds = await prisma.receipt.findMany({
       where: {
-        organizationId,
+        organizationId: orgId,
         id: { in: ids },
       },
       select: { id: true },
@@ -160,7 +165,7 @@ export async function DELETE(req: Request) {
 
     const deleted = await deleteReceiptsByIds(
       scopedIds.map((item) => item.id),
-      organizationId
+      orgId
     );
     return NextResponse.json({ ok: true, deleted });
   } catch (error: any) {

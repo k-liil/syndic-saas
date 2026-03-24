@@ -1,6 +1,6 @@
 import { NextResponse } from "next/server";
 import { prisma } from "@/lib/prisma";
-import { requireAdmin } from "@/lib/authz";
+import { requireManager } from "@/lib/authz";
 
 function asString(v: unknown) {
   return typeof v === "string" ? v.trim() : "";
@@ -13,7 +13,8 @@ function asNumber(v: unknown) {
 
 type Row = {
   supplierName?: string;
-  categoryName?: string;
+  postName?: string;
+  postCode?: string;
   method?: string;
   amount?: number;
   date?: string;
@@ -33,7 +34,7 @@ type Body =
     };
 
 export async function POST(req: Request) {
-  const gate = await requireAdmin();
+  const gate = await requireManager();
   if (!gate.ok) {
     return NextResponse.json({ error: gate.error }, { status: gate.status });
   }
@@ -48,7 +49,7 @@ export async function POST(req: Request) {
     if (body.action === "start") {
       const job = await prisma.importJob.create({
         data: {
-          organizationId: gate.organizationId,
+          organizationId: gate.organizationId ?? "",
           type: "payments",
           totalRows: body.totalRows,
           processed: 0,
@@ -82,18 +83,18 @@ export async function POST(req: Request) {
     const offset = asNumber(body.offset);
     const errors: { row: number; error: string }[] = [];
 
-    const [suppliers, categories, settings, lastPayment] = await Promise.all([
+    const [suppliers, posts, settings, lastPayment] = await Promise.all([
       prisma.supplier.findMany({
-        where: { organizationId: gate.organizationId },
+        where: { organizationId: gate.organizationId ?? "" },
         select: { id: true, name: true },
       }),
-      prisma.paymentCategory.findMany({
-        where: { organizationId: gate.organizationId },
-        select: { id: true, name: true },
+      prisma.accountingPost.findMany({
+        where: { organizationId: gate.organizationId ?? "" },
+        select: { id: true, code: true, name: true },
       }),
-      prisma.appSettings.findFirst({ where: { organizationId: gate.organizationId } }),
+      prisma.appSettings.findFirst({ where: { organizationId: gate.organizationId ?? "" } }),
       prisma.payment.findFirst({
-        where: { organizationId: gate.organizationId },
+        where: { organizationId: gate.organizationId ?? "" },
         orderBy: { paymentNumber: "desc" },
         select: { paymentNumber: true },
       }),
@@ -102,8 +103,11 @@ export async function POST(req: Request) {
     const suppliersByName = new Map(
       suppliers.map((supplier) => [supplier.name.toLowerCase(), supplier])
     );
-    const categoriesByName = new Map(
-      categories.map((category) => [category.name.toLowerCase(), category])
+    const postsByCode = new Map(
+      posts.map((post) => [post.code.toLowerCase(), post])
+    );
+    const postsByName = new Map(
+      posts.map((post) => [post.name.toLowerCase(), post])
     );
 
     const paymentStartNumber = settings?.paymentStartNumber ?? 1;
@@ -113,7 +117,7 @@ export async function POST(req: Request) {
 
     const validRows: Array<{
       supplierId: string;
-      categoryId: string | null;
+      accountingPostId: string | null;
       method: "CASH" | "TRANSFER" | "CHECK" | "DEBIT";
       amount: number;
       date: Date;
@@ -128,7 +132,8 @@ export async function POST(req: Request) {
       const rowNumber = offset + i + 2;
 
       const supplierName = asString(row.supplierName);
-      const categoryName = asString(row.categoryName);
+      const postCode = asString(row.postCode);
+      const postName = asString(row.postName);
       const method = asString(row.method).toUpperCase();
       const bankName = asString(row.bankName);
       const bankRef = asString(row.bankRef);
@@ -172,19 +177,21 @@ export async function POST(req: Request) {
         continue;
       }
 
-      let categoryId: string | null = null;
-      if (categoryName) {
-        const category = categoriesByName.get(categoryName.toLowerCase());
-        if (!category) {
-          errors.push({ row: rowNumber, error: `CATEGORY_NOT_FOUND: ${categoryName}` });
+      let accountingPostId: string | null = null;
+      if (postCode || postName) {
+        const post = postCode 
+          ? postsByCode.get(postCode.toLowerCase())
+          : postsByName.get(postName.toLowerCase());
+        if (!post) {
+          errors.push({ row: rowNumber, error: `POST_NOT_FOUND: ${postCode || postName}` });
           continue;
         }
-        categoryId = category.id;
+        accountingPostId = post.id;
       }
 
       validRows.push({
         supplierId: supplier.id,
-        categoryId,
+        accountingPostId,
         method: method as "CASH" | "TRANSFER" | "CHECK" | "DEBIT",
         amount,
         date: paymentDate,
@@ -207,13 +214,13 @@ export async function POST(req: Request) {
           await tx.fiscalYear.upsert({
             where: {
               organizationId_year: {
-                organizationId: gate.organizationId,
+                organizationId: gate.organizationId ?? "",
                 year: fiscalYear,
               },
             },
             update: {},
             create: {
-              organizationId: gate.organizationId,
+              organizationId: gate.organizationId ?? "",
               year: fiscalYear,
               startsAt: new Date(Date.UTC(fiscalYear, 0, 1)),
               endsAt: new Date(Date.UTC(fiscalYear, 11, 31)),
@@ -224,7 +231,7 @@ export async function POST(req: Request) {
         await tx.payment.createMany({
           data: validRows.map((row) => ({
             ...row,
-            organizationId: gate.organizationId,
+            organizationId: gate.organizationId ?? "",
           })),
         });
       });

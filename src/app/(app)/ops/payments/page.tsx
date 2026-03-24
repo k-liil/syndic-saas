@@ -1,7 +1,13 @@
 "use client";
 
-import { Suspense, useEffect, useMemo, useRef, useState } from "react";
+import { Suspense, useCallback, useEffect, useRef, useState } from "react";
+import { Eye, Paperclip, Pencil, Trash2 } from "lucide-react";
+import { useSession } from "next-auth/react";
 import { useSearchParams } from "next/navigation";
+import { canManage } from "@/lib/roles";
+import { useApiUrl } from "@/lib/org-context";
+import { useActiveYear } from "@/lib/use-active-year";
+import { getSuggestedPaymentPostCode } from "@/lib/payment-accounting-posts";
 
 type Supplier = {
   id: string;
@@ -13,10 +19,18 @@ type Bank = {
   name: string;
 };
 
-type PaymentCategory = {
+type AccountingPost = {
   id: string;
+  code: string;
   name: string;
+  postType: "CHARGE" | "PRODUCT";
   isActive: boolean;
+};
+
+type PaymentAttachment = {
+  name: string;
+  url: string;
+  type: string;
 };
 
 type Payment = {
@@ -28,11 +42,13 @@ type Payment = {
   note: string | null;
   bankName?: string | null;
   bankRef?: string | null;
-  categoryId?: string | null;
-  category?: {
+  accountingPostId?: string | null;
+  accountingPost?: {
     id: string;
+    code: string;
     name: string;
   } | null;
+  attachments?: PaymentAttachment[];
   supplier: Supplier;
 };
 
@@ -48,35 +64,117 @@ function formatMoney(amount: number) {
 function formatDate(value: string) {
   const d = new Date(value);
   if (Number.isNaN(d.getTime())) return value;
-  return d.toLocaleDateString("fr-FR");
+  const day = String(d.getUTCDate()).padStart(2, "0");
+  const month = String(d.getUTCMonth() + 1).padStart(2, "0");
+  const year = d.getUTCFullYear();
+  return `${day}/${month}/${year}`;
 }
 
-function toInputDate(value: Date) {
-  const year = value.getFullYear();
-  const month = String(value.getMonth() + 1).padStart(2, "0");
+function toDisplayDate(value: Date) {
   const day = String(value.getDate()).padStart(2, "0");
+  const month = String(value.getMonth() + 1).padStart(2, "0");
+  const year = value.getFullYear();
+  return `${day}/${month}/${year}`;
+}
+
+function parseDisplayDate(value: string) {
+  const trimmed = value.trim();
+  const match = trimmed.match(/^(\d{2})\/(\d{2})\/(\d{4})$/);
+
+  if (!match) {
+    return null;
+  }
+
+  const [, day, month, year] = match;
+  const parsed = new Date(
+    Number(year),
+    Number(month) - 1,
+    Number(day),
+    0,
+    0,
+    0,
+    0,
+  );
+
+  if (
+    Number.isNaN(parsed.getTime()) ||
+    parsed.getDate() !== Number(day) ||
+    parsed.getMonth() !== Number(month) - 1 ||
+    parsed.getFullYear() !== Number(year)
+  ) {
+    return null;
+  }
+
+  return parsed;
+}
+
+function toApiDate(value: string) {
+  const parsed = parseDisplayDate(value);
+  if (!parsed) {
+    return null;
+  }
+
+  const year = parsed.getFullYear();
+  const month = String(parsed.getMonth() + 1).padStart(2, "0");
+  const day = String(parsed.getDate()).padStart(2, "0");
   return `${year}-${month}-${day}`;
 }
 
-function fmtElapsed(ms: number) {
-  const totalSeconds = Math.max(0, Math.floor(ms / 1000));
-  const minutes = Math.floor(totalSeconds / 60);
-  const seconds = totalSeconds % 60;
+function toSafeAttachments(value: unknown): PaymentAttachment[] {
+  if (!Array.isArray(value)) {
+    return [];
+  }
 
-  return `${minutes}:${String(seconds).padStart(2, "0")}`;
+  return value.filter(
+    (item): item is PaymentAttachment =>
+      Boolean(
+        item &&
+          typeof item === "object" &&
+          typeof item.name === "string" &&
+          typeof item.url === "string" &&
+          typeof item.type === "string"
+      )
+  );
+}
+
+function readFileAsDataUrl(file: File) {
+  return new Promise<PaymentAttachment>((resolve, reject) => {
+    const reader = new FileReader();
+
+    reader.onload = () => {
+      if (typeof reader.result !== "string") {
+        reject(new Error("FILE_READ_FAILED"));
+        return;
+      }
+
+      resolve({
+        name: file.name,
+        type: file.type || "application/octet-stream",
+        url: reader.result,
+      });
+    };
+
+    reader.onerror = () => reject(new Error("FILE_READ_FAILED"));
+    reader.readAsDataURL(file);
+  });
 }
 
 function PaymentsPageContent() {
+  const { data: session } = useSession();
   const searchParams = useSearchParams();
-  const year = searchParams.get("year") ?? new Date().getFullYear();
+  const year = useActiveYear();
+  const canEdit = canManage(session?.user?.role);
+  const apiUrl = useApiUrl();
   const [payments, setPayments] = useState<Payment[]>([]);
   const [suppliers, setSuppliers] = useState<Supplier[]>([]);
   const [banks, setBanks] = useState<Bank[]>([]);
-  const [categories, setCategories] = useState<PaymentCategory[]>([]);
+  const [accountingPosts, setAccountingPosts] = useState<AccountingPost[]>([]);
   const [settings, setSettings] = useState<Settings | null>(null);
 
   const [search, setSearch] = useState("");
-  const [filterSupplierId, setFilterSupplierId] = useState("");
+  const [filterSupplierId, setFilterSupplierId] = useState(
+    () => searchParams.get("supplierId") ?? ""
+  );
   const [dateFrom, setDateFrom] = useState("");
   const [dateTo, setDateTo] = useState("");
 
@@ -85,12 +183,14 @@ function PaymentsPageContent() {
   const [title, setTitle] = useState("");
   const [supplierId, setSupplierId] = useState("");
   const [categoryId, setCategoryId] = useState("");
+  const [categoryAuto, setCategoryAuto] = useState(true);
   const [method, setMethod] = useState<"CASH" | "TRANSFER" | "CHECK" | "DEBIT">("CASH");
   const [bankName, setBankName] = useState("");
   const [bankRef, setBankRef] = useState("");
   const [amount, setAmount] = useState<number | "">("");
-  const [date, setDate] = useState(toInputDate(new Date()));
+  const [date, setDate] = useState(toDisplayDate(new Date()));
   const [note, setNote] = useState("");
+  const [attachments, setAttachments] = useState<PaymentAttachment[]>([]);
 
   const [toast, setToast] = useState("");
   const toastTimeoutRef = useRef<ReturnType<typeof setTimeout> | null>(null);
@@ -100,18 +200,33 @@ function PaymentsPageContent() {
   const [editingPayment, setEditingPayment] = useState<Payment | null>(null);
   const [paymentToDelete, setPaymentToDelete] = useState<Payment | null>(null);
   const [selectedPayments, setSelectedPayments] = useState<string[]>([]);
-const [importOpen, setImportOpen] = useState(false);
-const [importFile, setImportFile] = useState<File | null>(null);
-const [importBusy, setImportBusy] = useState(false);
-const [importResult, setImportResult] = useState<null | {
-  imported: number;
-  errors: { row: number; error: string }[];
-  durationMs?: number;
-}>(null);
-const [importProgress, setImportProgress] = useState(0);
-const [importTotal, setImportTotal] = useState(0);
-const [importPercent, setImportPercent] = useState(0);
-const [importStartedAt, setImportStartedAt] = useState<number | null>(null);
+  const [importOpen, setImportOpen] = useState(false);
+  const [importFile, setImportFile] = useState<File | null>(null);
+  const [importBusy, setImportBusy] = useState(false);
+  const [importResult, setImportResult] = useState<null | {
+    imported: number;
+    errors: { row: number; error: string }[];
+    durationMs?: number;
+  }>(null);
+  const activeChargePosts = accountingPosts.filter(
+    (post) => post.isActive && post.postType === "CHARGE"
+  );
+
+  function applySuggestedCategory(nextSupplierId: string, nextTitle: string, nextNote: string) {
+    const supplier = suppliers.find((item) => item.id === nextSupplierId);
+    if (!supplier) return;
+
+    const suggestedCode = getSuggestedPaymentPostCode(
+      supplier.name,
+      [nextTitle, nextNote].filter(Boolean).join(" ")
+    );
+    if (!suggestedCode) return;
+
+    const suggestedPost = activeChargePosts.find((post) => post.code === suggestedCode);
+    if (suggestedPost) {
+      setCategoryId(suggestedPost.id);
+    }
+  }
 
   function showToast(message: string) {
     setToast(message);
@@ -124,6 +239,27 @@ const [importStartedAt, setImportStartedAt] = useState<number | null>(null);
       setToast("");
       toastTimeoutRef.current = null;
     }, 2500);
+  }
+
+  async function addAttachments(files: FileList | null) {
+    if (!files || files.length === 0) {
+      return;
+    }
+
+    try {
+      const nextAttachments = await Promise.all(Array.from(files).map(readFileAsDataUrl));
+      setAttachments((prev) => [...prev, ...nextAttachments]);
+    } catch {
+      showToast("Impossible de lire les fichiers");
+    }
+  }
+
+  function removeAttachment(index: number) {
+    setAttachments((prev) => prev.filter((_, itemIndex) => itemIndex !== index));
+  }
+
+  function openAttachment(attachment: PaymentAttachment) {
+    window.open(attachment.url, "_blank", "noopener,noreferrer");
   }
 
 async function importPayments() {
@@ -153,7 +289,7 @@ async function importPayments() {
       };
     });
 
-  const res = await fetch("/api/imports/payments", {
+  const res = await fetch(apiUrl("/api/imports/payments"), {
     method: "POST",
     headers: {
       "Content-Type": "application/json",
@@ -182,37 +318,44 @@ async function importPayments() {
   setImportBusy(false);
 }
 
-  async function load() {
-    const res = await fetch(`/api/payments?year=${year}`);
+  const load = useCallback(async () => {
+    const res = await fetch(apiUrl(`/api/payments?year=${year}`));
     const json = await res.json();
 
-    const resCat = await fetch("/api/payment-categories");
+    const resCat = await fetch(apiUrl("/api/accounting-posts"));
     const jsonCat = await resCat.json();
 
-    setPayments(Array.isArray(json.payments) ? json.payments : []);
+    setPayments(
+      Array.isArray(json.payments)
+        ? json.payments.map((payment: Payment) => ({
+            ...payment,
+            attachments: toSafeAttachments(payment.attachments),
+          }))
+        : []
+    );
     setSelectedPayments([]);
     setSuppliers(Array.isArray(json.suppliers) ? json.suppliers : []);
     setBanks(Array.isArray(json.banks) ? json.banks : []);
-    setCategories(Array.isArray(jsonCat.categories) ? jsonCat.categories : []);
+    setAccountingPosts(Array.isArray(jsonCat.posts) ? jsonCat.posts : []);
     setSettings(json.settings ?? null);
-  }
+  }, [apiUrl, year]);
 
-useEffect(() => {
-  load();
+  useEffect(() => {
+    load();
 
-  return () => {
-    if (toastTimeoutRef.current) {
-      clearTimeout(toastTimeoutRef.current);
-    }
-  };
-}, [year]);
+    return () => {
+      if (toastTimeoutRef.current) {
+        clearTimeout(toastTimeoutRef.current);
+      }
+    };
+  }, [load]);
 
 async function deleteSelected() {
   if (selectedPayments.length === 0) return;
 
   const results = await Promise.all(
     selectedPayments.map((id) =>
-      fetch(`/api/payments?year=${year}`, {
+      fetch(apiUrl(`/api/payments?year=${year}`), {
         method: "DELETE",
         headers: {
           "Content-Type": "application/json",
@@ -254,12 +397,14 @@ function toggleSelect(id: string) {
     setTitle("");
     setSupplierId("");
     setCategoryId("");
+    setCategoryAuto(true);
     setMethod("CASH");
     setBankName("");
     setBankRef("");
     setAmount("");
-    setDate(toInputDate(new Date()));
+    setDate(toDisplayDate(new Date()));
     setNote("");
+    setAttachments([]);
   }
 
   function closeCreateModal() {
@@ -284,24 +429,31 @@ function toggleSelect(id: string) {
       return;
     }
 
+    const apiDate = toApiDate(date);
+    if (!apiDate) {
+      showToast("Date invalide (dd/mm/yyyy)");
+      return;
+    }
+
     setSubmitting(true);
 
     const finalNote = [title.trim(), note.trim()].filter(Boolean).join(" — ");
 
-    const res = await fetch("/api/payments?year=${year}", {
+    const res = await fetch(apiUrl(`/api/payments?year=${year}`), {
       method: "POST",
       headers: {
         "Content-Type": "application/json",
       },
       body: JSON.stringify({
         supplierId,
-        categoryId: categoryId || null,
+        accountingPostId: categoryId || null,
         method,
         bankName: method !== "CASH" ? bankName : null,
         bankRef: method === "CHECK" ? bankRef : null,
         amount: parseFloat(String(amount)),
-        date,
+        date: apiDate,
         note: finalNote || null,
+        attachments,
       }),
     });
 
@@ -342,7 +494,13 @@ function toggleSelect(id: string) {
 
     const finalNote = [title.trim(), note.trim()].filter(Boolean).join(" — ");
 
-    const res = await fetch("/api/payments?year=${year}", {
+    const apiDate = toApiDate(date);
+    if (!apiDate) {
+      showToast("Date invalide (dd/mm/yyyy)");
+      return;
+    }
+
+    const res = await fetch(apiUrl("/api/payments"), {
       method: "PUT",
       headers: {
         "Content-Type": "application/json",
@@ -350,13 +508,14 @@ function toggleSelect(id: string) {
       body: JSON.stringify({
         id: editingPayment.id,
         supplierId,
-        categoryId: categoryId || null,
+        accountingPostId: categoryId || null,
         method,
         bankName: method !== "CASH" ? bankName : null,
         bankRef: method === "CHECK" ? bankRef : null,
         amount: parseFloat(String(amount)),
-        date,
+        date: apiDate,
         note: finalNote || null,
+        attachments,
       }),
     });
 
@@ -377,7 +536,7 @@ function toggleSelect(id: string) {
   async function deletePayment() {
     if (!paymentToDelete) return;
 
-    const res = await fetch("/api/payments?year=${year}", {
+    const res = await fetch(apiUrl("/api/payments"), {
       method: "DELETE",
       headers: {
         "Content-Type": "application/json",
@@ -401,51 +560,53 @@ function toggleSelect(id: string) {
     showToast("Dépense supprimée");
   }
 
-  const filteredPayments = useMemo(() => {
-    return payments.filter((p) => {
-      const normalizedSearch = search.trim().toLowerCase();
+  const filteredPayments = payments.filter((p) => {
+    const normalizedSearch = search.trim().toLowerCase();
 
-      const paymentLabel =
-        settings?.paymentUsePrefix && settings?.paymentPrefix
-          ? `${settings.paymentPrefix}${p.paymentNumber}`
-          : String(p.paymentNumber);
+    const paymentLabel =
+      settings?.paymentUsePrefix && settings?.paymentPrefix
+        ? `${settings.paymentPrefix}${p.paymentNumber}`
+        : String(p.paymentNumber);
 
-      const haystack = [paymentLabel, p.supplier.name, p.note ?? "", p.method]
-        .join(" ")
-        .toLowerCase();
+    const haystack = [paymentLabel, p.supplier.name, p.note ?? "", p.method]
+      .join(" ")
+      .toLowerCase();
 
-      if (normalizedSearch && !haystack.includes(normalizedSearch)) {
-        return false;
-      }
+    if (normalizedSearch && !haystack.includes(normalizedSearch)) {
+      return false;
+    }
 
-      if (filterSupplierId && p.supplier.id !== filterSupplierId) {
-        return false;
-      }
+    if (filterSupplierId && p.supplier.id !== filterSupplierId) {
+      return false;
+    }
 
-      const paymentDate = new Date(p.date);
+    const paymentDate = new Date(p.date);
 
-      if (dateFrom) {
-        const from = new Date(`${dateFrom}T00:00:00`);
-        if (paymentDate < from) return false;
-      }
+    if (dateFrom) {
+      const from = parseDisplayDate(dateFrom);
+      if (!from) return false;
+      if (paymentDate < from) return false;
+    }
 
-      if (dateTo) {
-        const to = new Date(`${dateTo}T23:59:59`);
-        if (paymentDate > to) return false;
-      }
+    if (dateTo) {
+      const to = parseDisplayDate(dateTo);
+      if (!to) return false;
+      to.setHours(23, 59, 59, 999);
+      if (paymentDate > to) return false;
+    }
 
-      return true;
-    });
-  }, [payments, search, filterSupplierId, dateFrom, dateTo, settings]);
+    return true;
+  });
 
   return (
-    <div className="space-y-6">
+    <div className="flex h-[calc(100vh-9.5rem)] min-h-0 flex-col gap-6">
       {toast ? (
         <div className="fixed right-6 top-6 z-[100] rounded-2xl bg-emerald-500 px-4 py-3 text-sm font-semibold text-white shadow-lg">
           {toast}
         </div>
       ) : null}
 
+      <div className="shrink-0 space-y-6">
       <div>
         <h1 className="text-3xl font-semibold tracking-tight text-zinc-900">
           Dépenses
@@ -455,7 +616,7 @@ function toggleSelect(id: string) {
         </p>
       </div>
 
-      <div className="rounded-3xl border border-zinc-200 bg-white p-4 shadow-sm">
+      <div>
         <div className="flex flex-col gap-3 xl:flex-row xl:items-center">
           <input
             className="h-12 flex-1 rounded-2xl border border-zinc-200 bg-white px-4 text-sm outline-none placeholder:text-zinc-400"
@@ -478,20 +639,24 @@ function toggleSelect(id: string) {
           </select>
 
           <input
-            type="date"
+            type="text"
+            inputMode="numeric"
+            placeholder="dd/mm/yyyy"
             className="h-12 rounded-2xl border border-zinc-200 bg-white px-4 text-sm outline-none xl:w-44"
             value={dateFrom}
             onChange={(e) => setDateFrom(e.target.value)}
           />
 
           <input
-            type="date"
+            type="text"
+            inputMode="numeric"
+            placeholder="dd/mm/yyyy"
             className="h-12 rounded-2xl border border-zinc-200 bg-white px-4 text-sm outline-none xl:w-44"
             value={dateTo}
             onChange={(e) => setDateTo(e.target.value)}
           />
 
-<div className="flex gap-3">
+{canEdit ? <div className="flex gap-3">
   <button
     type="button"
     onClick={() => {
@@ -511,16 +676,16 @@ function toggleSelect(id: string) {
       setEditingPayment(null);
       setOpenCreate(true);
     }}
-    className="h-12 rounded-2xl bg-indigo-600 px-5 text-sm font-semibold text-white"
+    className="btn-brand h-12 rounded-2xl px-5 text-sm font-semibold"
   >
     + Ajouter une dépense
   </button>
-</div>
+</div> : null}
 
         </div>
 
-{selectedPayments.length > 0 && (
-  <div className="flex items-center justify-between rounded-2xl border border-zinc-200 bg-white p-3 shadow-sm">
+{canEdit && selectedPayments.length > 0 && (
+  <div className="mt-3 flex items-center justify-between rounded-2xl border border-zinc-200 bg-white p-3 shadow-sm">
     <div className="text-sm text-zinc-600">
       {selectedPayments.length} dépense(s) sélectionnée(s)
     </div>
@@ -534,21 +699,30 @@ function toggleSelect(id: string) {
   </div>
 )}
 
-        <div className="mt-4 overflow-hidden rounded-2xl border border-zinc-200">
+      </div>
+      </div>
+
+      <div className="min-h-0 flex-1 overflow-auto">
+        <div className="page-section-inline">
           <div className="overflow-x-auto">
-            <table className="min-w-full border-collapse">
+            <table className="payments-table min-w-full border-collapse">
               <thead className="bg-zinc-50">
                 <tr className="text-left">
                   <th className="px-5 py-4 text-xs font-semibold uppercase tracking-wide text-zinc-500">
-  <input
-    type="checkbox"
-    checked={
-      filteredPayments.length > 0 &&
-      selectedPayments.length === filteredPayments.length
-    }
-    onChange={toggleSelectAll}
-  />
-</th>
+                    {canEdit ? (
+                      <input
+                        type="checkbox"
+                        checked={
+                          filteredPayments.length > 0 &&
+                          selectedPayments.length === filteredPayments.length
+                        }
+                        onChange={toggleSelectAll}
+                      />
+                    ) : null}
+                  </th>
+                  <th className="px-5 py-4 text-xs font-semibold uppercase tracking-wide text-zinc-500">
+                    N°
+                  </th>
                   <th className="px-5 py-4 text-xs font-semibold uppercase tracking-wide text-zinc-500">
                     Date
                   </th>
@@ -559,13 +733,16 @@ function toggleSelect(id: string) {
                     Prestataire
                   </th>
                   <th className="px-5 py-4 text-xs font-semibold uppercase tracking-wide text-zinc-500">
-                    Catégorie
+                    Poste
                   </th>
                   <th className="px-5 py-4 text-xs font-semibold uppercase tracking-wide text-zinc-500">
                     Méthode
                   </th>
                   <th className="px-5 py-4 text-xs font-semibold uppercase tracking-wide text-zinc-500">
                     Montant
+                  </th>
+                  <th className="px-5 py-4 text-xs font-semibold uppercase tracking-wide text-zinc-500">
+                    Piece
                   </th>
                   <th className="px-5 py-4 text-xs font-semibold uppercase tracking-wide text-zinc-500">
                     Action
@@ -577,7 +754,7 @@ function toggleSelect(id: string) {
                 {filteredPayments.length === 0 ? (
                   <tr>
                     <td
-                      colSpan={8}
+                      colSpan={10}
                       className="px-5 py-10 text-center text-sm text-zinc-500"
                     >
                       Aucune dépense trouvée.
@@ -598,24 +775,30 @@ function toggleSelect(id: string) {
                         className="cursor-pointer border-t border-zinc-200 text-sm text-zinc-700 hover:bg-zinc-50"
                       >
                         <td className="px-5 py-4">
-  <input
-    type="checkbox"
-    checked={selectedPayments.includes(p.id)}
-    onChange={() => toggleSelect(p.id)}
-    onClick={(e) => e.stopPropagation()}
-  />
-</td>
+                          {canEdit ? (
+                            <input
+                              type="checkbox"
+                              checked={selectedPayments.includes(p.id)}
+                              onChange={() => toggleSelect(p.id)}
+                              onClick={(e) => e.stopPropagation()}
+                            />
+                          ) : null}
+                        </td>
+                        <td className="px-5 py-4">
+                          <span className="font-semibold text-zinc-900">
+                            {numberLabel}
+                          </span>
+                        </td>
                         <td className="px-5 py-4">{formatDate(p.date)}</td>
                         <td className="px-5 py-4">
                           <div className="font-medium text-zinc-900">
                             {p.note?.split(" — ")[0] || `Paiement ${numberLabel}`}
                           </div>
-                          <div className="text-xs text-zinc-500">{numberLabel}</div>
                         </td>
                         <td className="px-5 py-4">{p.supplier.name}</td>
                         <td className="px-5 py-4">
                           <span className="inline-flex rounded-full bg-zinc-100 px-3 py-1 text-xs font-medium text-zinc-700">
-                            {p.category?.name || "-"}
+                            {p.accountingPost ? `${p.accountingPost.code} - ${p.accountingPost.name}` : "-"}
                           </span>
                         </td>
                         <td className="px-4 py-3">
@@ -625,6 +808,8 @@ function toggleSelect(id: string) {
                                 ? "bg-emerald-100 text-emerald-700"
                                 : p.method === "TRANSFER"
                                 ? "bg-blue-100 text-blue-700"
+                                : p.method === "DEBIT"
+                                ? "bg-purple-100 text-purple-700"
                                 : "bg-orange-100 text-orange-700"
                             }`}
                           >
@@ -641,16 +826,63 @@ function toggleSelect(id: string) {
                           {formatMoney(p.amount)}
                         </td>
                         <td className="px-5 py-4">
-                          <button
-                            type="button"
-                            onClick={(e) => {
-                              e.stopPropagation();
-                              setPaymentToDelete(p);
-                            }}
-                            className="rounded-xl border border-red-200 bg-red-50 px-3 py-2 text-xs font-semibold text-red-700 hover:bg-red-100"
-                          >
-                            Supprimer
-                          </button>
+                          {p.attachments && p.attachments.length > 0 ? (
+                            <button
+                              type="button"
+                              onClick={(e) => {
+                                e.stopPropagation();
+                                openAttachment(p.attachments![0]);
+                              }}
+                              className="inline-flex h-9 w-9 items-center justify-center rounded-xl border border-sky-200 bg-sky-50 text-sky-700 hover:bg-sky-100"
+                              title="Voir la piece jointe"
+                            >
+                              <Eye className="h-4 w-4" />
+                            </button>
+                          ) : (
+                            <span className="text-xs text-zinc-400">-</span>
+                          )}
+                        </td>
+                        <td className="px-5 py-4">
+                          {canEdit ? (
+                            <div className="flex items-center gap-2">
+                              <button
+                                type="button"
+                                onClick={(e) => {
+                                  e.stopPropagation();
+                                  setEditingPayment(p);
+                                  setTitle(p.note?.split(" — ")[0] || "");
+                                  setNote(p.note?.split(" — ")[1] || "");
+                                  setSupplierId(p.supplier.id);
+                                  setCategoryId(p.accountingPost?.id || "");
+                                  setCategoryAuto(!p.accountingPost?.id);
+                                  setMethod(p.method);
+                                  setBankName(p.bankName || "");
+                                  setBankRef(p.bankRef || "");
+                                  setAmount(p.amount);
+                                  setDate(formatDate(p.date));
+                                  setAttachments(p.attachments ?? []);
+                                  setOpenCreate(true);
+                                }}
+                                className="inline-flex h-9 w-9 items-center justify-center rounded-xl border border-zinc-200 bg-white text-zinc-600 transition hover:border-sky-200 hover:bg-sky-50 hover:text-sky-700"
+                                title="Modifier"
+                              >
+                                <Pencil className="h-4 w-4" />
+                              </button>
+                              <button
+                                type="button"
+                                onClick={(e) => {
+                                  e.stopPropagation();
+                                  setPaymentToDelete(p);
+                                }}
+                                className="inline-flex h-9 w-9 items-center justify-center rounded-xl border border-red-200 bg-red-50 text-red-700 transition hover:bg-red-100"
+                                title="Supprimer"
+                              >
+                                <Trash2 className="h-4 w-4" />
+                              </button>
+                            </div>
+                          ) : (
+                            <span className="text-xs text-zinc-400">Lecture seule</span>
+                          )}
                         </td>
                       </tr>
                     );
@@ -662,9 +894,9 @@ function toggleSelect(id: string) {
         </div>
       </div>
 
-      {openCreate ? (
-        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/30 p-4">
-          <div className="w-full max-w-xl rounded-3xl bg-white shadow-2xl">
+      {canEdit && openCreate ? (
+        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/30 p-4" onClick={closeCreateModal}>
+          <div className="w-full max-w-xl rounded-3xl bg-white shadow-2xl" onClick={(e) => e.stopPropagation()}>
             <div className="flex items-center justify-between border-b border-zinc-200 px-6 py-5">
               <h2 className="text-2xl font-semibold text-zinc-900">
                 {editingPayment ? "Modifier la dépense" : "Ajouter une dépense"}
@@ -687,7 +919,13 @@ function toggleSelect(id: string) {
                 <input
                   className="h-12 w-full rounded-2xl border border-zinc-200 px-4 text-sm outline-none"
                   value={title}
-                  onChange={(e) => setTitle(e.target.value)}
+                  onChange={(e) => {
+                    const nextTitle = e.target.value;
+                    setTitle(nextTitle);
+                    if (categoryAuto) {
+                      applySuggestedCategory(supplierId, nextTitle, note);
+                    }
+                  }}
                 />
               </div>
 
@@ -697,19 +935,16 @@ function toggleSelect(id: string) {
                     Montant (MAD)
                   </label>
                   <input
-  type="number"
-  step="0.01"
-  inputMode="decimal"
-  className="h-12 w-full rounded-2xl border border-zinc-200 px-4 text-sm outline-none"
-  value={amount}
-  onChange={(e) => {
-  const v = e.target.value;
-  console.log("INPUT VALUE:", v);
-  console.log("PARSED VALUE:", v === "" ? "" : parseFloat(v));
-
-  setAmount(v === "" ? "" : parseFloat(v));
-}}
-/>
+                    type="number"
+                    step="0.01"
+                    inputMode="decimal"
+                    className="h-12 w-full rounded-2xl border border-zinc-200 px-4 text-sm outline-none"
+                    value={amount}
+                    onChange={(e) => {
+                      const v = e.target.value;
+                      setAmount(v === "" ? "" : parseFloat(v));
+                    }}
+                  />
                 </div>
 
                 <div>
@@ -717,7 +952,9 @@ function toggleSelect(id: string) {
                     Date
                   </label>
                   <input
-                    type="date"
+                    type="text"
+                    inputMode="numeric"
+                    placeholder="dd/mm/yyyy"
                     className="h-12 w-full rounded-2xl border border-zinc-200 px-4 text-sm outline-none"
                     value={date}
                     onChange={(e) => setDate(e.target.value)}
@@ -732,7 +969,13 @@ function toggleSelect(id: string) {
                 <select
                   className="h-12 w-full rounded-2xl border border-zinc-200 px-4 text-sm outline-none"
                   value={supplierId}
-                  onChange={(e) => setSupplierId(e.target.value)}
+                  onChange={(e) => {
+                    const nextSupplierId = e.target.value;
+                    setSupplierId(nextSupplierId);
+                    if (categoryAuto) {
+                      applySuggestedCategory(nextSupplierId, title, note);
+                    }
+                  }}
                 >
                   <option value="">Choisir un fournisseur</option>
                   {suppliers.map((s) => (
@@ -745,21 +988,23 @@ function toggleSelect(id: string) {
 
               <div>
                 <label className="mb-2 block text-sm font-medium text-zinc-700">
-                  Catégorie
+                  Poste comptable
                 </label>
 
                 <select
                   className="h-12 w-full rounded-2xl border border-zinc-200 px-4 text-sm outline-none"
                   value={categoryId}
-                  onChange={(e) => setCategoryId(e.target.value)}
+                  onChange={(e) => {
+                    setCategoryId(e.target.value);
+                    setCategoryAuto(e.target.value === "");
+                  }}
                 >
-                  <option value="">Choisir une catégorie</option>
+                  <option value="">Choisir un poste</option>
 
-                  {categories
-                    .filter((c) => c.isActive)
+                  {activeChargePosts
                     .map((c) => (
                       <option key={c.id} value={c.id}>
-                        {c.name}
+                        {c.code} - {c.name}
                       </option>
                     ))}
                 </select>
@@ -770,21 +1015,21 @@ function toggleSelect(id: string) {
                   Mode de paiement
                 </label>
 
-                <div className="grid grid-cols-1 gap-3 sm:grid-cols-3">
+                <div className="grid grid-cols-2 gap-2 sm:grid-cols-4">
                   <button
                     type="button"
                     onClick={() => setMethod("CASH")}
-                    className={`rounded-2xl border p-4 text-left shadow-sm transition ${
+                    className={`rounded-2xl border p-3 text-left shadow-sm transition ${
                       method === "CASH"
                         ? "border-emerald-500 bg-emerald-50 shadow-sm"
                         : "border-zinc-200 bg-white hover:border-zinc-300 hover:shadow-sm"
                     }`}
                   >
-                    <div className="text-2xl">💵</div>
-                    <div className="mt-3 text-base font-semibold text-zinc-900">
+                    <div className="text-xl">💵</div>
+                    <div className="mt-2 text-sm font-semibold text-zinc-900">
                       Espèces
                     </div>
-                    <div className="mt-1 text-sm text-zinc-500">
+                    <div className="mt-1 text-xs text-zinc-500">
                       Paiement direct
                     </div>
                   </button>
@@ -792,17 +1037,17 @@ function toggleSelect(id: string) {
                   <button
                     type="button"
                     onClick={() => setMethod("TRANSFER")}
-                    className={`rounded-2xl border p-4 text-left shadow-sm transition ${
+                    className={`rounded-2xl border p-3 text-left shadow-sm transition ${
                       method === "TRANSFER"
                         ? "border-blue-500 bg-blue-50 shadow-sm"
                         : "border-zinc-200 bg-white hover:border-zinc-300 hover:shadow-sm"
                     }`}
                   >
-                    <div className="text-2xl">🏦</div>
-                    <div className="mt-3 text-base font-semibold text-zinc-900">
+                    <div className="text-xl">🏦</div>
+                    <div className="mt-2 text-sm font-semibold text-zinc-900">
                       Virement
                     </div>
-                    <div className="mt-1 text-sm text-zinc-500">
+                    <div className="mt-1 text-xs text-zinc-500">
                       Via banque interne
                     </div>
                   </button>
@@ -810,17 +1055,17 @@ function toggleSelect(id: string) {
                   <button
                     type="button"
                     onClick={() => setMethod("CHECK")}
-                    className={`rounded-2xl border p-4 text-left shadow-sm transition ${
+                    className={`rounded-2xl border p-3 text-left shadow-sm transition ${
                       method === "CHECK"
                         ? "border-orange-500 bg-orange-50 shadow-sm"
                         : "border-zinc-200 bg-white hover:border-zinc-300 hover:shadow-sm"
                     }`}
                   >
-                    <div className="text-2xl">🧾</div>
-                    <div className="mt-3 text-base font-semibold text-zinc-900">
+                    <div className="text-xl">🧾</div>
+                    <div className="mt-2 text-sm font-semibold text-zinc-900">
                       Chèque
                     </div>
-                    <div className="mt-1 text-sm text-zinc-500">
+                    <div className="mt-1 text-xs text-zinc-500">
                       Banque + numéro de chèque
                     </div>
                   </button>
@@ -828,17 +1073,17 @@ function toggleSelect(id: string) {
                   <button
   type="button"
   onClick={() => setMethod("DEBIT")}
-  className={`rounded-2xl border p-4 text-left shadow-sm transition ${
+  className={`rounded-2xl border p-3 text-left shadow-sm transition ${
     method === "DEBIT"
       ? "border-purple-500 bg-purple-50 shadow-sm"
       : "border-zinc-200 bg-white hover:border-zinc-300 hover:shadow-sm"
   }`}
 >
-  <div className="text-2xl">💳</div>
-  <div className="mt-3 text-base font-semibold text-zinc-900">
+  <div className="text-xl">💳</div>
+  <div className="mt-2 text-sm font-semibold text-zinc-900">
     Prélèvement
   </div>
-  <div className="mt-1 text-sm text-zinc-500">
+  <div className="mt-1 text-xs text-zinc-500">
     Débit direct banque
   </div>
 </button>
@@ -883,12 +1128,66 @@ function toggleSelect(id: string) {
 
               <div>
                 <label className="mb-2 block text-sm font-medium text-zinc-700">
+                  Factures / bons
+                </label>
+                <div className="space-y-3 rounded-2xl border border-zinc-200 p-4">
+                  <input
+                    type="file"
+                    multiple
+                    onChange={(e) => {
+                      void addAttachments(e.target.files);
+                      e.currentTarget.value = "";
+                    }}
+                    className="block w-full text-sm"
+                  />
+
+                  {attachments.length > 0 ? (
+                    <div className="flex flex-wrap gap-2">
+                      {attachments.map((attachment, index) => (
+                        <div
+                          key={`${attachment.name}-${index}`}
+                          className="inline-flex items-center gap-2 rounded-full bg-zinc-100 px-3 py-1.5 text-xs text-zinc-700"
+                        >
+                          <Paperclip className="h-3.5 w-3.5" />
+                          <button
+                            type="button"
+                            onClick={() => openAttachment(attachment)}
+                            className="max-w-40 truncate text-left font-medium hover:text-sky-700"
+                          >
+                            {attachment.name}
+                          </button>
+                          <button
+                            type="button"
+                            onClick={() => removeAttachment(index)}
+                            className="text-zinc-400 hover:text-red-600"
+                          >
+                            ×
+                          </button>
+                        </div>
+                      ))}
+                    </div>
+                  ) : (
+                    <div className="text-xs text-zinc-500">
+                      Aucune pièce jointe.
+                    </div>
+                  )}
+                </div>
+              </div>
+
+              <div>
+                <label className="mb-2 block text-sm font-medium text-zinc-700">
                   Note
                 </label>
                 <textarea
                   className="min-h-28 w-full rounded-2xl border border-zinc-200 p-4 text-sm outline-none"
                   value={note}
-                  onChange={(e) => setNote(e.target.value)}
+                  onChange={(e) => {
+                    const nextNote = e.target.value;
+                    setNote(nextNote);
+                    if (categoryAuto) {
+                      applySuggestedCategory(supplierId, title, nextNote);
+                    }
+                  }}
                 />
               </div>
 
@@ -896,7 +1195,7 @@ function toggleSelect(id: string) {
                 type="button"
                 onClick={editingPayment ? updatePayment : createPayment}
                 disabled={submitting}
-                className="h-12 w-full rounded-2xl bg-slate-950 text-sm font-semibold text-white disabled:opacity-50"
+                className="btn-brand h-12 w-full rounded-2xl text-sm font-semibold disabled:opacity-50"
               >
                 {editingPayment
                   ? "Enregistrer les modifications"
@@ -908,8 +1207,8 @@ function toggleSelect(id: string) {
       ) : null}
 
       {selectedPayment ? (
-        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/30 p-4">
-          <div className="w-full max-w-xl rounded-3xl bg-white shadow-2xl">
+        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/30 p-4" onClick={() => setSelectedPayment(null)}>
+          <div className="w-full max-w-xl rounded-3xl bg-white shadow-2xl" onClick={(e) => e.stopPropagation()}>
             <div className="flex items-center justify-between border-b border-zinc-200 px-6 py-5">
               <h2 className="text-xl font-semibold text-zinc-900">
                 Détails de la dépense
@@ -963,9 +1262,9 @@ function toggleSelect(id: string) {
                 </div>
 
                 <div className="rounded-xl border border-zinc-200 bg-zinc-50 px-4 py-3">
-                  <div className="text-xs text-zinc-500">Catégorie</div>
+                  <div className="text-xs text-zinc-500">Poste</div>
                   <div className="font-medium">
-                    {selectedPayment.category?.name || "-"}
+                    {selectedPayment.accountingPost ? `${selectedPayment.accountingPost.code} - ${selectedPayment.accountingPost.name}` : "-"}
                   </div>
                 </div>
 
@@ -987,6 +1286,7 @@ function toggleSelect(id: string) {
               </div>
 
               <div className="pt-2">
+                {canEdit ? (
                 <button
                   type="button"
                   onClick={() => {
@@ -994,12 +1294,14 @@ function toggleSelect(id: string) {
                     setTitle(selectedPayment.note?.split(" — ")[0] || "");
                     setNote(selectedPayment.note?.split(" — ")[1] || "");
                     setSupplierId(selectedPayment.supplier.id);
-                    setCategoryId(selectedPayment.category?.id || "");
+                    setCategoryId(selectedPayment.accountingPost?.id || "");
+                    setCategoryAuto(!selectedPayment.accountingPost?.id);
                     setMethod(selectedPayment.method);
                     setBankName(selectedPayment.bankName || "");
                     setBankRef(selectedPayment.bankRef || "");
                     setAmount(selectedPayment.amount);
-                    setDate(selectedPayment.date.slice(0, 10));
+                    setDate(formatDate(selectedPayment.date));
+                    setAttachments(selectedPayment.attachments ?? []);
                     setSelectedPayment(null);
                     setOpenCreate(true);
                   }}
@@ -1007,6 +1309,7 @@ function toggleSelect(id: string) {
                 >
                   Modifier
                 </button>
+                ) : null}
               </div>
 
               {selectedPayment.note ? (
@@ -1014,14 +1317,35 @@ function toggleSelect(id: string) {
                   {selectedPayment.note}
                 </div>
               ) : null}
+
+              {selectedPayment.attachments && selectedPayment.attachments.length > 0 ? (
+                <div className="space-y-3 rounded-xl border border-zinc-200 bg-zinc-50 px-4 py-3">
+                  <div className="text-xs font-semibold uppercase tracking-wide text-zinc-500">
+                    Pieces jointes
+                  </div>
+                  <div className="flex flex-wrap gap-2">
+                    {selectedPayment.attachments.map((attachment, index) => (
+                      <button
+                        key={`${attachment.name}-${index}`}
+                        type="button"
+                        onClick={() => openAttachment(attachment)}
+                        className="inline-flex items-center gap-2 rounded-full bg-white px-3 py-1.5 text-xs font-medium text-zinc-700 shadow-sm hover:text-sky-700"
+                      >
+                        <Paperclip className="h-3.5 w-3.5" />
+                        <span className="max-w-48 truncate">{attachment.name}</span>
+                      </button>
+                    ))}
+                  </div>
+                </div>
+              ) : null}
             </div>
           </div>
         </div>
       ) : null}
 
-      {paymentToDelete ? (
-        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/30 p-4">
-          <div className="w-full max-w-3xl rounded-3xl bg-white shadow-2xl">
+      {canEdit && paymentToDelete ? (
+        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/30 p-4" onClick={() => setPaymentToDelete(null)}>
+          <div className="w-full max-w-3xl rounded-3xl bg-white shadow-2xl" onClick={(e) => e.stopPropagation()}>
             <div className="flex items-center justify-between border-b border-zinc-200 px-6 py-5">
               <h2 className="text-xl font-semibold text-zinc-900">
                 Supprimer la dépense
@@ -1040,10 +1364,10 @@ function toggleSelect(id: string) {
               <p className="text-base leading-7 text-zinc-600">
                 Êtes-vous sûr de vouloir supprimer la dépense{" "}
                 <span className="font-semibold text-zinc-900">
-                  "
+                  &quot;
                   {paymentToDelete.note?.split(" — ")[0] ||
                     `N°${paymentToDelete.paymentNumber}`}
-                  "
+                  &quot;
                 </span>{" "}
                 ? Cette action est irréversible.
               </p>
@@ -1069,9 +1393,13 @@ function toggleSelect(id: string) {
           </div>
         </div>
       ) : null}
-      {importOpen ? (
-  <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/30 p-4">
-    <div className="w-full max-w-xl rounded-3xl bg-white shadow-2xl">
+      {canEdit && importOpen ? (
+  <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/30 p-4" onClick={() => {
+    setImportOpen(false);
+    setImportFile(null);
+    setImportResult(null);
+  }}>
+    <div className="w-full max-w-xl rounded-3xl bg-white shadow-2xl" onClick={(e) => e.stopPropagation()}>
       <div className="flex items-center justify-between border-b border-zinc-200 px-6 py-5">
         <h2 className="text-2xl font-semibold text-zinc-900">
           Importer des dépenses
@@ -1105,9 +1433,9 @@ function toggleSelect(id: string) {
         <div className="rounded-2xl bg-zinc-50 p-3 text-xs text-zinc-600">
           supplierName,categoryName,method,amount,date,bankName,bankRef,note
           <br />
-          Plombier Ahmed,Plomberie,CASH,350,2024-02-02,,,"Réparation fuite"
+          Plombier Ahmed,Plomberie,CASH,350,2024-02-02,,,&quot;Réparation fuite&quot;
           <br />
-          Electricien Sami,Electricité,TRANSFER,1200,2024-02-10,Attijari,,"Remplacement disjoncteur"
+          Electricien Sami,Electricité,TRANSFER,1200,2024-02-10,Attijari,,&quot;Remplacement disjoncteur&quot;
         </div>
 
         <button

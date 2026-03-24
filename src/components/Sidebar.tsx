@@ -1,47 +1,54 @@
 "use client";
 
+import { useEffect, useState, type ElementType } from "react";
 import Link from "next/link";
 import { usePathname } from "next/navigation";
+import { useSession } from "next-auth/react";
 import {
+  AlertCircle,
   Banknote,
+  BarChart3,
   Building2,
   CalendarRange,
   Calculator,
+  FileText,
   Home,
   LayoutDashboard,
+  MessageSquare,
   Receipt,
   Settings,
+  Shield,
   Sparkles,
+  Truck,
   Users,
+  Vault,
 } from "lucide-react";
+import { normalizeRole } from "@/lib/roles";
+import { PAGE_VISIBILITY_REGISTRY, type PageVisibilityRecord, roleCanSeePage } from "@/lib/page-visibility";
 
-type Item = { title: string; href: string; icon: React.ElementType };
-
-const dashboard: Item[] = [
-  { title: "Tableau de bord", href: "/dashboard", icon: LayoutDashboard },
-];
-
-const suivi: Item[] = [
-  { title: "Vue annuelle", href: "/ops/contributions/year", icon: CalendarRange },
-  { title: "Generer cotisations", href: "/ops/dues_generate", icon: Sparkles },
-];
-
-const operations: Item[] = [
-  { title: "Recettes", href: "/ops/receipts", icon: Banknote },
-  { title: "Paiements", href: "/ops/payments", icon: Receipt },
-  { title: "Comptabilite", href: "/ops/accounting", icon: Calculator },
-];
-
-const gestion: Item[] = [
-  { title: "Immeubles", href: "/setup/buildings", icon: Building2 },
-  { title: "Lots", href: "/setup/units", icon: Home },
-  { title: "Coproprietaires", href: "/setup/owners", icon: Users },
-  { title: "Parametres", href: "/setup/settings", icon: Settings },
-];
+const ICONS: Record<string, ElementType> = {
+  AlertCircle,
+  Banknote,
+  BarChart3,
+  Building2,
+  CalendarRange,
+  Calculator,
+  FileText,
+  Home,
+  LayoutDashboard,
+  MessageSquare,
+  Receipt,
+  Settings,
+  Shield,
+  Sparkles,
+  Truck,
+  Users,
+  Vault,
+};
 
 function SectionTitle({ children }: { children: React.ReactNode }) {
   return (
-    <div className="px-3 pb-1.5 pt-3 text-[10px] font-semibold uppercase tracking-[0.16em] text-slate-400">
+    <div className="px-3 pb-1 pt-2 text-[10px] font-semibold uppercase tracking-[0.16em] text-cyan-400/80">
       {children}
     </div>
   );
@@ -55,28 +62,28 @@ function NavItem({
 }: {
   href: string;
   title: string;
-  Icon: React.ElementType;
+  Icon: ElementType;
   active: boolean;
 }) {
   return (
     <Link
       href={href}
       className={[
-        "group relative flex items-center gap-2.5 rounded-xl px-3 py-2 text-[13px] transition",
+        "group relative flex items-center gap-2 px-3 py-1.5 text-[13px] transition",
         active
-          ? "bg-white text-slate-950 shadow-sm"
-          : "text-slate-600 hover:bg-white hover:text-slate-950",
+          ? "bg-sky-50 text-sky-700 font-medium"
+          : "text-slate-500 hover:bg-slate-50 hover:text-slate-800",
       ].join(" ")}
     >
       <span
         className={[
-          "flex h-8 w-8 items-center justify-center rounded-xl transition",
+          "flex h-7 w-7 items-center justify-center rounded-lg transition",
           active
-            ? "bg-sky-50 text-sky-600"
+            ? "bg-sky-100 text-sky-600"
             : "bg-slate-100 text-slate-500 group-hover:bg-slate-100 group-hover:text-slate-800",
         ].join(" ")}
       >
-        <Icon size={16} />
+        <Icon size={14} />
       </span>
       <span className="font-medium">{title}</span>
     </Link>
@@ -89,62 +96,87 @@ function isActivePath(pathname: string, href: string) {
   return false;
 }
 
+const defaultItems: PageVisibilityRecord[] = PAGE_VISIBILITY_REGISTRY.map((item) => ({
+  href: item.href,
+  title: item.title,
+  section: item.section,
+  icon: item.icon,
+  isEnabled: item.defaultEnabled,
+  roles: item.roles,
+}));
+
+const sectionOrder = ["dashboard", "suivi", "operations", "gestion", "organisation", "administration"] as const;
+const sectionLabels: Record<(typeof sectionOrder)[number], string> = {
+  dashboard: "",
+  suivi: "Suivi",
+  operations: "Operations",
+  gestion: "Gestion",
+  organisation: "Organisation",
+  administration: "Administration",
+};
+
 export function Sidebar() {
   const pathname = usePathname();
+  const { data: session, status } = useSession();
+  const role = normalizeRole(session?.user?.role);
+  const [items, setItems] = useState<PageVisibilityRecord[]>(defaultItems);
+  const [loading, setLoading] = useState(true);
+
+  useEffect(() => {
+    if (status === "loading") {
+      return;
+    }
+
+    fetch("/api/page-visibility", { cache: "no-store" })
+      .then((response) => response.json())
+      .then((data) => {
+        setItems(Array.isArray(data?.items) ? data.items : defaultItems);
+      })
+      .catch(() => setItems(defaultItems))
+      .finally(() => setLoading(false));
+  }, [status]);
+
+  if (status === "loading" || loading) {
+    return (
+      <aside className="flex h-full flex-col">
+        <div className="space-y-2 px-3 py-2">
+          {Array.from({ length: 10 }).map((_, index) => (
+            <div key={index} className="h-10 rounded-xl bg-slate-100/80 animate-pulse" />
+          ))}
+        </div>
+      </aside>
+    );
+  }
+
+  const visibleItems = items.filter((item) => roleCanSeePage(item, role));
 
   return (
     <aside className="flex h-full flex-col">
       <div className="space-y-0.5">
-        <nav className="space-y-0.5">
-          {dashboard.map((item) => (
-            <NavItem
-              key={item.href}
-              href={item.href}
-              title={item.title}
-              Icon={item.icon}
-              active={isActivePath(pathname, item.href)}
-            />
-          ))}
-        </nav>
+        {sectionOrder.map((section) => {
+          const sectionItems = visibleItems.filter((item) => item.section === section);
+          if (sectionItems.length === 0) return null;
 
-        <SectionTitle>Suivi</SectionTitle>
-        <nav className="space-y-0.5">
-          {suivi.map((item) => (
-            <NavItem
-              key={item.href}
-              href={item.href}
-              title={item.title}
-              Icon={item.icon}
-              active={isActivePath(pathname, item.href)}
-            />
-          ))}
-        </nav>
-
-        <SectionTitle>Operations</SectionTitle>
-        <nav className="space-y-0.5">
-          {operations.map((item) => (
-            <NavItem
-              key={item.href}
-              href={item.href}
-              title={item.title}
-              Icon={item.icon}
-              active={isActivePath(pathname, item.href)}
-            />
-          ))}
-        </nav>
-
-        <SectionTitle>Gestion</SectionTitle>
-        <nav className="space-y-0.5">
-          {gestion.map((item) => (
-            <NavItem
-              key={item.href}
-              href={item.href}
-              title={item.title}
-              Icon={item.icon}
-              active={isActivePath(pathname, item.href)}
-            />
-          ))}
-        </nav>
+          return (
+            <div key={section}>
+              {sectionLabels[section] ? <SectionTitle>{sectionLabels[section]}</SectionTitle> : null}
+              <nav className="space-y-0.5">
+                {sectionItems.map((item) => {
+                  const Icon = ICONS[item.icon] ?? Shield;
+                  return (
+                    <NavItem
+                      key={item.href}
+                      href={item.href}
+                      title={item.title}
+                      Icon={Icon}
+                      active={isActivePath(pathname, item.href)}
+                    />
+                  );
+                })}
+              </nav>
+            </div>
+          );
+        })}
       </div>
     </aside>
   );

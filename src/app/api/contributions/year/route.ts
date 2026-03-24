@@ -1,6 +1,7 @@
 import { NextResponse } from "next/server";
 import { prisma } from "@/lib/prisma";
-import { requireAdmin } from "@/lib/authz";
+import { requireAuth } from "@/lib/authz";
+import { getOrgIdFromRequest } from "@/lib/org-utils";
 
 function naturalLotSort(a: { lotNumber: string | null; reference: string | null }, b: { lotNumber: string | null; reference: string | null }) {
   const collator = new Intl.Collator("fr", {
@@ -16,9 +17,14 @@ function naturalLotSort(a: { lotNumber: string | null; reference: string | null 
 
 export async function GET(req: Request) {
 
-  const gate = await requireAdmin();
+  const gate = await requireAuth();
   if (!gate.ok) {
     return NextResponse.json({ error: gate.error }, { status: gate.status });
+  }
+
+  const orgId = await getOrgIdFromRequest(req, gate);
+  if (!orgId) {
+    return NextResponse.json([]);
   }
 
   const { searchParams } = new URL(req.url);
@@ -35,8 +41,8 @@ export async function GET(req: Request) {
 
   const buildings = await prisma.building.findMany({
     where: buildingId
-      ? { id: buildingId, organizationId: gate.organizationId }
-      : { organizationId: gate.organizationId },
+      ? { id: buildingId, organizationId: orgId }
+      : { organizationId: orgId },
     select: {
       id: true,
       name: true,
@@ -46,14 +52,14 @@ export async function GET(req: Request) {
           lotNumber: true,
           reference: true,
           ownerships: {
-            where: { endDate: null, organizationId: gate.organizationId },
+            where: { endDate: null, organizationId: orgId },
             select: {
-              owner: { select: { name: true } }
+              owner: { select: { firstName: true, name: true } }
             }
           },
           dues: {
             where: {
-              organizationId: gate.organizationId,
+              organizationId: orgId,
               period: {
                 gte: start,
                 lte: end

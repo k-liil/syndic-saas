@@ -38,37 +38,41 @@ type RowData = {
 function StatusBadge({ value }: { value: MonthStatus }) {
   if (value === "PAID") {
     return (
-      <div className="inline-flex min-w-[82px] items-center justify-center rounded-full bg-emerald-100 px-3 py-1.5 text-xs font-semibold text-emerald-700">
-        Paye
+      <div className="flex h-[54px] w-full items-center justify-center">
+        <span className="h-3 w-3 rounded-full bg-emerald-500" />
       </div>
     );
   }
 
   if (value === "PARTIAL") {
     return (
-      <div className="inline-flex min-w-[82px] items-center justify-center rounded-full bg-amber-100 px-3 py-1.5 text-xs font-semibold text-amber-700">
-        Partiel
+      <div className="flex h-[54px] w-full items-center justify-center">
+        <span className="h-3 w-3 rounded-full bg-amber-500" />
       </div>
     );
   }
 
   if (value === "UNPAID") {
     return (
-      <div className="inline-flex min-w-[82px] items-center justify-center rounded-full bg-rose-100 px-3 py-1.5 text-xs font-semibold text-rose-700">
-        Retard
+      <div className="flex h-[54px] w-full items-center justify-center">
+        <span className="h-3 w-3 rounded-full bg-rose-500" />
       </div>
     );
   }
 
   if (value === "ADVANCE") {
     return (
-      <div className="inline-flex min-w-[82px] items-center justify-center rounded-full bg-sky-100 px-3 py-1.5 text-xs font-semibold text-sky-700">
-        Avance
+      <div className="flex h-[54px] w-full items-center justify-center">
+        <span className="h-3 w-3 rounded-full bg-sky-500" />
       </div>
     );
   }
 
-  return <div className="text-xs text-zinc-300">-</div>;
+  return (
+    <div className="flex h-[54px] w-full items-center justify-center">
+      <span className="h-2.5 w-2.5 rounded-full bg-zinc-200" />
+    </div>
+  );
 }
 
 const columns: ColumnDef<RowData>[] = [
@@ -110,7 +114,7 @@ export function ContributionsYearTable({ data }: { data: RowData[] }) {
   return (
     <div className="overflow-hidden rounded-[28px] border border-zinc-200 bg-white shadow-[0_10px_30px_rgba(15,23,42,0.06)]">
       <div className="overflow-x-auto">
-        <Table className="min-w-[1500px]">
+        <Table className="mx-auto min-w-[1260px] max-w-[85vw]">
           <TableHeader className="bg-zinc-50">
             {table.getHeaderGroups().map((headerGroup) => (
               <TableRow key={headerGroup.id} className="border-b border-zinc-200 hover:bg-zinc-50">
@@ -120,15 +124,15 @@ export function ContributionsYearTable({ data }: { data: RowData[] }) {
                     className={[
                       "h-14 whitespace-nowrap border-b border-zinc-200 text-[11px] font-bold uppercase tracking-[0.12em] text-zinc-500",
                       index === 0 ? "sticky left-0 z-30 bg-zinc-50" : "",
-                      index === 1 ? "sticky left-[160px] z-30 bg-zinc-50" : "",
-                      index >= 2 ? "text-center" : "",
+                      index === 1 ? "sticky left-[132px] z-30 bg-zinc-50" : "",
+                      index >= 2 ? "px-0 text-center" : "",
                     ].join(" ")}
                     style={
                       index === 0
-                        ? { width: 160, minWidth: 160, maxWidth: 160 }
+                        ? { width: 132, minWidth: 132, maxWidth: 132 }
                         : index === 1
-                          ? { width: 320, minWidth: 320, maxWidth: 320 }
-                          : { width: 92, minWidth: 92, maxWidth: 92 }
+                          ? { width: 240, minWidth: 240, maxWidth: 240 }
+                          : { width: 72, minWidth: 72, maxWidth: 72 }
                     }
                   >
                     {header.isPlaceholder
@@ -151,17 +155,17 @@ export function ContributionsYearTable({ data }: { data: RowData[] }) {
                     <TableCell
                       key={cell.id}
                       className={[
-                        "h-[74px] align-middle border-b border-zinc-100",
-                        index === 0 ? "sticky left-0 z-20 bg-inherit pl-5" : "",
-                        index === 1 ? "sticky left-[160px] z-20 bg-inherit pl-5" : "",
-                        index >= 2 ? "text-center" : "",
+                        "h-[54px] align-middle border-b border-zinc-100 py-2",
+                        index === 0 ? "sticky left-0 z-20 bg-inherit pl-4" : "",
+                        index === 1 ? "sticky left-[132px] z-20 bg-inherit pl-4" : "",
+                        index >= 2 ? "p-0 text-center" : "",
                       ].join(" ")}
                       style={
                         index === 0
-                          ? { width: 160, minWidth: 160, maxWidth: 160 }
+                          ? { width: 132, minWidth: 132, maxWidth: 132 }
                           : index === 1
-                            ? { width: 320, minWidth: 320, maxWidth: 320 }
-                            : { width: 92, minWidth: 92, maxWidth: 92 }
+                            ? { width: 240, minWidth: 240, maxWidth: 240 }
+                            : { width: 72, minWidth: 72, maxWidth: 72 }
                       }
                     >
                       {flexRender(cell.column.columnDef.cell, cell.getContext())}

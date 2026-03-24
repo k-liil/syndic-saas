@@ -1,6 +1,6 @@
 import { NextResponse } from "next/server";
 import { prisma } from "@/lib/prisma";
-import { requireAdmin } from "@/lib/authz";
+import { requireManager } from "@/lib/authz";
 
 type Row = {
   cin: string;
@@ -21,7 +21,7 @@ type Body =
     };
 
 export async function POST(req: Request) {
-  const gate = await requireAdmin();
+  const gate = await requireManager();
   if (!gate.ok) return NextResponse.json({ error: gate.error }, { status: gate.status });
 
   const body = (await req.json()) as Body;
@@ -29,7 +29,7 @@ export async function POST(req: Request) {
   if (body.action === "start") {
     const job = await prisma.importJob.create({
       data: {
-        organizationId: gate.organizationId,
+        organizationId: gate.organizationId ?? "",
         type: "owners",
         totalRows: body.totalRows,
         processed: 0,
@@ -66,7 +66,7 @@ export async function POST(req: Request) {
   const [units, existingOwners] = await Promise.all([
     prisma.unit.findMany({
       where: {
-        organizationId: gate.organizationId,
+        organizationId: gate.organizationId ?? "",
         lotNumber: {
           in: lotNumbers,
         },
@@ -78,7 +78,7 @@ export async function POST(req: Request) {
     }),
     prisma.owner.findMany({
       where: {
-        organizationId: gate.organizationId,
+        organizationId: gate.organizationId ?? "",
         cin: {
           in: cins,
         },
@@ -119,7 +119,7 @@ export async function POST(req: Request) {
     await prisma.owner.createMany({
       data: Array.from(newOwners.values()).map((owner) => ({
         ...owner,
-        organizationId: gate.organizationId,
+        organizationId: gate.organizationId ?? "",
       })),
       skipDuplicates: true,
     });
@@ -127,7 +127,7 @@ export async function POST(req: Request) {
 
   const owners = await prisma.owner.findMany({
     where: {
-      organizationId: gate.organizationId,
+      organizationId: gate.organizationId ?? "",
       cin: {
         in: cins,
       },
@@ -153,7 +153,7 @@ export async function POST(req: Request) {
       ownerId: {
         in: ownerIds,
       },
-      organizationId: gate.organizationId,
+      organizationId: gate.organizationId ?? "",
       unitId: {
         in: unitIds,
       },
@@ -218,7 +218,7 @@ export async function POST(req: Request) {
     if (!existingOwnershipKeys.has(ownershipKey)) {
       existingOwnershipKeys.add(ownershipKey);
       ownershipsToCreate.push({
-        organizationId: gate.organizationId,
+        organizationId: gate.organizationId ?? "",
         ownerId: owner.id,
         unitId: unit.id,
       });

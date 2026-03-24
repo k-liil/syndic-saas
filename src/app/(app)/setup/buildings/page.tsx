@@ -1,20 +1,29 @@
 "use client";
 
-import { useEffect, useMemo, useState } from "react";
+import { useCallback, useEffect, useMemo, useState } from "react";
+import { useSession } from "next-auth/react";
 import { Modal } from "@/components/ui/Modal";
 import { Table, THead, TR, TH, TD } from "@/components/ui/Table";
 import { CheckCircle2, XCircle, AlertTriangle } from "lucide-react";
 import { Pencil, Trash2 } from "lucide-react";
+import { canManage } from "@/lib/roles";
+import { useApiUrl } from "@/lib/org-context";
 
 type Building = {
   id: string;
   name: string;
   address: string | null;
 };
-  type ImportError = { row: number; error: string };
-  type ImportResult = { imported: number; errors: ImportError[] };
+type ImportError = { row: number; error: string };
+type ImportResult = { imported: number; errors: ImportError[] };
+
+function getErrorMessage(error: unknown) {
+  return error instanceof Error ? error.message : "Operation failed";
+}
 
 export default function BuildingsPage() {
+  const { data: session } = useSession();
+  const canEdit = canManage(session?.user?.role);
   const [items, setItems] = useState<Building[]>([]);
   const [openAdd, setOpenAdd] = useState(false);
   const [openImport, setOpenImport] = useState(false);
@@ -25,7 +34,7 @@ export default function BuildingsPage() {
 
   const [importFile, setImportFile] = useState<File | null>(null);
 
-
+ 
   const [importResult, setImportResult] = useState<ImportResult | null>(null);
   const [importError, setImportError] = useState<string>("");
 
@@ -35,11 +44,13 @@ export default function BuildingsPage() {
 
   const canCreate = useMemo(() => name.trim().length > 0, [name]);
 
-  async function load() {
-    const res = await fetch("/api/buildings", { cache: "no-store" });
+  const apiUrl = useApiUrl();
+
+  const load = useCallback(async () => {
+    const res = await fetch(apiUrl("/api/buildings"), { cache: "no-store" });
     const data = await res.json();
     setItems(Array.isArray(data) ? data : []);
-  }
+  }, [apiUrl]);
 
   async function createBuilding() {
   if (!canCreate || loading) return;
@@ -48,7 +59,7 @@ export default function BuildingsPage() {
   try {
     const payload = { name: name.trim(), address: address.trim() || null };
 
-    const res = await fetch("/api/buildings", {
+    const res = await fetch(apiUrl("/api/buildings"), {
       method: editingId ? "PATCH" : "POST",
       headers: { "Content-Type": "application/json" },
       body: JSON.stringify(editingId ? { id: editingId, ...payload } : payload),
@@ -69,11 +80,11 @@ export default function BuildingsPage() {
 
   async function deleteBuilding(id: string) {
     if (loading) return;
-    if (!confirm("Supprimer cet immeuble ?")) return;
+    if (!confirm("Supprimer cet bâtiment ?")) return;
 
     setLoading(true);
     try {
-      const res = await fetch("/api/buildings", {
+      const res = await fetch(apiUrl("/api/buildings"), {
         method: "DELETE",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({ id }),
@@ -81,8 +92,8 @@ export default function BuildingsPage() {
       const data = await res.json().catch(() => null);
       if (!res.ok) throw new Error(data?.error ?? "Delete failed");
       await load();
-    } catch (e: any) {
-      alert(e?.message ?? "Delete failed");
+    } catch (e) {
+      alert(getErrorMessage(e));
     } finally {
       setLoading(false);
     }
@@ -120,90 +131,96 @@ export default function BuildingsPage() {
       if (input) input.value = "";
 
       await load();
-    } catch (e: any) {
-      setImportError(e?.message ?? "Import failed");
+    } catch (e) {
+      setImportError(getErrorMessage(e));
     } finally {
       setImportBusy(false);
     }
   }
 
   useEffect(() => {
-    load();
-  }, []);
+    void load();
+  }, [load]);
 
   return (
-    <div className="space-y-6">
-      <div className="flex items-start justify-between gap-4">
-        <div>
-          <h1 className="text-2xl font-semibold text-zinc-900">Gestion des Immeubles</h1>
-          <p className="mt-1 text-sm text-zinc-500">Créer et gérer les immeubles.</p>
-        </div>
+    <div className="flex flex-col h-full">
+      <div className="sticky top-0 z-20 -mx-4 -mt-6 mb-6 bg-[#FCFCFB]/90 px-4 py-4 backdrop-blur-md sm:-mx-6 sm:-mt-8 sm:px-6 lg:-mx-8 lg:px-8 border-b border-slate-200/50">
+        <div className="flex items-start justify-between gap-4">
+          <div>
+            <h1 className="text-2xl font-semibold text-zinc-900">Gestion des Bâtiments</h1>
+            <p className="mt-1 text-sm text-zinc-500">Créer et gérer les bâtiments.</p>
+          </div>
 
-        <div className="flex gap-2">
-          <button
-            onClick={() => setOpenImport(true)}
-            className="rounded-xl border border-zinc-200 bg-white px-4 py-2 text-sm font-medium hover:bg-zinc-50"
-          >
-            Importer
-          </button>
+          {canEdit ? (
+            <div className="flex gap-2">
+              <button
+                onClick={() => setOpenImport(true)}
+                className="rounded-xl border border-zinc-200 bg-white px-4 py-2 text-sm font-medium hover:bg-zinc-50"
+              >
+                Importer
+              </button>
 
-          <button
-            onClick={() => setOpenAdd(true)}
-            className="rounded-xl bg-zinc-900 px-4 py-2 text-sm font-medium text-white hover:bg-zinc-800"
-          >
-            + Ajouter un immeuble
-          </button>
+              <button
+                onClick={() => setOpenAdd(true)}
+                className="rounded-xl bg-zinc-900 px-4 py-2 text-sm font-medium text-white hover:bg-zinc-800"
+              >
+                + Ajouter un bâtiment
+              </button>
+            </div>
+          ) : null}
         </div>
       </div>
 
-      <Table>
-        <THead>
-          <TR>
-            <TH>Nom</TH>
-            <TH>Adresse</TH>
-            <TH className="text-right">Actions</TH>
-          </TR>
-        </THead>
-        <tbody>
-          {items.length === 0 ? (
+      <div className="flex-1 overflow-auto">
+        <Table>
+          <THead>
             <TR>
-              <TD className="text-zinc-500">Aucun immeuble.</TD>
-              <TD />
-              <TD />
+              <TH>Nom</TH>
+              <TH>Adresse</TH>
+              <TH className="text-right">Actions</TH>
             </TR>
-          ) : (
-            items.map((b) => (
-              <TR key={b.id}>
-                <TD className="font-medium text-zinc-900">{b.name}</TD>
-                <TD className="text-zinc-600">{b.address ?? "—"}</TD>
-                <TD>
-                  <div className="flex justify-end gap-2">
-                    <button
-                      type="button"
-                      onClick={() => editBuilding(b)}
-                      title="Éditer"
-                      className="inline-flex h-9 w-9 items-center justify-center rounded-lg border border-zinc-200 bg-white hover:bg-zinc-50"
-                    >
-                      <Pencil className="h-4 w-4 text-blue-600" />
-                    </button>
-
-                    <button
-                      type="button"
-                      onClick={() => deleteBuilding(b.id)}
-                      title="Supprimer"
-                      className="inline-flex h-9 w-9 items-center justify-center rounded-lg border border-zinc-200 bg-white hover:bg-zinc-50"
-                    >
-                      <Trash2 className="h-4 w-4 text-red-600" />
-                    </button>
-                  </div>
-                </TD>
+          </THead>
+          <tbody>
+            {items.length === 0 ? (
+              <TR>
+                <TD className="text-zinc-500">Aucun bâtiment.</TD>
+                <TD />
+                <TD />
               </TR>
-            ))
-          )}
-        </tbody>
-      </Table>
+            ) : (
+              items.map((b) => (
+                <TR key={b.id}>
+                  <TD className="font-medium text-zinc-900">{b.name}</TD>
+                  <TD className="text-zinc-600">{b.address ?? "—"}</TD>
+                  <TD>
+                    {canEdit ? <div className="flex justify-end gap-2">
+                      <button
+                        type="button"
+                        onClick={() => editBuilding(b)}
+                        title="Éditer"
+                        className="inline-flex h-9 w-9 items-center justify-center rounded-lg border border-zinc-200 bg-white hover:bg-zinc-50"
+                      >
+                        <Pencil className="h-4 w-4 text-blue-600" />
+                      </button>
 
-      <Modal
+                      <button
+                        type="button"
+                        onClick={() => deleteBuilding(b.id)}
+                        title="Supprimer"
+                        className="inline-flex h-9 w-9 items-center justify-center rounded-lg border border-zinc-200 bg-white hover:bg-zinc-50"
+                      >
+                        <Trash2 className="h-4 w-4 text-red-600" />
+                      </button>
+                    </div> : <div className="text-right text-xs text-zinc-500">Lecture seule</div>}
+                  </TD>
+                </TR>
+              ))
+            )}
+          </tbody>
+        </Table>
+      </div>
+
+      {canEdit ? <Modal
         open={openAdd}
         onClose={() => {
           setOpenAdd(false);
@@ -211,7 +228,7 @@ export default function BuildingsPage() {
           setName("");
           setAddress("");
         }}
-        title={editingId ? "Modifier un immeuble" : "Ajouter un immeuble"}
+        title={editingId ? "Modifier un bâtiment" : "Ajouter un bâtiment"}
         zIndex={50}
       >
         <div className="grid gap-4">
@@ -219,7 +236,7 @@ export default function BuildingsPage() {
             <label className="text-sm font-medium">Nom</label>
             <input
               className="h-10 rounded-xl border border-zinc-200 px-3"
-              placeholder="Nom de l’immeuble"
+              placeholder="Nom de l’bâtiment"
               value={name}
               onChange={(e) => setName(e.target.value)}
             />
@@ -243,9 +260,9 @@ export default function BuildingsPage() {
             {loading ? (editingId ? "Enregistrement..." : "Création...") : (editingId ? "Enregistrer" : "Créer")}
           </button>
         </div>
-      </Modal>
+      </Modal> : null}
 
-      <Modal open={openImport} onClose={() => setOpenImport(false)} title="Importer des immeubles (CSV)" zIndex={50}>
+      {canEdit ? <Modal open={openImport} onClose={() => setOpenImport(false)} title="Importer des bâtiments (CSV)" zIndex={50}>
         <div className="grid gap-4">
           <div className="text-sm text-zinc-600">
             CSV attendu : colonnes <b>name</b> (obligatoire) et <b>address</b> (optionnel)
@@ -261,8 +278,8 @@ export default function BuildingsPage() {
 
           <pre className="rounded-xl bg-zinc-50 p-3 text-xs overflow-auto">
 name,address
-Immeuble 1,Adresse test
-Immeuble 2,
+Bâtiment 1,Adresse test
+Bâtiment 2,
           </pre>
 
           <button
@@ -329,7 +346,7 @@ Immeuble 2,
       </div>
     ) : null}
         </div>
-      </Modal>
+      </Modal> : null}
     </div>
   );
 }

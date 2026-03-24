@@ -1,6 +1,6 @@
 import { NextResponse } from "next/server";
 import { prisma } from "@/lib/prisma";
-import { requireAdmin } from "@/lib/authz";
+import { requireManager } from "@/lib/authz";
 
 type Row = {
   type?: string;
@@ -28,7 +28,7 @@ function asString(value: unknown) {
 }
 
 export async function POST(req: Request) {
-  const gate = await requireAdmin();
+  const gate = await requireManager();
   if (!gate.ok) {
     return NextResponse.json({ error: gate.error }, { status: gate.status });
   }
@@ -38,7 +38,7 @@ export async function POST(req: Request) {
   if (body.action === "start") {
     const job = await prisma.importJob.create({
       data: {
-        organizationId: gate.organizationId,
+        organizationId: gate.organizationId ?? "",
         type: "other-receipts",
         totalRows: body.totalRows,
         processed: 0,
@@ -133,7 +133,7 @@ export async function POST(req: Request) {
 
   if (validRows.length > 0) {
     const last = await prisma.otherReceipt.findFirst({
-      where: { organizationId: gate.organizationId },
+      where: { organizationId: gate.organizationId ?? "" },
       orderBy: { receiptNumber: "desc" },
       select: { receiptNumber: true },
     });
@@ -143,7 +143,7 @@ export async function POST(req: Request) {
     await prisma.otherReceipt.createMany({
       data: validRows.map((row, index) => ({
         receiptNumber: startNumber + index + 1,
-        organizationId: gate.organizationId,
+        organizationId: gate.organizationId ?? "",
         type: row.type,
         description: row.description,
         amount: row.amount,

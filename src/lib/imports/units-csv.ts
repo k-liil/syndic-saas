@@ -3,7 +3,7 @@ export type ImportUnitRow = {
   reference: string | null;
   type: "APARTMENT" | "GARAGE" | "COMMERCIAL";
   buildingName?: string | null;
-  monthlyDueAmount?: number | null;
+  surface?: number | null;
 };
 
 export type ImportUnitError = {
@@ -11,14 +11,14 @@ export type ImportUnitError = {
   error: string;
 };
 
-function parseMoney(v: string): number | null {
+function parseSurface(v: string): number | null {
   const s = (v ?? "").trim();
   if (!s) return null;
 
   const n = Number(s.replace(",", "."));
   if (!Number.isFinite(n) || n < 0) return NaN;
 
-  return Math.round(n);
+  return Math.round(n * 100) / 100;
 }
 
 function parseLotNumber(v: string): string | null {
@@ -47,7 +47,7 @@ export function parseUnitsCsv(text: string): {
   const refIdx = header.indexOf("reference");
   const typeIdx = header.indexOf("type");
   const bldIdx = header.indexOf("building");
-  const dueIdx = header.indexOf("monthlydueamount");
+  const surfIdx = header.indexOf("surface");
 
   const errors: ImportUnitError[] = [];
   const rows: ImportUnitRow[] = [];
@@ -66,7 +66,7 @@ export function parseUnitsCsv(text: string): {
     const reference = refIdx >= 0 ? (cols[refIdx] ?? "").trim() : "";
     const rawType = (cols[typeIdx] ?? "").trim().toUpperCase();
     const buildingName = bldIdx >= 0 ? (cols[bldIdx] ?? "").trim() : "";
-    const dueRaw = dueIdx >= 0 ? (cols[dueIdx] ?? "").trim() : "";
+    const surfRaw = surfIdx >= 0 ? (cols[surfIdx] ?? "").trim() : "";
 
     if (!lotNumber) {
       errors.push({ row: i + 1, error: "lotNumber invalide" });
@@ -86,11 +86,11 @@ export function parseUnitsCsv(text: string): {
       continue;
     }
 
-    const monthlyDueAmount = parseMoney(dueRaw);
-    if (Number.isNaN(monthlyDueAmount as number)) {
+    const surface = surfIdx >= 0 ? parseSurface(surfRaw) : null;
+    if (surface !== null && Number.isNaN(surface)) {
       errors.push({
         row: i + 1,
-        error: "monthlyDueAmount invalide (doit être >= 0)",
+        error: "surface invalide (doit être >= 0)",
       });
       continue;
     }
@@ -100,7 +100,7 @@ export function parseUnitsCsv(text: string): {
       reference: reference || null,
       type,
       buildingName: buildingName || null,
-      monthlyDueAmount: monthlyDueAmount ?? null,
+      surface: surface ?? null,
     });
   }
 

@@ -1,13 +1,14 @@
 import { NextResponse } from "next/server";
 import { prisma } from "@/lib/prisma";
-import { requireAdmin } from "@/lib/authz";
+import { requireAuth, requireManager } from "@/lib/authz";
+import { getOrgIdFromRequest } from "@/lib/org-utils";
 
 export async function PUT(
   req: Request,
   { params }: { params: Promise<{ id: string }> }
 ) {
 
-  const gate = await requireAdmin();
+  const gate = await requireAuth();
 
   if (!gate.ok) {
     return NextResponse.json(
@@ -16,10 +17,15 @@ export async function PUT(
     );
   }
 
+  const orgId = await getOrgIdFromRequest(req, gate);
+  if (!orgId) {
+    return NextResponse.json({ error: "No organization" }, { status: 400 });
+  }
+
   const { id } = await params;
 
   const existing = await prisma.otherReceipt.findFirst({
-    where: { id, organizationId: gate.organizationId },
+    where: { id, organizationId: orgId },
     select: { id: true },
   });
 
@@ -47,11 +53,11 @@ export async function PUT(
 }
 
 export async function DELETE(
-  _req: Request,
+  req: Request,
   { params }: { params: Promise<{ id: string }> }
 ) {
 
-  const gate = await requireAdmin();
+  const gate = await requireManager();
 
   if (!gate.ok) {
     return NextResponse.json(
@@ -60,10 +66,15 @@ export async function DELETE(
     );
   }
 
+  const orgId = await getOrgIdFromRequest(req, gate);
+  if (!orgId) {
+    return NextResponse.json({ error: "No organization" }, { status: 400 });
+  }
+
   const { id } = await params;
 
   const existing = await prisma.otherReceipt.findFirst({
-    where: { id, organizationId: gate.organizationId },
+    where: { id, organizationId: orgId },
     select: { id: true },
   });
 

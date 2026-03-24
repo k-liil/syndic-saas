@@ -1,7 +1,8 @@
 import { NextResponse } from "next/server";
 import { prisma } from "@/lib/prisma";
 import { UnitType, DueStatus } from "@prisma/client";
-import { requireAdmin } from "@/lib/authz";
+import { requireManager } from "@/lib/authz";
+import { buildContributionStartPeriod } from "@/lib/contribution-start";
 
 function firstDayOfMonth(d: Date) {
   return new Date(Date.UTC(d.getUTCFullYear(), d.getUTCMonth(), 1, 0, 0, 0));
@@ -9,7 +10,7 @@ function firstDayOfMonth(d: Date) {
 
 export async function POST(req: Request) {
   try {
-    const gate = await requireAdmin();
+    const gate = await requireManager();
     if (!gate.ok) {
       return NextResponse.json({ error: gate.error }, { status: gate.status });
     }
@@ -22,32 +23,53 @@ export async function POST(req: Request) {
       return NextResponse.json({ error: "buildingId required" }, { status: 400 });
     }
 
-    const period = firstDayOfMonth(periodInput);
+    const orgId = gate.organizationId;
+    if (!orgId) {
+      return NextResponse.json({ error: "No organization" }, { status: 400 });
+    }
 
-    // IMPORTANT:
-    // - On ne génère que sur les lots qui ont monthlyDueAmount défini (>0)
-    // - On limite au building + actifs
-    // - On exclut COMMERCIAL (si tu veux l’inclure un jour, ce sera un switch)
+    const period = firstDayOfMonth(periodInput);
+    const settings = await prisma.appSettings.findFirst({
+      where: { organizationId: orgId },
+      select: { startYear: true, startMonth: true },
+    });
+
     const units = await prisma.unit.findMany({
       where: {
-        organizationId: gate.organizationId,
+        organizationId: orgId,
         buildingId,
         isActive: true,
         type: { in: [UnitType.APARTMENT, UnitType.GARAGE] },
       },
-      select: { id: true, monthlyDueAmount: true },
+      select: {
+        id: true,
+        ownerships: {
+          where: { organizationId: orgId, endDate: null },
+          take: 1,
+          select: {
+            startDate: true,
+          },
+        },
+      },
     });
 
     const toCreate = units.flatMap((u) => {
-      const amount = u.monthlyDueAmount;
-      if (!amount || Number(amount) <= 0) return [];
+      const startPeriod = buildContributionStartPeriod(
+        u.ownerships[0]?.startDate,
+        settings?.startYear,
+        settings?.startMonth,
+      );
+
+      if (period.getTime() < startPeriod.getTime()) {
+        return [];
+      }
 
       return [
         {
           unitId: u.id,
-          organizationId: gate.organizationId,
+          organizationId: orgId,
           period,
-          amountDue: amount,
+          amountDue: 0,
           paidAmount: 0,
           status: DueStatus.UNPAID,
         },

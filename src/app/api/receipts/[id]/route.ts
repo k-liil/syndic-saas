@@ -1,13 +1,13 @@
 import { NextResponse } from "next/server";
 import { prisma } from "@/lib/prisma";
-import { requireAdmin } from "@/lib/authz";
+import { requireAuth, requireManager } from "@/lib/authz";
 import { DueStatus } from "@prisma/client";
 
 export async function GET(
   _req: Request,
   { params }: { params: Promise<{ id: string }> }
 ) {
-  const gate = await requireAdmin();
+  const gate = await requireAuth();
   if (!gate.ok) {
     return NextResponse.json({ error: gate.error }, { status: gate.status });
   }
@@ -15,7 +15,7 @@ export async function GET(
   const { id } = await params;
 
   const item = await prisma.receipt.findFirst({
-    where: { id, organizationId: gate.organizationId },
+    where: { id, organizationId: gate.organizationId ?? undefined },
     select: {
       id: true,
       receiptNumber: true,
@@ -97,7 +97,7 @@ export async function PUT(
   req: Request,
   { params }: { params: Promise<{ id: string }> }
 ) {
-  const gate = await requireAdmin();
+  const gate = await requireManager();
   if (!gate.ok) {
     return NextResponse.json({ error: gate.error }, { status: gate.status });
   }
@@ -144,7 +144,7 @@ const note =
     }
 
     const existing = await prisma.receipt.findFirst({
-      where: { id, organizationId: gate.organizationId },
+      where: { id, organizationId: gate.organizationId ?? undefined },
       select: { id: true },
     });
 
@@ -189,7 +189,7 @@ export async function DELETE(
   _req: Request,
   { params }: { params: Promise<{ id: string }> }
 ) {
-  const gate = await requireAdmin();
+  const gate = await requireManager();
   if (!gate.ok) {
     return NextResponse.json({ error: gate.error }, { status: gate.status });
   }
@@ -199,7 +199,7 @@ export async function DELETE(
   try {
     await prisma.$transaction(async (tx) => {
       const receipt = await tx.receipt.findFirst({
-        where: { id, organizationId: gate.organizationId },
+        where: { id, organizationId: gate.organizationId ?? undefined },
         select: { id: true },
       });
 
@@ -210,7 +210,7 @@ export async function DELETE(
       const allocations = await tx.receiptAllocation.findMany({
         where: {
           receiptId: id,
-          receipt: { organizationId: gate.organizationId },
+          receipt: { organizationId: gate.organizationId ?? undefined },
         },
         include: { due: true },
       });

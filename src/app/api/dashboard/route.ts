@@ -1,6 +1,8 @@
 import { NextResponse } from "next/server";
 import { prisma } from "@/lib/prisma";
-import { requireAdmin } from "@/lib/authz";
+import { requireAuth } from "@/lib/authz";
+import { getOrgIdFromRequest } from "@/lib/org-utils";
+import { resolveActiveFiscalYear } from "@/lib/active-fiscal-year";
 
 function toNumber(value: unknown): number {
   if (value == null) return 0;
@@ -21,30 +23,21 @@ function toNumber(value: unknown): number {
 }
 
 export async function GET(req: Request) {
-  const gate = await requireAdmin();
+  const gate = await requireAuth();
   if (!gate.ok) {
     return NextResponse.json({ error: gate.error }, { status: gate.status });
   }
 
+  const orgId = await getOrgIdFromRequest(req, gate);
+  if (!orgId) {
+    return NextResponse.json([]);
+  }
+
   const { searchParams } = new URL(req.url);
-const yearParam = searchParams.get("year");
+  const yearParam = searchParams.get("year");
+  const parsedYear = await resolveActiveFiscalYear(orgId, yearParam);
 
-let parsedYear: number;
-
-if (yearParam) {
-  parsedYear = Number(yearParam);
-} else {
-  const lastReceipt = await prisma.receipt.findFirst({
-    orderBy: { date: "desc" },
-    select: { date: true },
-  });
-
-  parsedYear = lastReceipt
-    ? new Date(lastReceipt.date).getFullYear()
-    : new Date().getFullYear();
-}
-
-  if (!Number.isInteger(parsedYear) || parsedYear < 2000 || parsedYear > 2100) {
+  if (parsedYear === undefined || !Number.isInteger(parsedYear) || parsedYear < 2000 || parsedYear > 2100) {
     return NextResponse.json(
       { error: "Invalid year parameter" },
       { status: 400 }
@@ -53,12 +46,12 @@ if (yearParam) {
 
   const year = parsedYear;
 
-  // Bornes locales de l'exercice
-  const startDate = new Date(year, 0, 1, 0, 0, 0, 0);
-  const endDate = new Date(year + 1, 0, 1, 0, 0, 0, 0);
+  const startDate = new Date(Date.UTC(year, 0, 1, 0, 0, 0, 0));
+  const endDate = new Date(Date.UTC(year + 1, 0, 1, 0, 0, 0, 0));
 
   const [
     receipts,
+    otherReceipts,
     payments,
     settings,
     ownersCount,
@@ -67,7 +60,22 @@ if (yearParam) {
   ] = await Promise.all([
     prisma.receipt.findMany({
       where: {
-        organizationId: gate.organizationId,
+        organizationId: orgId!,
+        date: {
+          gte: startDate,
+          lt: endDate,
+        },
+      },
+      select: {
+        amount: true,
+        method: true,
+        date: true,
+      },
+    }),
+
+    prisma.otherReceipt.findMany({
+      where: {
+        organizationId: orgId!,
         date: {
           gte: startDate,
           lt: endDate,
@@ -82,7 +90,7 @@ if (yearParam) {
 
     prisma.payment.findMany({
       where: {
-        organizationId: gate.organizationId,
+        organizationId: orgId!,
         date: {
           gte: startDate,
           lt: endDate,
@@ -95,14 +103,14 @@ if (yearParam) {
       },
     }),
 
-    prisma.appSettings.findFirst({ where: { organizationId: gate.organizationId } }),
+    prisma.appSettings.findFirst({ where: { organizationId: orgId! } }),
 
-    prisma.owner.count({ where: { organizationId: gate.organizationId } }),
+    prisma.owner.count({ where: { organizationId: orgId! } }),
 
     prisma.receipt.groupBy({
       by: ["ownerId"],
       where: {
-        organizationId: gate.organizationId,
+        organizationId: orgId!,
         date: {
           gte: startDate,
           lt: endDate,
@@ -111,12 +119,12 @@ if (yearParam) {
     }),
 
     prisma.payment.groupBy({
-      by: ["categoryId"],
+      by: ["accountingPostId"],
       _sum: {
         amount: true,
       },
       where: {
-        organizationId: gate.organizationId,
+        organizationId: orgId!,
         date: {
           gte: startDate,
           lt: endDate,
@@ -132,7 +140,20 @@ if (yearParam) {
   let receiptsBank = 0;
 
 for (const r of receipts) {
-  const month = new Date(r.date).getMonth();
+  const month = new Date(r.date).getUTCMonth();
+  const amount = toNumber(r.amount);
+
+  receiptsByMonth[month] += amount;
+
+  if (r.method === "CASH") {
+    receiptsCash += amount;
+  } else {
+    receiptsBank += amount;
+  }
+}
+
+for (const r of otherReceipts) {
+  const month = new Date(r.date).getUTCMonth();
   const amount = toNumber(r.amount);
 
   receiptsByMonth[month] += amount;
@@ -148,7 +169,7 @@ for (const r of receipts) {
   let paymentsBank = 0;
 
 for (const p of payments) {
-  const month = new Date(p.date).getMonth();
+  const month = new Date(p.date).getUTCMonth();
   const amount = toNumber(p.amount);
 
   paymentsByMonth[month] += amount;
@@ -176,18 +197,19 @@ const openingBank = toNumber(settings?.openingBankBalance);
       ? 0
       : Math.round((paidOwnersCount / ownersCount) * 100);
 
-const categoryIds = expensesByCategory
-  .map((c) => c.categoryId)
+const postIds = expensesByCategory
+  .map((c) => c.accountingPostId)
   .filter((id): id is string => id !== null);
 
-const categories = categoryIds.length
-  ? await prisma.paymentCategory.findMany({
+const accountingPosts = postIds.length
+  ? await prisma.accountingPost.findMany({
       where: {
-        organizationId: gate.organizationId,
-        id: { in: categoryIds },
+        organizationId: orgId!,
+        id: { in: postIds },
       },
       select: {
         id: true,
+        code: true,
         name: true,
       },
     })
@@ -195,7 +217,7 @@ const categories = categoryIds.length
 
 const expensesByCategoryFormatted = expensesByCategory.map((c) => ({
   categoryName:
-    categories.find((cat) => cat.id === c.categoryId)?.name ?? "Sans catégorie",
+    accountingPosts.find((ap) => ap.id === c.accountingPostId)?.name ?? "Sans poste",
   amount: toNumber(c._sum.amount),
 }));
 

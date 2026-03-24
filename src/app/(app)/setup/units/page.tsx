@@ -1,6 +1,7 @@
 "use client";
 
 import { useEffect, useMemo, useState } from "react";
+import { useSession } from "next-auth/react";
 import { Modal } from "@/components/ui/Modal";
 import { Table, THead, TR, TH, TD } from "@/components/ui/Table";
 import {
@@ -8,6 +9,8 @@ import {
   type ImportUnitError,
   type ImportUnitRow,
 } from "@/lib/imports/units-csv";
+import { canManage } from "@/lib/roles";
+import { useApiUrl } from "@/lib/org-context";
 
 type Building = { id: string; name: string };
 
@@ -19,10 +22,25 @@ type Unit = {
   reference: string;
   type: "APARTMENT" | "GARAGE" | "COMMERCIAL";
   building: Building | null;
-  monthlyDueAmount: number | null;
+  floor: number | null;
+  surface: number | null;
+  contributionAmount?: number | null;
+  activeOwnership?: {
+    id: string;
+    startDate: string;
+    owner: {
+      id: string;
+      firstName: string | null;
+      name: string;
+    };
+  } | null;
 };
 
 type Owner = { id: string; name: string };
+
+function getErrorMessage(error: unknown, fallback: string) {
+  return error instanceof Error ? error.message : fallback;
+}
 
 function TypeBadge({ type }: { type: Unit["type"] }) {
   const label =
@@ -48,11 +66,6 @@ function TypeBadge({ type }: { type: Unit["type"] }) {
   );
 }
 
-function formatMoneyMAD(v: number | null | undefined) {
-  if (v === null || v === undefined) return "—";
-  return `${v.toLocaleString("fr-FR")} MAD`;
-}
-
 function lotNumberSortValue(v: string | null) {
   if (!v) return Number.MAX_SAFE_INTEGER;
   const n = Number(v);
@@ -68,6 +81,9 @@ function chunkArray<T>(items: T[], size: number) {
 }
 
 export default function LotsPage() {
+  const { data: session } = useSession();
+  const canEdit = canManage(session?.user?.role);
+  const apiUrl = useApiUrl();
   const [lots, setLots] = useState<Unit[]>([]);
   const [buildings, setBuildings] = useState<Building[]>([]);
   const [owners, setOwners] = useState<Owner[]>([]);
@@ -88,13 +104,17 @@ export default function LotsPage() {
   const [selected, setSelected] = useState<Record<string, boolean>>({});
   const [bulkBusy, setBulkBusy] = useState(false);
 
+  const [editMode, setEditMode] = useState(false);
+  const [editingId, setEditingId] = useState<string | null>(null);
+
   const [lotNumber, setLotNumber] = useState("");
   const [reference, setReference] = useState("");
   const [surface, setSurface] = useState<string>("");
   const [type, setType] = useState<LotType>("APARTMENT");
   const [ownerId, setOwnerId] = useState("");
+  const [ownershipId, setOwnershipId] = useState("");
+  const [entryMonth, setEntryMonth] = useState("");
   const [buildingId, setBuildingId] = useState("");
-  const [monthlyDueAmount, setMonthlyDueAmount] = useState<string>("");
 
   const [loading, setLoading] = useState(false);
 
@@ -111,28 +131,20 @@ export default function LotsPage() {
   }, [lotNumber, lotNumberValue]);
 
   const canCreate = useMemo(() => {
+    if (editMode) {
+      if (type === "APARTMENT") return !!buildingId;
+      return true;
+    }
     if (Number.isNaN(lotNumberValue)) return false;
     if (type === "APARTMENT") return !!buildingId;
     return true;
-  }, [lotNumberValue, buildingId, type]);
-
-  const monthlyDueAmountNumber = useMemo(() => {
-    const raw = monthlyDueAmount.trim();
-    if (!raw) return null;
-    const n = Number(raw.replace(",", "."));
-    if (!Number.isFinite(n) || n < 0) return NaN;
-    return Math.round(n);
-  }, [monthlyDueAmount]);
-
-  const monthlyDueAmountInvalid = useMemo(() => {
-    return monthlyDueAmount.trim().length > 0 && Number.isNaN(monthlyDueAmountNumber);
-  }, [monthlyDueAmount, monthlyDueAmountNumber]);
+  }, [editMode, lotNumberValue, buildingId, type]);
 
   async function loadAll() {
     const [uRes, bRes, oRes] = await Promise.all([
-      fetch("/api/units", { cache: "no-store" }),
-      fetch("/api/buildings", { cache: "no-store" }),
-      fetch("/api/owners", { cache: "no-store" }),
+      fetch(apiUrl("/api/units"), { cache: "no-store" }),
+      fetch(apiUrl("/api/buildings"), { cache: "no-store" }),
+      fetch(apiUrl("/api/owners"), { cache: "no-store" }),
     ]);
 
     const u = await uRes.json();
@@ -156,50 +168,128 @@ export default function LotsPage() {
     }
   }
 
-  async function createLot() {
-    if (!canCreate || loading) return;
-    if (monthlyDueAmountInvalid || lotNumberInvalid) return;
+  function openCreateModal() {
+    setEditMode(false);
+    setEditingId(null);
+    setLotNumber("");
+    setReference("");
+    setSurface("");
+    setType("APARTMENT");
+    setOwnerId("");
+    setOwnershipId("");
+    setEntryMonth("");
+    if (!buildingId && buildings.length > 0) setBuildingId(buildings[0].id);
+    setOpen(true);
+  }
+
+  async function openEditModal(lot: Unit) {
+    setEditMode(true);
+    setEditingId(lot.id);
+    setLotNumber(lot.lotNumber ?? "");
+    setReference(lot.reference ?? "");
+    setSurface(lot.surface?.toString() ?? "");
+    setType(lot.type === "COMMERCIAL" ? "OTHER" : lot.type as LotType);
+    setOwnerId("");
+    setOwnershipId(lot.activeOwnership?.id ?? "");
+    setEntryMonth(lot.activeOwnership?.startDate?.slice(0, 7) ?? "");
+    if (lot.type === "APARTMENT" && lot.building) {
+      setBuildingId(lot.building.id);
+    } else {
+      setBuildingId("");
+    }
+    setOpen(true);
+  }
+
+  async function saveLot() {
+    if (loading) return;
+    if (lotNumberInvalid && !editMode) return;
 
     setLoading(true);
 
     try {
       const apiType = type === "OTHER" ? "COMMERCIAL" : type;
+      const surfaceNum = surface.trim() ? Number(surface) : null;
 
-      const res = await fetch("/api/units", {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({
-          lotNumber: String(lotNumberValue),
-          reference: reference.trim() || `Lot ${lotNumberValue}`,
-          type: apiType,
-          ...(type === "APARTMENT" ? { buildingId } : {}),
-          monthlyDueAmount: monthlyDueAmountNumber,
-        }),
-      });
+      if (editMode && editingId) {
+        const res = await fetch(apiUrl(`/api/units/${editingId}`), {
+          method: "PATCH",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({
+            lotNumber: lotNumber.trim() || null,
+            reference: reference.trim() || null,
+            type: apiType,
+            ...(type === "APARTMENT" ? { buildingId } : { buildingId: null }),
+            surface: surfaceNum,
+          }),
+        });
 
-      const data = await res.json();
-      if (!res.ok) throw new Error(data?.error ?? "Lot create failed");
+        const data = await res.json();
+        if (!res.ok) throw new Error(data?.error ?? "Lot update failed");
 
-      setLotNumber("");
-      setReference("");
-      setSurface("");
-      setType("APARTMENT");
-      setOwnerId("");
-      setMonthlyDueAmount("");
+        if (ownershipId && entryMonth) {
+          const ownershipRes = await fetch(apiUrl("/api/ownerships"), {
+            method: "PATCH",
+            headers: { "Content-Type": "application/json" },
+            body: JSON.stringify({
+              id: ownershipId,
+              startDate: `${entryMonth}-01`,
+            }),
+          });
+
+          const ownershipData = await ownershipRes.json().catch(() => null);
+          if (!ownershipRes.ok) {
+            throw new Error(ownershipData?.error ?? "Ownership update failed");
+          }
+        }
+      } else {
+        const res = await fetch(apiUrl("/api/units"), {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({
+            lotNumber: String(lotNumberValue),
+            reference: reference.trim() || `Lot ${lotNumberValue}`,
+            type: apiType,
+            ...(type === "APARTMENT" ? { buildingId } : {}),
+            surface: surfaceNum,
+          }),
+        });
+
+        const data = await res.json();
+        if (!res.ok) throw new Error(data?.error ?? "Lot create failed");
+      }
+
       setOpen(false);
-
       await loadAll();
-    } catch (e: any) {
-      alert(e?.message ?? "Lot create failed");
+    } catch (error: unknown) {
+      alert(getErrorMessage(error, "Erreur"));
     } finally {
       setLoading(false);
+    }
+  }
+
+  async function deleteLot(id: string, lotNumber: string | null) {
+    if (!confirm(`Supprimer le lot ${lotNumber ?? ""} ?`)) return;
+
+    try {
+      const res = await fetch(apiUrl(`/api/units/${id}`), {
+        method: "DELETE",
+      });
+
+      if (!res.ok) {
+        const data = await res.json().catch(() => null);
+        throw new Error(data?.error ?? "Delete failed");
+      }
+
+      await loadAll();
+    } catch (error: unknown) {
+      alert(getErrorMessage(error, "Erreur lors de la suppression"));
     }
   }
 
   useEffect(() => {
     loadAll();
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, []);
+  }, [apiUrl]);
 
   const selectedIds = useMemo(
     () => Object.entries(selected).filter(([, v]) => v).map(([k]) => k),
@@ -217,12 +307,12 @@ export default function LotsPage() {
   }
 
   async function removeSelected() {
-    if (selectedIds.length === 0 || bulkBusy) return;
+    if (!canEdit || selectedIds.length === 0 || bulkBusy) return;
     if (!confirm(`Supprimer ${selectedIds.length} lot(s) ?`)) return;
 
     setBulkBusy(true);
     try {
-      const res = await fetch("/api/units/bulk-delete", {
+      const res = await fetch(apiUrl("/api/units/bulk-delete"), {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({ ids: selectedIds }),
@@ -232,15 +322,15 @@ export default function LotsPage() {
 
       setSelected({});
       await loadAll();
-    } catch (e: any) {
-      alert(e?.message ?? "Bulk delete failed");
+    } catch (error: unknown) {
+      alert(getErrorMessage(error, "Bulk delete failed"));
     } finally {
       setBulkBusy(false);
     }
   }
 
   async function runImportInBatches(rows: ImportUnitRow[]) {
-    const startRes = await fetch("/api/import/units", {
+    const startRes = await fetch(apiUrl("/api/import/units"), {
       method: "POST",
       headers: { "Content-Type": "application/json" },
       body: JSON.stringify({
@@ -264,7 +354,7 @@ export default function LotsPage() {
     for (let i = 0; i < chunks.length; i++) {
       const batch = chunks[i];
 
-      const batchRes = await fetch("/api/import/units", {
+      const batchRes = await fetch(apiUrl("/api/import/units"), {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({
@@ -303,379 +393,464 @@ export default function LotsPage() {
   }
 
   return (
-    <div className="space-y-6">
-      <div className="flex items-start justify-between gap-4">
-        <div>
-          <h1 className="text-2xl font-semibold text-zinc-900">Gestion des Lots</h1>
-          <p className="mt-1 text-sm text-zinc-500">Appartements, garages et autres lots.</p>
-        </div>
+    <div className="flex flex-col h-full">
+      <div className="sticky top-0 z-20 -mx-4 -mt-6 mb-6 bg-[#FCFCFB]/90 px-4 py-4 backdrop-blur-md sm:-mx-6 sm:-mt-8 sm:px-6 lg:-mx-8 lg:px-8 border-b border-slate-200/50">
+        <div className="flex items-start justify-between gap-4">
+          <div>
+            <h1 className="text-2xl font-semibold text-zinc-900">Gestion des Lots</h1>
+            <p className="mt-1 text-sm text-zinc-500">Appartements, garages et autres lots.</p>
+          </div>
 
-        <div className="flex gap-2">
-          <button
-            onClick={removeSelected}
-            disabled={selectedIds.length === 0 || bulkBusy}
-            className="rounded-xl border border-zinc-200 bg-white px-4 py-2 text-sm font-medium hover:bg-zinc-50 disabled:opacity-40"
-          >
-            Supprimer ({selectedIds.length})
-          </button>
+          {canEdit ? (
+            <div className="flex gap-2">
+              <button
+                onClick={removeSelected}
+                disabled={selectedIds.length === 0 || bulkBusy}
+                className="rounded-xl border border-zinc-200 bg-white px-4 py-2 text-sm font-medium hover:bg-zinc-50 disabled:opacity-40"
+              >
+                Supprimer ({selectedIds.length})
+              </button>
 
-          <button
-            onClick={() => {
-              setOpenImport(true);
-              setImportFile(null);
-              setImportError("");
-              setImportResult(null);
-              setImportProgress(0);
-              setImportTotal(0);
-              setImportPercent(0);
-            }}
-            className="rounded-xl border border-zinc-200 bg-white px-4 py-2 text-sm font-medium hover:bg-zinc-50"
-          >
-            Charger
-          </button>
+              <button
+                onClick={() => {
+                  setOpenImport(true);
+                  setImportFile(null);
+                  setImportError("");
+                  setImportResult(null);
+                  setImportProgress(0);
+                  setImportTotal(0);
+                  setImportPercent(0);
+                }}
+                className="rounded-xl border border-zinc-200 bg-white px-4 py-2 text-sm font-medium hover:bg-zinc-50"
+              >
+                Charger
+              </button>
 
-          <button
-            onClick={() => {
-              setOpen(true);
-              setLotNumber("");
-              setReference("");
-              setMonthlyDueAmount("");
-              if (!buildingId && buildings.length > 0) setBuildingId(buildings[0].id);
-            }}
-            className="rounded-xl bg-zinc-900 px-4 py-2 text-sm font-medium text-white hover:bg-zinc-800"
-          >
-            + Ajouter un Lot
-          </button>
+              <button
+                onClick={openCreateModal}
+                className="rounded-xl bg-zinc-900 px-4 py-2 text-sm font-medium text-white hover:bg-zinc-800"
+              >
+                + Ajouter un Lot
+              </button>
+            </div>
+          ) : null}
         </div>
       </div>
 
-      <Table>
-        <THead>
-          <TR>
-            <TH className="w-10">
-              <input type="checkbox" checked={allChecked} onChange={(e) => toggleAll(e.target.checked)} />
-            </TH>
-            <TH>N° lot</TH>
-            <TH>Libellé</TH>
-            <TH>Type</TH>
-            <TH>Cotisation</TH>
-            <TH>Immeuble</TH>
-            <TH className="text-right">Actions</TH>
-          </TR>
-        </THead>
-
-        <tbody>
-          {lots.length === 0 ? (
+      <div className="flex-1 overflow-auto">
+        <Table>
+          <THead>
             <TR>
-              <TD />
-              <TD className="text-zinc-500">Aucun lot.</TD>
-              <TD />
-              <TD />
-              <TD />
-              <TD />
-              <TD />
-            </TR>
-          ) : (
-            lots.map((l) => (
-              <TR key={l.id}>
-                <TD className="w-10">
+              <TH className="w-10">
+                {canEdit ? (
                   <input
                     type="checkbox"
-                    checked={!!selected[l.id]}
-                    onChange={(e) => setSelected((prev) => ({ ...prev, [l.id]: e.target.checked }))}
+                    checked={allChecked}
+                    onChange={(e) => toggleAll(e.target.checked)}
                   />
-                </TD>
+                ) : null}
+              </TH>
+              <TH>N° lot</TH>
+              <TH>Libellé</TH>
+              <TH>Type</TH>
+              <TH>Surface</TH>
+              <TH>Cotisation</TH>
+              <TH>Bâtiment</TH>
+              <TH className="text-right">Actions</TH>
+            </TR>
+          </THead>
 
-                <TD className="font-medium text-zinc-900">{l.lotNumber ?? "—"}</TD>
-
-                <TD className="text-zinc-700">{l.reference || "—"}</TD>
-
-                <TD>
-                  <TypeBadge type={l.type} />
-                </TD>
-
-                <TD className="text-zinc-700">{formatMoneyMAD(l.monthlyDueAmount)}</TD>
-
-                <TD className="text-zinc-600">{l.building?.name ?? "—"}</TD>
-
-                <TD>
-                  <div className="flex justify-end gap-2">
-                    <button className="rounded-lg border border-zinc-200 px-3 py-1.5 text-xs hover:bg-zinc-50">
-                      Éditer
-                    </button>
-                    <button className="rounded-lg border border-zinc-200 px-3 py-1.5 text-xs hover:bg-zinc-50">
-                      Supprimer
-                    </button>
-                  </div>
-                </TD>
+          <tbody>
+            {lots.length === 0 ? (
+              <TR>
+                <TD />
+                <TD className="text-zinc-500">Aucun lot.</TD>
+                <TD />
+                <TD />
+                <TD />
+                <TD />
+                <TD />
+                <TD />
               </TR>
-            ))
-          )}
-        </tbody>
-      </Table>
+            ) : (
+              lots.map((l) => (
+                <TR key={l.id}>
+                  <TD className="w-10">
+                    {canEdit ? (
+                      <input
+                        type="checkbox"
+                        checked={!!selected[l.id]}
+                        onChange={(e) =>
+                          setSelected((prev) => ({
+                            ...prev,
+                            [l.id]: e.target.checked,
+                          }))
+                        }
+                      />
+                    ) : null}
+                  </TD>
 
-      <Modal open={open} onClose={() => setOpen(false)} title="Ajouter un Lot" zIndex={50}>
-        {buildings.length === 0 ? (
-          <div className="text-sm text-zinc-600">Aucun immeuble trouvé. Crée d’abord un immeuble dans “Immeubles”.</div>
-        ) : (
-          <div className="grid gap-4">
-            <div className="grid grid-cols-2 gap-3">
-              <div className="grid gap-2">
-                <label className="text-sm font-medium">N° lot *</label>
-                <input
-                  className="h-10 rounded-xl border border-zinc-200 px-3"
-                  value={lotNumber}
-                  onChange={(e) => setLotNumber(e.target.value)}
-                  inputMode="numeric"
-                  placeholder="Ex: 12"
-                />
-                {lotNumberInvalid ? <div className="text-xs text-red-600">Numéro de lot invalide.</div> : null}
+                  <TD className="font-medium text-zinc-900">
+                    {l.lotNumber ?? "—"}
+                  </TD>
+
+                  <TD className="text-zinc-700">{l.reference || "—"}</TD>
+
+                  <TD>
+                    <TypeBadge type={l.type} />
+                  </TD>
+
+                  <TD className="text-zinc-700">
+                    {l.surface ? `${l.surface} m²` : "—"}
+                  </TD>
+
+                  <TD className="text-zinc-700">
+                    {formatMoney(l.contributionAmount)}
+                  </TD>
+
+                  <TD className="text-zinc-600">{l.building?.name ?? "—"}</TD>
+
+                  <TD>
+                    {canEdit ? (
+                      <div className="flex justify-end gap-2">
+                        <button
+                          onClick={() => openEditModal(l)}
+                          className="rounded-lg border border-zinc-200 px-3 py-1.5 text-xs hover:bg-zinc-50"
+                        >
+                          Éditer
+                        </button>
+                        <button
+                          onClick={() => deleteLot(l.id, l.lotNumber)}
+                          className="rounded-lg border border-zinc-200 px-3 py-1.5 text-xs hover:bg-red-50 hover:text-red-600"
+                        >
+                          Supprimer
+                        </button>
+                      </div>
+                    ) : (
+                      <div className="text-right text-xs text-zinc-500">
+                        Lecture seule
+                      </div>
+                    )}
+                  </TD>
+                </TR>
+              ))
+            )}
+          </tbody>
+        </Table>
+      </div>
+
+      {canEdit ? (
+        <Modal
+          open={open}
+          onClose={() => setOpen(false)}
+          title={editMode ? "Modifier le Lot" : "Ajouter un Lot"}
+          zIndex={50}
+        >
+          {buildings.length === 0 ? (
+            <div className="text-sm text-zinc-600">
+              {"Aucun bâtiment trouvé. Crée d'abord un bâtiment dans \"Bâtiments\"."}
+            </div>
+          ) : (
+            <div className="grid gap-4">
+              <div className="grid grid-cols-2 gap-3">
+                <div className="grid gap-2">
+                  <label className="text-sm font-medium">
+                    N° lot {editMode ? "" : "*"}
+                  </label>
+                  <input
+                    className="h-10 rounded-xl border border-zinc-200 px-3"
+                    value={lotNumber}
+                    onChange={(e) => setLotNumber(e.target.value)}
+                    inputMode="numeric"
+                    placeholder="Ex: 12"
+                    disabled={editMode}
+                  />
+                  {editMode ? (
+                    <div className="text-xs text-zinc-500">
+                      Le numéro de lot ne peut pas être modifié.
+                    </div>
+                  ) : lotNumberInvalid ? (
+                    <div className="text-xs text-red-600">
+                      Numéro de lot invalide.
+                    </div>
+                  ) : null}
+                </div>
+
+                <div className="grid gap-2">
+                  <label className="text-sm font-medium">Libellé</label>
+                  <input
+                    className="h-10 rounded-xl border border-zinc-200 px-3"
+                    value={reference}
+                    onChange={(e) => setReference(e.target.value)}
+                    placeholder="Ex: Appartement 12"
+                  />
+                  <div className="text-xs text-zinc-500">
+                    {"Optionnel. Si vide, le système utilisera automatiquement \"Lot X\"."}
+                  </div>
+                </div>
               </div>
 
               <div className="grid gap-2">
                 <label className="text-sm font-medium">Surface (m²)</label>
                 <input
                   className="h-10 rounded-xl border border-zinc-200 px-3"
-                  placeholder="Optionnel"
+                  placeholder="Ex: 85"
                   value={surface}
                   onChange={(e) => setSurface(e.target.value)}
                   inputMode="decimal"
                 />
-              </div>
-            </div>
-
-            <div className="grid gap-2">
-              <label className="text-sm font-medium">Libellé</label>
-              <input
-                className="h-10 rounded-xl border border-zinc-200 px-3"
-                value={reference}
-                onChange={(e) => setReference(e.target.value)}
-                placeholder="Ex: Appartement 12"
-              />
-              <div className="text-xs text-zinc-500">Optionnel. Si vide, le système utilisera automatiquement “Lot X”.</div>
-            </div>
-
-            <div className="grid gap-2">
-              <label className="text-sm font-medium">Cotisation mensuelle (MAD)</label>
-              <input
-                className="h-10 rounded-xl border border-zinc-200 px-3"
-                placeholder="Optionnel (ex: 250)"
-                value={monthlyDueAmount}
-                onChange={(e) => setMonthlyDueAmount(e.target.value)}
-                inputMode="numeric"
-              />
-              {monthlyDueAmountInvalid ? (
-                <div className="text-xs text-red-600">Montant invalide.</div>
-              ) : (
                 <div className="text-xs text-zinc-500">
-                  Sert à générer les cotisations mensuelles du lot. Laisse vide si tu veux compléter plus tard.
+                  Optionnel. Utilisé pour le calcul des cotisations par tantième.
                 </div>
-              )}
-            </div>
+              </div>
 
-            <div className="grid gap-2">
-              <label className="text-sm font-medium">Type</label>
-              <select
-                className="h-10 rounded-xl border border-zinc-200 bg-white px-3"
-                value={type}
-                onChange={(e) => {
-                  const next = e.target.value as LotType;
-                  setType(next);
-                  if (next !== "APARTMENT") setBuildingId("");
-                  if (next === "APARTMENT" && !buildingId && buildings.length > 0) setBuildingId(buildings[0].id);
-                }}
-              >
-                <option value="APARTMENT">Appartement</option>
-                <option value="GARAGE">Garage</option>
-                <option value="OTHER">Autre</option>
-              </select>
-            </div>
-
-            {type === "APARTMENT" ? (
               <div className="grid gap-2">
-                <label className="text-sm font-medium">Immeuble *</label>
+                <label className="text-sm font-medium">Type</label>
                 <select
                   className="h-10 rounded-xl border border-zinc-200 bg-white px-3"
-                  value={buildingId}
-                  onChange={(e) => setBuildingId(e.target.value)}
+                  value={type}
+                  onChange={(e) => {
+                    const next = e.target.value as LotType;
+                    setType(next);
+                    if (next !== "APARTMENT") setBuildingId("");
+                    if (
+                      next === "APARTMENT" &&
+                      !buildingId &&
+                      buildings.length > 0
+                    )
+                      setBuildingId(buildings[0].id);
+                  }}
                 >
-                  {buildings.map((b) => (
-                    <option key={b.id} value={b.id}>
-                      {b.name}
+                  <option value="APARTMENT">Appartement</option>
+                  <option value="GARAGE">Garage</option>
+                  <option value="OTHER">Autre</option>
+                </select>
+              </div>
+
+              {type === "APARTMENT" ? (
+                <div className="grid gap-2">
+                  <label className="text-sm font-medium">Bâtiment *</label>
+                  <select
+                    className="h-10 rounded-xl border border-zinc-200 bg-white px-3"
+                    value={buildingId}
+                    onChange={(e) => setBuildingId(e.target.value)}
+                  >
+                    {buildings.map((b) => (
+                      <option key={b.id} value={b.id}>
+                        {b.name}
+                      </option>
+                    ))}
+                  </select>
+                </div>
+              ) : (
+                <div className="rounded-xl border border-zinc-200 bg-zinc-50 p-3 text-sm text-zinc-600">
+                  Pour un <b>{type === "GARAGE" ? "garage" : "autre lot"}</b>,
+                  aucun bâtiment n&apos;est requis.
+                </div>
+              )}
+
+              <div className="grid gap-2">
+                <label className="text-sm font-medium">Propriétaire</label>
+                <select
+                  className="h-10 rounded-xl border border-zinc-200 bg-white px-3"
+                  value={ownerId}
+                  onChange={(e) => setOwnerId(e.target.value)}
+                  disabled
+                >
+                  <option value="">
+                    {"Propriétaire défini via \"Copropriétaires\""}
+                  </option>
+                  {owners.map((o) => (
+                    <option key={o.id} value={o.id}>
+                      {o.name}
                     </option>
                   ))}
                 </select>
+                <div className="text-xs text-zinc-500">
+                  {"Géré via la section \"Copropriétaires\"."}
+                </div>
               </div>
-            ) : (
-              <div className="rounded-xl border border-zinc-200 bg-zinc-50 p-3 text-sm text-zinc-600">
-                Pour un <b>{type === "GARAGE" ? "garage" : "autre lot"}</b>, aucun immeuble n’est requis.
-              </div>
-            )}
 
-            <div className="grid gap-2">
-              <label className="text-sm font-medium">Propriétaire</label>
-              <select
-                className="h-10 rounded-xl border border-zinc-200 bg-white px-3"
-                value={ownerId}
-                onChange={(e) => setOwnerId(e.target.value)}
+              <button
+                onClick={saveLot}
+                disabled={
+                  !canCreate || loading || (lotNumberInvalid && !editMode)
+                }
+                className="mt-2 h-11 w-full rounded-xl bg-zinc-900 text-sm font-medium text-white hover:bg-zinc-800 disabled:opacity-40"
               >
-                <option value="">Sélectionner un propriétaire (optionnel)</option>
-                {owners.map((o) => (
-                  <option key={o.id} value={o.id}>
-                    {o.name}
-                  </option>
-                ))}
-              </select>
-              <div className="text-xs text-zinc-500">
-                Ce champ n’est toujours pas branché au backend. On le reliera plus tard via Ownership.
+                {loading
+                  ? "Enregistrement..."
+                  : editMode
+                  ? "Enregistrer"
+                  : "Ajouter un Lot"}
+              </button>
+            </div>
+          )}
+        </Modal>
+      ) : null}
+
+      {canEdit ? (
+        <Modal
+          open={openImport}
+          onClose={() => !importBusy && setOpenImport(false)}
+          title="Charger des lots (CSV)"
+          zIndex={50}
+        >
+          <div className="grid gap-4">
+            <div className="text-sm text-zinc-600">
+              CSV attendu : <b>lotNumber</b>, <b>reference</b>, <b>type</b>{" "}
+              (APARTMENT|GARAGE|OTHER), <b>building</b> (obligatoire si
+              APARTMENT), <b>surface</b> (optionnel).
+              <div className="mt-1 text-xs text-zinc-500">
+                <b>lotNumber</b> = numéro unique du lot • <b>building</b> = nom
+                exact de l&apos;bâtiment • <b>surface</b> = surface en m²
               </div>
             </div>
+
+            <input
+              id="importUnitsFile"
+              type="file"
+              accept=".csv,text/csv"
+              onChange={(e) => setImportFile(e.target.files?.[0] ?? null)}
+              className="block w-full text-sm"
+            />
+
+            <pre className="overflow-auto rounded-xl bg-zinc-50 p-3 text-xs">
+              {`lotNumber,reference,type,building,surface
+12,Appartement 12,APARTMENT,Bâtiment 1,85
+101,Garage 101,GARAGE,,
+900,Local technique,OTHER,,25`}
+            </pre>
 
             <button
-              onClick={createLot}
-              disabled={!canCreate || loading || monthlyDueAmountInvalid || lotNumberInvalid}
-              className="mt-2 h-11 w-full rounded-xl bg-zinc-900 text-sm font-medium text-white hover:bg-zinc-800 disabled:opacity-40"
-            >
-              {loading ? "Création..." : "Ajouter un Lot"}
-            </button>
-          </div>
-        )}
-      </Modal>
+              disabled={!importFile || importBusy}
+              onClick={async () => {
+                if (!importFile || importBusy) return;
 
-      <Modal open={openImport} onClose={() => !importBusy && setOpenImport(false)} title="Charger des lots (CSV)" zIndex={50}>
-        <div className="grid gap-4">
-          <div className="text-sm text-zinc-600">
-            CSV attendu : <b>lotNumber</b>, <b>reference</b>, <b>type</b> (APARTMENT|GARAGE|OTHER), <b>building</b>{" "}
-            (obligatoire si APARTMENT), <b>monthlyDueAmount</b> (optionnel).
-            <div className="mt-1 text-xs text-zinc-500">
-              <b>lotNumber</b> = numéro unique du lot • <b>building</b> = nom exact de l’immeuble •{" "}
-              <b>monthlyDueAmount</b> = montant mensuel (MAD)
-            </div>
-          </div>
+                setImportBusy(true);
+                setImportError("");
+                setImportResult(null);
+                setImportProgress(0);
+                setImportTotal(0);
+                setImportPercent(0);
 
-          <input
-            id="importUnitsFile"
-            type="file"
-            accept=".csv,text/csv"
-            onChange={(e) => setImportFile(e.target.files?.[0] ?? null)}
-            className="block w-full text-sm"
-          />
+                try {
+                  const text = await importFile.text();
+                  const parsed = parseUnitsCsv(text);
 
-          <pre className="overflow-auto rounded-xl bg-zinc-50 p-3 text-xs">
-{`lotNumber,reference,type,building,monthlyDueAmount
-12,Appartement 12,APARTMENT,Immeuble 1,250
-101,Garage 101,GARAGE,,0
-900,Local technique,OTHER,,0`}
-          </pre>
+                  if (parsed.errors.length > 0 && parsed.rows.length === 0) {
+                    setImportResult({
+                      imported: 0,
+                      errors: parsed.errors,
+                    });
+                    return;
+                  }
 
-          <button
-            disabled={!importFile || importBusy}
-            onClick={async () => {
-              if (!importFile || importBusy) return;
+                  setImportTotal(parsed.rows.length);
 
-              setImportBusy(true);
-              setImportError("");
-              setImportResult(null);
-              setImportProgress(0);
-              setImportTotal(0);
-              setImportPercent(0);
+                  const result = await runImportInBatches(parsed.rows);
 
-              try {
-                const text = await importFile.text();
-                const parsed = parseUnitsCsv(text);
-
-                if (parsed.rows.length === 0) {
                   setImportResult({
-                    imported: 0,
-                    errors: parsed.errors.length ? parsed.errors : [{ row: 0, error: "Aucune ligne valide" }],
+                    imported: result.imported,
+                    errors: [...parsed.errors, ...result.errors],
                   });
-                  return;
+
+                  setImportFile(null);
+                  const input = document.getElementById(
+                    "importUnitsFile"
+                  ) as HTMLInputElement | null;
+                  if (input) input.value = "";
+
+                  await loadAll();
+                } catch (error: unknown) {
+                  setImportError(getErrorMessage(error, "Import failed"));
+                } finally {
+                  setImportBusy(false);
                 }
+              }}
+              className="h-11 w-full rounded-xl bg-zinc-900 text-sm font-medium text-white hover:bg-zinc-800 disabled:opacity-40"
+            >
+              {importBusy ? "Import en cours..." : "Charger"}
+            </button>
 
-                setImportTotal(parsed.rows.length);
-
-                const result = await runImportInBatches(parsed.rows);
-
-                setImportResult({
-                  imported: result.imported,
-                  errors: [...parsed.errors, ...result.errors],
-                });
-
-                setImportFile(null);
-                const input = document.getElementById("importUnitsFile") as HTMLInputElement | null;
-                if (input) input.value = "";
-
-                await loadAll();
-              } catch (e: any) {
-                setImportError(e?.message ?? "Import failed");
-              } finally {
-                setImportBusy(false);
-              }
-            }}
-            className="h-11 w-full rounded-xl bg-zinc-900 text-sm font-medium text-white hover:bg-zinc-800 disabled:opacity-40"
-          >
-            {importBusy ? "Import en cours..." : "Charger"}
-          </button>
-
-          {(importBusy || importTotal > 0) ? (
-            <div className="space-y-2">
-              <div className="flex items-center justify-between text-sm text-zinc-700">
-                <span>Import en cours</span>
-                <span>
-                  {importProgress} / {importTotal}
-                </span>
-              </div>
-
-              <div className="h-3 w-full overflow-hidden rounded-full bg-zinc-200">
-                <div
-                  className="h-3 rounded-full bg-zinc-900 transition-all duration-300"
-                  style={{ width: `${importPercent}%` }}
-                />
-              </div>
-
-              <div className="text-xs text-zinc-500">{importPercent}%</div>
-            </div>
-          ) : null}
-
-          {importError ? (
-            <div className="rounded-xl border border-red-200 bg-red-50 p-3 text-sm text-red-800">{importError}</div>
-          ) : null}
-
-          {importResult ? (
-            <div className="grid gap-2">
-<div className="flex gap-2">
-  <span className="inline-flex items-center rounded-full bg-emerald-100 px-3 py-1 text-xs font-medium text-emerald-700">
-    Importés : {importResult.imported}
-  </span>
-
-  <span
-    className={`inline-flex items-center rounded-full px-3 py-1 text-xs font-medium ${
-      importResult.errors.length > 0
-        ? "bg-red-100 text-red-700"
-        : "bg-zinc-100 text-zinc-600"
-    }`}
-  >
-    Erreurs : {importResult.errors.length}
-  </span>
-</div>
-
-              {importResult.errors.length > 0 ? (
-                <div className="rounded-xl border border-zinc-200 bg-white p-3">
-                  <div className="mb-2 text-sm font-medium text-zinc-900">Détail des erreurs</div>
-                  <ul className="max-h-48 space-y-1 overflow-auto text-sm text-zinc-700">
-                    {importResult.errors.map((e, idx) => (
-                      <li key={idx} className="flex gap-2">
-                        <span className="w-16 shrink-0 text-zinc-500">Ligne {e.row}</span>
-                        <span className="break-words">{e.error}</span>
-                      </li>
-                    ))}
-                  </ul>
+            {importBusy || importTotal > 0 ? (
+              <div className="space-y-2">
+                <div className="flex items-center justify-between text-sm text-zinc-700">
+                  <span>Import en cours</span>
+                  <span>
+                    {importProgress} / {importTotal}
+                  </span>
                 </div>
-              ) : null}
-            </div>
-          ) : null}
-        </div>
-      </Modal>
+
+                <div className="h-3 w-full overflow-hidden rounded-full bg-zinc-200">
+                  <div
+                    className="h-3 rounded-full bg-zinc-900 transition-all duration-300"
+                    style={{ width: `${importPercent}%` }}
+                  />
+                </div>
+
+                <div className="text-xs text-zinc-500">{importPercent}%</div>
+              </div>
+            ) : null}
+
+            {importError ? (
+              <div className="rounded-xl border border-red-200 bg-red-50 p-3 text-sm text-red-800">
+                {importError}
+              </div>
+            ) : null}
+
+            {importResult ? (
+              <div className="grid gap-2">
+                <div className="flex gap-2">
+                  <span className="inline-flex items-center rounded-full bg-emerald-100 px-3 py-1 text-xs font-medium text-emerald-700">
+                    Importés : {importResult.imported}
+                  </span>
+
+                  <span
+                    className={`inline-flex items-center rounded-full px-3 py-1 text-xs font-medium ${
+                      importResult.errors.length > 0
+                        ? "bg-red-100 text-red-700"
+                        : "bg-zinc-100 text-zinc-600"
+                    }`}
+                  >
+                    Erreurs : {importResult.errors.length}
+                  </span>
+                </div>
+
+                {importResult.errors.length > 0 ? (
+                  <div className="rounded-xl border border-zinc-200 bg-white p-3">
+                    <div className="mb-2 text-sm font-medium text-zinc-900">
+                      Détail des erreurs
+                    </div>
+                    <ul className="max-h-48 space-y-1 overflow-auto text-sm text-zinc-700">
+                      {importResult.errors.map((e, idx) => (
+                        <li key={idx} className="flex gap-2">
+                          <span className="w-16 shrink-0 text-zinc-500">
+                            Ligne {e.row}
+                          </span>
+                          <span className="break-words">{e.error}</span>
+                        </li>
+                      ))}
+                    </ul>
+                  </div>
+                ) : null}
+              </div>
+            ) : null}
+          </div>
+        </Modal>
+      ) : null}
     </div>
   );
 }
+
+function formatMoney(amount: number | null | undefined) {
+  if (amount === null || amount === undefined || Number.isNaN(amount))
+    return "—";
+  return (
+    new Intl.NumberFormat("fr-FR", {
+      minimumFractionDigits: 2,
+      maximumFractionDigits: 2,
+    }).format(amount) + " MAD"
+  );
+}
+

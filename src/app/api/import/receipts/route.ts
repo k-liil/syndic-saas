@@ -1,7 +1,9 @@
 import { NextResponse } from "next/server";
 import { prisma } from "@/lib/prisma";
-import { requireAdmin } from "@/lib/authz";
+import { requireManager } from "@/lib/authz";
 import { DueStatus, PaymentMethod, ReceiptType } from "@prisma/client";
+import { getMonthlyContributionAmount } from "@/lib/contribution-amounts";
+import { buildContributionStartPeriod } from "@/lib/contribution-start";
 
 type Row = {
   lotNumber: string;
@@ -51,7 +53,7 @@ async function processInParallel<T>(
 }
 
 export async function POST(req: Request) {
-  const gate = await requireAdmin();
+  const gate = await requireManager();
   if (!gate.ok) {
     return NextResponse.json({ error: gate.error }, { status: gate.status });
   }
@@ -61,7 +63,7 @@ export async function POST(req: Request) {
   if (body.action === "start") {
     const job = await prisma.importJob.create({
       data: {
-        organizationId: gate.organizationId,
+        organizationId: gate.organizationId ?? "",
         type: "receipts",
         totalRows: body.totalRows,
         processed: 0,
@@ -101,13 +103,12 @@ export async function POST(req: Request) {
       lotNumber: {
         in: lotNumbers,
       },
-      organizationId: gate.organizationId,
+      organizationId: gate.organizationId ?? "",
     },
     select: {
       id: true,
       lotNumber: true,
       buildingId: true,
-      monthlyDueAmount: true,
     },
   });
 
@@ -124,12 +125,13 @@ export async function POST(req: Request) {
       unitId: {
         in: units.map((unit) => unit.id),
       },
-      organizationId: gate.organizationId,
+      organizationId: gate.organizationId ?? "",
       endDate: null,
     },
     select: {
       unitId: true,
       ownerId: true,
+      startDate: true,
     },
   });
 
@@ -138,21 +140,21 @@ export async function POST(req: Request) {
   );
 
   const settings = await prisma.appSettings.findFirst({
-    where: { organizationId: gate.organizationId },
+    where: { organizationId: gate.organizationId ?? "" },
     select: {
       startYear: true,
       startMonth: true,
       receiptStartNumber: true,
+      globalFixedAmount: true,
     },
   });
 
   const startYear = settings?.startYear ?? 2026;
   const startMonth = settings?.startMonth ?? 1;
   const receiptStartNumber = settings?.receiptStartNumber ?? 1;
-  const startPeriod = new Date(Date.UTC(startYear, startMonth - 1, 1));
 
   const lastReceipt = await prisma.receipt.findFirst({
-    where: { organizationId: gate.organizationId },
+    where: { organizationId: gate.organizationId ?? "" },
     orderBy: { receiptNumber: "desc" },
     select: { receiptNumber: true },
   });
@@ -166,7 +168,11 @@ export async function POST(req: Request) {
     row: Row;
     rowNo: number;
     unit: (typeof units)[number] & { buildingId: string };
-    ownership: { unitId: string; ownerId: string };
+    ownership: {
+      unitId: string;
+      ownerId: string;
+      startDate: Date;
+    };
     amount: number;
     receiptDate: Date;
     method: PaymentMethod;
@@ -256,20 +262,30 @@ export async function POST(req: Request) {
         try {
           await prisma.$transaction(async (tx) => {
             const receiptPeriod = firstDayOfMonth(item.receiptDate);
+            const startPeriod = buildContributionStartPeriod(
+              item.ownership.startDate,
+              startYear,
+              startMonth,
+            );
             const fiscalYear = item.receiptDate.getUTCFullYear();
-            const fee = Number(item.unit.monthlyDueAmount ?? 0);
+            // Auto-allouer les cotisations selon globalFixedAmount
+            const fee = getMonthlyContributionAmount(
+              settings?.globalFixedAmount !== null && settings?.globalFixedAmount !== undefined
+                ? Number(settings.globalFixedAmount)
+                : 0,
+            );
             const maxFutureMonths = 240;
 
             await tx.fiscalYear.upsert({
               where: {
                 organizationId_year: {
-                  organizationId: gate.organizationId,
+                  organizationId: gate.organizationId ?? "",
                   year: fiscalYear,
                 },
               },
               update: {},
               create: {
-                organizationId: gate.organizationId,
+                organizationId: gate.organizationId ?? "",
                 year: fiscalYear,
                 startsAt: new Date(Date.UTC(fiscalYear, 0, 1)),
                 endsAt: new Date(Date.UTC(fiscalYear, 11, 31)),
@@ -279,7 +295,7 @@ export async function POST(req: Request) {
             const receipt = await tx.receipt.create({
               data: {
                 receiptNumber: item.receiptNumber,
-                organizationId: gate.organizationId,
+                organizationId: gate.organizationId ?? "",
                 type: ReceiptType.CONTRIBUTION,
                 ownerId: item.ownership.ownerId,
                 buildingId: item.unit.buildingId,
@@ -304,7 +320,7 @@ export async function POST(req: Request) {
                 data: [
                   {
                     unitId: item.unit.id,
-                    organizationId: gate.organizationId,
+                    organizationId: gate.organizationId ?? "",
                     period,
                     amountDue: fee,
                     paidAmount: 0,
@@ -330,7 +346,7 @@ export async function POST(req: Request) {
               const dues = await tx.monthlyDue.findMany({
                 where: {
                   unitId: item.unit.id,
-                  organizationId: gate.organizationId,
+                  organizationId: gate.organizationId ?? "",
                   status: { in: [DueStatus.UNPAID, DueStatus.PARTIAL] },
                   period: { gte: startPeriod },
                 },
