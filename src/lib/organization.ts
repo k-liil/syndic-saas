@@ -131,7 +131,7 @@ export async function ensureOrganizationForUser(userId?: string | null) {
     data: {
       userId: user.id,
       organizationId: organization.id,
-      role: normalizeRole(user.role),
+      role: (normalizeRole(user.role) === "GUEST" ? "OWNER" : normalizeRole(user.role)) as any,
     },
   });
 
