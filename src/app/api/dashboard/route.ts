@@ -50,86 +50,53 @@ export async function GET(req: Request) {
   const endDate = new Date(Date.UTC(year + 1, 0, 1, 0, 0, 0, 0));
 
   const [
-    receipts,
-    otherReceipts,
-    payments,
+    receiptsAgg,
+    otherReceiptsAgg,
+    paymentsAgg,
     settings,
     ownersCount,
     paidOwners,
     expensesByCategory,
+    // Add these for monthly breakdown - still findMany but minimal fields
+    receiptsMonths,
+    otherReceiptsMonths,
+    paymentsMonths,
   ] = await Promise.all([
-    prisma.receipt.findMany({
-      where: {
-        organizationId: orgId!,
-        date: {
-          gte: startDate,
-          lt: endDate,
-        },
-      },
-      select: {
-        amount: true,
-        method: true,
-        date: true,
-      },
+    prisma.receipt.aggregate({
+      where: { organizationId: orgId!, date: { gte: startDate, lt: endDate } },
+      _sum: { amount: true },
     }),
-
-    prisma.otherReceipt.findMany({
-      where: {
-        organizationId: orgId!,
-        date: {
-          gte: startDate,
-          lt: endDate,
-        },
-      },
-      select: {
-        amount: true,
-        method: true,
-        date: true,
-      },
+    prisma.otherReceipt.aggregate({
+      where: { organizationId: orgId!, date: { gte: startDate, lt: endDate } },
+      _sum: { amount: true },
     }),
-
-    prisma.payment.findMany({
-      where: {
-        organizationId: orgId!,
-        date: {
-          gte: startDate,
-          lt: endDate,
-        },
-      },
-      select: {
-        amount: true,
-        method: true,
-        date: true,
-      },
+    prisma.payment.aggregate({
+      where: { organizationId: orgId!, date: { gte: startDate, lt: endDate } },
+      _sum: { amount: true },
     }),
-
     prisma.appSettings.findFirst({ where: { organizationId: orgId! } }),
-
     prisma.owner.count({ where: { organizationId: orgId! } }),
-
     prisma.receipt.groupBy({
       by: ["ownerId"],
-      where: {
-        organizationId: orgId!,
-        date: {
-          gte: startDate,
-          lt: endDate,
-        },
-      },
+      where: { organizationId: orgId!, date: { gte: startDate, lt: endDate } },
     }),
-
     prisma.payment.groupBy({
       by: ["accountingPostId"],
-      _sum: {
-        amount: true,
-      },
-      where: {
-        organizationId: orgId!,
-        date: {
-          gte: startDate,
-          lt: endDate,
-        },
-      },
+      _sum: { amount: true },
+      where: { organizationId: orgId!, date: { gte: startDate, lt: endDate } },
+    }),
+    // Minimal fetch for month calculation
+    prisma.receipt.findMany({
+      where: { organizationId: orgId!, date: { gte: startDate, lt: endDate } },
+      select: { amount: true, date: true, method: true },
+    }),
+    prisma.otherReceipt.findMany({
+      where: { organizationId: orgId!, date: { gte: startDate, lt: endDate } },
+      select: { amount: true, date: true, method: true },
+    }),
+    prisma.payment.findMany({
+      where: { organizationId: orgId!, date: { gte: startDate, lt: endDate } },
+      select: { amount: true, date: true, method: true },
     }),
   ]);
 
@@ -139,47 +106,32 @@ export async function GET(req: Request) {
   let receiptsCash = 0;
   let receiptsBank = 0;
 
-for (const r of receipts) {
-  const month = new Date(r.date).getUTCMonth();
-  const amount = toNumber(r.amount);
-
-  receiptsByMonth[month] += amount;
-
-  if (r.method === "CASH") {
-    receiptsCash += amount;
-  } else {
-    receiptsBank += amount;
+  for (const r of receiptsMonths) {
+    const month = new Date(r.date).getUTCMonth();
+    const amount = toNumber(r.amount);
+    receiptsByMonth[month] += amount;
+    if (r.method === "CASH") receiptsCash += amount;
+    else receiptsBank += amount;
   }
-}
 
-for (const r of otherReceipts) {
-  const month = new Date(r.date).getUTCMonth();
-  const amount = toNumber(r.amount);
-
-  receiptsByMonth[month] += amount;
-
-  if (r.method === "CASH") {
-    receiptsCash += amount;
-  } else {
-    receiptsBank += amount;
+  for (const r of otherReceiptsMonths) {
+    const month = new Date(r.date).getUTCMonth();
+    const amount = toNumber(r.amount);
+    receiptsByMonth[month] += amount;
+    if (r.method === "CASH") receiptsCash += amount;
+    else receiptsBank += amount;
   }
-}
 
   let paymentsCash = 0;
   let paymentsBank = 0;
 
-for (const p of payments) {
-  const month = new Date(p.date).getUTCMonth();
-  const amount = toNumber(p.amount);
-
-  paymentsByMonth[month] += amount;
-
-  if (p.method === "CASH") {
-    paymentsCash += amount;
-  } else {
-    paymentsBank += amount;
+  for (const p of paymentsMonths) {
+    const month = new Date(p.date).getUTCMonth();
+    const amount = toNumber(p.amount);
+    paymentsByMonth[month] += amount;
+    if (p.method === "CASH") paymentsCash += amount;
+    else paymentsBank += amount;
   }
-}
 
 const openingCash = toNumber(settings?.openingCashBalance);
 const openingBank = toNumber(settings?.openingBankBalance);

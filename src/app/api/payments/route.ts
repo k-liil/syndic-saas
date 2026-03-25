@@ -91,9 +91,17 @@ export async function GET(req: Request) {
             }
           : { organizationId: orgId! },
       orderBy: [{ date: "desc" }, { paymentNumber: "desc" }],
-      include: {
-        supplier: true,
-        accountingPost: true,
+      select: {
+        id: true,
+        paymentNumber: true,
+        date: true,
+        amount: true,
+        method: true,
+        note: true,
+        bankName: true,
+        bankRef: true,
+        supplier: { select: { id: true, name: true } },
+        accountingPost: { select: { id: true, name: true, code: true } },
       },
     }),
 

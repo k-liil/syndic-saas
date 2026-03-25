@@ -91,8 +91,7 @@ if (method) where.method = method;
     ];
   }
 
-const [items, total, totalAllAgg, totalCashAgg, totalTransferAgg, totalCheckAgg] =
-  await prisma.$transaction([
+  const [items, total, methodAgg] = await prisma.$transaction([
     prisma.receipt.findMany({
       where,
       skip,
@@ -116,52 +115,43 @@ const [items, total, totalAllAgg, totalCashAgg, totalTransferAgg, totalCheckAgg]
       },
     }),
     prisma.receipt.count({ where }),
-    prisma.receipt.aggregate({
+    prisma.receipt.groupBy({
       where,
+      by: ["method"],
       _sum: { amount: true },
-    }),
-    prisma.receipt.aggregate({
-      where: {
-        ...where,
-        method: "CASH",
-      },
-      _sum: { amount: true },
-    }),
-    prisma.receipt.aggregate({
-      where: {
-        ...where,
-        method: "TRANSFER",
-      },
-      _sum: { amount: true },
-    }),
-    prisma.receipt.aggregate({
-      where: {
-        ...where,
-        method: "CHECK",
-      },
-      _sum: { amount: true },
+      orderBy: { method: "asc" },
     }),
   ]);
 
-return NextResponse.json({
-  items: items.map((item) => ({
-    ...item,
-    amount: Number(item.amount ?? 0),
-    unallocatedAmount: Number(item.unallocatedAmount ?? 0),
-  })),
-  pagination: {
-    page,
-    pageSize,
-    total,
-    totalPages: Math.max(1, Math.ceil(total / pageSize)),
-  },
-  totals: {
-    all: Number(totalAllAgg._sum.amount ?? 0),
-    cash: Number(totalCashAgg._sum.amount ?? 0),
-    transfer: Number(totalTransferAgg._sum.amount ?? 0),
-    check: Number(totalCheckAgg._sum.amount ?? 0),
-  },
-});
+  const totals = {
+    all: 0,
+    cash: 0,
+    transfer: 0,
+    check: 0,
+  };
+
+  for (const m of methodAgg) {
+    const amount = Number(m._sum?.amount ?? 0);
+    totals.all += amount;
+    if (m.method === "CASH") totals.cash = amount;
+    if (m.method === "TRANSFER") totals.transfer = amount;
+    if (m.method === "CHECK") totals.check = amount;
+  }
+
+  return NextResponse.json({
+    items: items.map((item) => ({
+      ...item,
+      amount: Number(item.amount ?? 0),
+      unallocatedAmount: Number(item.unallocatedAmount ?? 0),
+    })),
+    pagination: {
+      page,
+      pageSize,
+      total,
+      totalPages: Math.max(1, Math.ceil(total / pageSize)),
+    },
+    totals,
+  });
 
   return NextResponse.json({
     items,
