@@ -24,7 +24,7 @@ export const PAGE_VISIBILITY_REGISTRY: PageRegistryItem[] = [
     icon: "LayoutDashboard",
     section: "dashboard",
     defaultEnabled: true,
-    roles: { SUPER_ADMIN: true, MANAGER: true, OWNER: true },
+    roles: { SUPER_ADMIN: true, MANAGER: true, OWNER: true, GUEST: false },
   },
   {
     title: "Vue annuelle",
@@ -32,7 +32,7 @@ export const PAGE_VISIBILITY_REGISTRY: PageRegistryItem[] = [
     icon: "CalendarRange",
     section: "suivi",
     defaultEnabled: true,
-    roles: { SUPER_ADMIN: true, MANAGER: true, OWNER: true },
+    roles: { SUPER_ADMIN: true, MANAGER: true, OWNER: true, GUEST: false },
   },
   {
     title: "Generer cotisations",
@@ -40,7 +40,7 @@ export const PAGE_VISIBILITY_REGISTRY: PageRegistryItem[] = [
     icon: "Sparkles",
     section: "suivi",
     defaultEnabled: true,
-    roles: { SUPER_ADMIN: true, MANAGER: true, OWNER: false },
+    roles: { SUPER_ADMIN: true, MANAGER: true, OWNER: false, GUEST: false },
   },
   {
     title: "Recettes",
@@ -48,7 +48,7 @@ export const PAGE_VISIBILITY_REGISTRY: PageRegistryItem[] = [
     icon: "Banknote",
     section: "operations",
     defaultEnabled: true,
-    roles: { SUPER_ADMIN: true, MANAGER: true, OWNER: true },
+    roles: { SUPER_ADMIN: true, MANAGER: true, OWNER: true, GUEST: false },
   },
   {
     title: "Depenses",
@@ -56,7 +56,7 @@ export const PAGE_VISIBILITY_REGISTRY: PageRegistryItem[] = [
     icon: "Receipt",
     section: "operations",
     defaultEnabled: true,
-    roles: { SUPER_ADMIN: true, MANAGER: true, OWNER: true },
+    roles: { SUPER_ADMIN: true, MANAGER: true, OWNER: true, GUEST: false },
   },
   {
     title: "Budgets",
@@ -64,7 +64,7 @@ export const PAGE_VISIBILITY_REGISTRY: PageRegistryItem[] = [
     icon: "BarChart3",
     section: "operations",
     defaultEnabled: true,
-    roles: { SUPER_ADMIN: true, MANAGER: true, OWNER: false },
+    roles: { SUPER_ADMIN: true, MANAGER: true, OWNER: false, GUEST: false },
   },
   {
     title: "Comptabilite",
@@ -72,7 +72,7 @@ export const PAGE_VISIBILITY_REGISTRY: PageRegistryItem[] = [
     icon: "Calculator",
     section: "operations",
     defaultEnabled: true,
-    roles: { SUPER_ADMIN: true, MANAGER: true, OWNER: false },
+    roles: { SUPER_ADMIN: true, MANAGER: true, OWNER: false, GUEST: false },
   },
   {
     title: "Batiments",
@@ -80,7 +80,7 @@ export const PAGE_VISIBILITY_REGISTRY: PageRegistryItem[] = [
     icon: "Building2",
     section: "gestion",
     defaultEnabled: true,
-    roles: { SUPER_ADMIN: true, MANAGER: true, OWNER: true },
+    roles: { SUPER_ADMIN: true, MANAGER: true, OWNER: true, GUEST: false },
   },
   {
     title: "Lots",
@@ -88,7 +88,7 @@ export const PAGE_VISIBILITY_REGISTRY: PageRegistryItem[] = [
     icon: "Home",
     section: "gestion",
     defaultEnabled: true,
-    roles: { SUPER_ADMIN: true, MANAGER: true, OWNER: true },
+    roles: { SUPER_ADMIN: true, MANAGER: true, OWNER: true, GUEST: false },
   },
   {
     title: "Coproprietaires",
@@ -96,7 +96,7 @@ export const PAGE_VISIBILITY_REGISTRY: PageRegistryItem[] = [
     icon: "Users",
     section: "gestion",
     defaultEnabled: true,
-    roles: { SUPER_ADMIN: true, MANAGER: true, OWNER: false },
+    roles: { SUPER_ADMIN: true, MANAGER: true, OWNER: false, GUEST: false },
   },
   {
     title: "Prestataires",
@@ -104,7 +104,7 @@ export const PAGE_VISIBILITY_REGISTRY: PageRegistryItem[] = [
     icon: "Truck",
     section: "gestion",
     defaultEnabled: true,
-    roles: { SUPER_ADMIN: true, MANAGER: true, OWNER: false },
+    roles: { SUPER_ADMIN: true, MANAGER: true, OWNER: false, GUEST: false },
   },
   {
     title: "Postes comptables",
@@ -112,7 +112,7 @@ export const PAGE_VISIBILITY_REGISTRY: PageRegistryItem[] = [
     icon: "FileText",
     section: "gestion",
     defaultEnabled: true,
-    roles: { SUPER_ADMIN: true, MANAGER: true, OWNER: false },
+    roles: { SUPER_ADMIN: true, MANAGER: true, OWNER: false, GUEST: false },
   },
   {
     title: "Parametres",
@@ -120,7 +120,7 @@ export const PAGE_VISIBILITY_REGISTRY: PageRegistryItem[] = [
     icon: "Settings",
     section: "gestion",
     defaultEnabled: true,
-    roles: { SUPER_ADMIN: true, MANAGER: true, OWNER: false },
+    roles: { SUPER_ADMIN: true, MANAGER: true, OWNER: false, GUEST: false },
   },
   {
     title: "Utilisateurs",
@@ -128,7 +128,7 @@ export const PAGE_VISIBILITY_REGISTRY: PageRegistryItem[] = [
     icon: "Users",
     section: "gestion",
     defaultEnabled: true,
-    roles: { SUPER_ADMIN: true, MANAGER: false, OWNER: false },
+    roles: { SUPER_ADMIN: true, MANAGER: false, OWNER: false, GUEST: false },
   },
   {
     title: "Organisations",
@@ -136,7 +136,7 @@ export const PAGE_VISIBILITY_REGISTRY: PageRegistryItem[] = [
     icon: "Shield",
     section: "gestion",
     defaultEnabled: true,
-    roles: { SUPER_ADMIN: true, MANAGER: false, OWNER: false },
+    roles: { SUPER_ADMIN: true, MANAGER: false, OWNER: false, GUEST: false },
   },
   {
     title: "Assemblees",
@@ -144,7 +144,7 @@ export const PAGE_VISIBILITY_REGISTRY: PageRegistryItem[] = [
     icon: "Users",
     section: "organisation",
     defaultEnabled: true,
-    roles: { SUPER_ADMIN: true, MANAGER: true, OWNER: true },
+    roles: { SUPER_ADMIN: true, MANAGER: true, OWNER: true, GUEST: false },
   },
   {
     title: "Incidents",
@@ -152,7 +152,7 @@ export const PAGE_VISIBILITY_REGISTRY: PageRegistryItem[] = [
     icon: "AlertCircle",
     section: "organisation",
     defaultEnabled: true,
-    roles: { SUPER_ADMIN: true, MANAGER: true, OWNER: true },
+    roles: { SUPER_ADMIN: true, MANAGER: true, OWNER: true, GUEST: false },
   },
   {
     title: "Reclamations",
@@ -160,7 +160,7 @@ export const PAGE_VISIBILITY_REGISTRY: PageRegistryItem[] = [
     icon: "MessageSquare",
     section: "organisation",
     defaultEnabled: true,
-    roles: { SUPER_ADMIN: true, MANAGER: true, OWNER: true },
+    roles: { SUPER_ADMIN: true, MANAGER: true, OWNER: true, GUEST: false },
   },
   {
     title: "Coffre-Fort",
@@ -168,7 +168,7 @@ export const PAGE_VISIBILITY_REGISTRY: PageRegistryItem[] = [
     icon: "Vault",
     section: "organisation",
     defaultEnabled: true,
-    roles: { SUPER_ADMIN: true, MANAGER: true, OWNER: true },
+    roles: { SUPER_ADMIN: true, MANAGER: true, OWNER: true, GUEST: false },
   },
   {
     title: "Visibilite des pages",
@@ -176,7 +176,7 @@ export const PAGE_VISIBILITY_REGISTRY: PageRegistryItem[] = [
     icon: "Shield",
     section: "administration",
     defaultEnabled: true,
-    roles: { SUPER_ADMIN: true, MANAGER: false, OWNER: false },
+    roles: { SUPER_ADMIN: true, MANAGER: false, OWNER: false, GUEST: false },
   },
   {
     title: "Maintenance",
@@ -184,7 +184,7 @@ export const PAGE_VISIBILITY_REGISTRY: PageRegistryItem[] = [
     icon: "Settings",
     section: "administration",
     defaultEnabled: true,
-    roles: { SUPER_ADMIN: true, MANAGER: false, OWNER: false },
+    roles: { SUPER_ADMIN: true, MANAGER: false, OWNER: false, GUEST: false },
   },
 ];
 
@@ -242,6 +242,7 @@ export function mergePageVisibilitySettings(
         SUPER_ADMIN: saved.superAdmin,
         MANAGER: saved.manager || saved.admin || saved.operator,
         OWNER: saved.owner,
+        GUEST: false,
       },
     };
   });
