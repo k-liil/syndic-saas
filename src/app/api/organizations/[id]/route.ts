@@ -139,9 +139,17 @@ export async function DELETE(req: Request, { params }: Params) {
     return NextResponse.json({ error: "Organisation introuvable" }, { status: 404 });
   }
 
-  if (existing._count.units > 0 || existing._count.owners > 0) {
+  if (
+    existing._count.units > 0 ||
+    existing._count.owners > 0 ||
+    existing._count.payments > 0 ||
+    existing._count.receipts > 0
+  ) {
     return NextResponse.json(
-      { error: "Impossible de supprimer une organisation contenant encore des donnees liees." },
+      {
+        error:
+          "Impossible de supprimer cette organisation car elle contient encore des données rattachées (lots, propriétaires ou transactions).",
+      },
       { status: 409 },
     );
   }

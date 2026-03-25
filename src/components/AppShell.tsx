@@ -167,7 +167,7 @@ export function AppShell({
         </aside>
 
         <div className={`flex min-h-screen flex-col ${pageBgClass}`}>
-          <header className={`sticky top-0 z-20 flex h-16 shrink-0 items-center border-b backdrop-blur-xl ${headerBgClass}`}>
+          <header className={`sticky top-0 z-30 flex h-16 shrink-0 items-center border-b backdrop-blur-xl ${headerBgClass}`}>
             <div className="flex w-full items-center justify-between gap-4 px-4 sm:px-6 lg:px-8">
               <div className="flex min-w-0 items-center gap-3">
                 <Suspense
@@ -198,7 +198,7 @@ export function AppShell({
                     </button>
 
                     {notificationsOpen ? (
-                      <div className="absolute right-0 mt-3 w-96 rounded-[24px] border border-slate-200 bg-white p-4 shadow-[0_20px_60px_rgba(15,23,42,0.12)]">
+                      <div className="absolute right-0 mt-35 w-96 z-50 rounded-[24px] border border-slate-200 bg-white p-4 shadow-[0_20px_60px_rgba(15,23,42,0.12)]">
                         <div className="flex items-center justify-between">
                           <div>
                             <div className="text-sm font-semibold text-slate-900">Notifications</div>
@@ -261,20 +261,20 @@ export function AppShell({
 
                 <button
                   onClick={() => setOpen((v) => !v)}
-                  className="glass-panel flex items-center gap-3 rounded-full px-3 py-2 text-left hover:-translate-y-px"
+                  className="glass-panel flex items-center gap-2 rounded-full px-2.5 py-1.5 text-left hover:-translate-y-px"
                   aria-label="User menu"
                 >
-                  <span className="flex h-10 w-10 items-center justify-center rounded-full bg-slate-950 text-white">
-                    <User size={18} />
+                  <span className="flex h-9 w-9 items-center justify-center rounded-full bg-slate-950 text-white">
+                    <User size={16} />
                   </span>
                   <span className="hidden sm:block">
-                    <span className="block text-sm font-semibold text-slate-900">{username}</span>
-                    <span className="block text-xs text-slate-500">{role}</span>
+                    <span className="block text-xs font-semibold text-slate-900">{username}</span>
+                    <span className="block text-[10px] text-slate-500 leading-none">{role}</span>
                   </span>
                 </button>
 
                 {open ? (
-                  <div className="absolute right-0 mt-3 w-72 rounded-[24px] border border-slate-200 bg-white p-4 shadow-[0_20px_60px_rgba(15,23,42,0.12)]">
+                  <div className="absolute right-0 mt-35 w-72 z-50 rounded-[24px] border border-slate-200 bg-white p-4 shadow-[0_20px_60px_rgba(15,23,42,0.12)]">
                     {session?.user ? (
                       <>
                         <div className="rounded-2xl bg-slate-50 p-4">

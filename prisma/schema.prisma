@@ -844,3 +844,8 @@ model PageVisibilitySetting {
   @@index([section])
   @@index([isEnabled])
 }
+model SystemSettings {
+  id            String   @id @default(cuid())
+  prismaLogging Boolean  @default(true)
+  updatedAt     DateTime @updatedAt
+}

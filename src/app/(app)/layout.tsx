@@ -4,13 +4,18 @@ import { OrgProvider } from "@/lib/org-context";
 import { prisma } from "@/lib/prisma";
 import { requireAuth } from "@/lib/authz";
 
+import { redirect } from "next/navigation";
+
 export default async function AppLayout({
   children,
 }: {
   children: React.ReactNode;
 }) {
-  const settings = await prisma.appSettings.findFirst();
   const gate = await requireAuth();
+  if (!gate.ok) {
+    return null; // Let middleware handle redirect, avoid HTML/JSON collision
+  }
+  const settings = await prisma.appSettings.findFirst();
   const cookieStore = await cookies();
   const initialOrgId = cookieStore.get("syndic-org-id")?.value;
   

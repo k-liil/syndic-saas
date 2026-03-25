@@ -178,6 +178,14 @@ export const PAGE_VISIBILITY_REGISTRY: PageRegistryItem[] = [
     defaultEnabled: true,
     roles: { SUPER_ADMIN: true, MANAGER: false, OWNER: false },
   },
+  {
+    title: "Maintenance",
+    href: "/setup/maintenance",
+    icon: "Settings",
+    section: "administration",
+    defaultEnabled: true,
+    roles: { SUPER_ADMIN: true, MANAGER: false, OWNER: false },
+  },
 ];
 
 export type PageVisibilityRecord = {

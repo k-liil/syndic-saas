@@ -1,25 +1,32 @@
-import { withAuth } from "next-auth/middleware";
+import { NextResponse } from "next/server";
+import { getToken } from "next-auth/jwt";
+import type { NextRequest } from "next/server";
 
-export default withAuth({
-  pages: {
-    signIn: "/login",
-  },
-  callbacks: {
-    authorized: ({ token }) => !!token,
-  },
-});
+export async function middleware(req: NextRequest) {
+  const token = await getToken({ req });
+  const { pathname } = req.nextUrl;
+
+  if (
+    pathname.startsWith("/dashboard") ||
+    pathname.startsWith("/setup") ||
+    pathname.startsWith("/ops") ||
+    pathname.startsWith("/organisation")
+  ) {
+    if (!token) {
+      const url = req.nextUrl.clone();
+      url.pathname = "/login";
+      return NextResponse.redirect(url);
+    }
+  }
+
+  return NextResponse.next();
+}
 
 export const config = {
   matcher: [
-    /*
-     * Match all request paths except for the ones starting with:
-     * - api (API routes)
-     * - _next/static (static files)
-     * - _next/image (image optimization files)
-     * - favicon.ico (favicon file)
-     * - login (login page)
-     * - (root /)
-     */
-    "/((?!api|_next/static|_next/image|favicon.ico|login|.*\\.(?:png|svg|jpg|jpeg|gif|webp|ico)$|$).*)",
+    "/dashboard/:path*",
+    "/setup/:path*",
+    "/ops/:path*",
+    "/organisation/:path*",
   ],
 };

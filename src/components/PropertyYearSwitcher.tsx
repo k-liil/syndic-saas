@@ -1,9 +1,10 @@
 "use client";
 
 import Link from "next/link";
-import { Building2, ChevronDown, FolderCog } from "lucide-react";
+import { Building2, ChevronDown, FolderCog, Trash2 } from "lucide-react";
 import { useEffect, useMemo, useRef, useState, useCallback } from "react";
 import { usePathname, useRouter, useSearchParams } from "next/navigation";
+import { useSession } from "next-auth/react";
 import { useOrganization } from "@/lib/org-context";
 
 type FiscalYear = { id: string; year: number };
@@ -26,7 +27,9 @@ export function PropertyYearSwitcher({
   const pathname = usePathname();
   const sp = useSearchParams();
   const rootRef = useRef<HTMLDivElement>(null);
+  const { data: session } = useSession();
   const { org, orgs, switchOrg } = useOrganization();
+  const isSuperAdmin = (session?.user as any)?.role === "SUPER_ADMIN";
 
   const year =
     sp.get("year") ||
@@ -91,6 +94,21 @@ export function PropertyYearSwitcher({
     setOpen(false);
   }, [orgs, switchOrg]);
 
+  async function handleDeleteOrg(o: { id: string, name: string }) {
+    if (!confirm(`Supprimer l'organisation "${o.name}" ?\nCette action est irreversible.`)) return;
+
+    try {
+      const res = await fetch(`/api/organizations/${o.id}`, { method: "DELETE" });
+      const data = await res.json();
+      if (!res.ok) throw new Error(data.error || "Erreur lors de la suppression");
+      
+      // Refresh page to sync if the current org was deleted
+      window.location.reload();
+    } catch (e: any) {
+      alert(e.message);
+    }
+  }
+
   if (!org) {
     return (
       <span className="inline-flex h-11 items-center rounded-full border border-slate-200 bg-white px-4 text-sm font-medium text-slate-500 shadow-sm">
@@ -121,22 +139,42 @@ export function PropertyYearSwitcher({
 
       {open ? (
         <div className="absolute left-0 top-14 z-50 w-64 rounded-2xl border border-slate-200 bg-white p-3 shadow-[0_20px_60px_rgba(15,23,42,0.12)]">
-          {orgs.length > 1 && (
+          {orgs.length > 0 && (
             <div className="rounded-xl bg-slate-50 p-3">
               <div className="mb-2 text-[10px] font-semibold uppercase tracking-[0.15em] text-slate-400">
                 Copropriete
               </div>
-              <select
-                className="w-full rounded-lg border border-slate-200 bg-white px-2 py-1.5 text-xs font-medium text-slate-700"
-                value={org.id}
-                onChange={(e) => handleOrgSwitch(e.target.value)}
-              >
+              <div className="space-y-1.5">
                 {orgs.map((o) => (
-                  <option key={o.id} value={o.id}>
-                    {o.name}
-                  </option>
+                  <div key={o.id} className="flex items-center gap-1.5 group/item">
+                    <button
+                      type="button"
+                      onClick={() => handleOrgSwitch(o.id)}
+                      className={[
+                        "flex-1 rounded-lg px-2.5 py-1.5 text-xs font-medium text-left transition",
+                        o.id === org.id
+                          ? "bg-sky-100 text-sky-800"
+                          : "bg-white border border-slate-200 text-slate-700 hover:bg-slate-100"
+                      ].join(" ")}
+                    >
+                      {o.name}
+                    </button>
+                    {isSuperAdmin && (
+                      <button
+                        type="button"
+                        onClick={(e) => {
+                          e.stopPropagation();
+                          handleDeleteOrg(o);
+                        }}
+                        className="p-1.5 text-slate-400 hover:text-red-500 opacity-0 group-hover/item:opacity-100 transition"
+                        title="Supprimer l'organisation"
+                      >
+                        <Trash2 size={14} />
+                      </button>
+                    )}
+                  </div>
                 ))}
-              </select>
+              </div>
             </div>
           )}
 

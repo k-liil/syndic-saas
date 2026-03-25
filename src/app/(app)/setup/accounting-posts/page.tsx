@@ -4,7 +4,7 @@ import { useCallback, useEffect, useRef, useState } from "react";
 import { useSession } from "next-auth/react";
 import { Pencil, Plus, Power, PowerOff } from "lucide-react";
 import { canManage } from "@/lib/roles";
-import { useApiUrl } from "@/lib/org-context";
+import { useApiUrl, useOrgId } from "@/lib/org-context";
 
 type AccountingPost = {
   id: string;
@@ -150,6 +150,7 @@ export default function AccountingPostsPage() {
   const { data: session } = useSession();
   const canEdit = canManage(session?.user?.role);
   const apiUrl = useApiUrl();
+  const orgId = useOrgId();
 
   const [posts, setPosts] = useState<AccountingPost[]>([]);
   const [loading, setLoading] = useState(true);
@@ -263,6 +264,7 @@ export default function AccountingPostsPage() {
       setSubmitting(false);
     }
   }
+
 
   async function updateActivation(post: AccountingPost, nextActive: boolean) {
     setBusyIds((current) => [...current, post.id]);
