@@ -10,6 +10,19 @@ function asBoolean(value: unknown) {
   return Boolean(value);
 }
 
+type PageVisibilityPayloadItem = {
+  href?: unknown;
+  title?: unknown;
+  section?: unknown;
+  icon?: unknown;
+  isEnabled?: unknown;
+  roles?: {
+    SUPER_ADMIN?: unknown;
+    MANAGER?: unknown;
+    OWNER?: unknown;
+  } | null;
+};
+
 async function ensureDefaults() {
   const existing = await prisma.pageVisibilitySetting.findMany({
     select: { href: true },
@@ -64,7 +77,7 @@ export async function PUT(req: Request) {
   }
 
   const body = await req.json().catch(() => null);
-  const items = Array.isArray(body?.items) ? body.items : null;
+  const items = Array.isArray(body?.items) ? (body.items as PageVisibilityPayloadItem[]) : null;
   if (!items) {
     return NextResponse.json({ error: "INVALID_BODY" }, { status: 400 });
   }
