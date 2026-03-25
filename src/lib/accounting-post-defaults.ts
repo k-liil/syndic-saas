@@ -7,6 +7,13 @@ type PrismaLike = {
 
 export const DEFAULT_ACCOUNTING_POST_SOURCE_SLUG = "cit-intellak-ii";
 
+export type AccountingPostTemplate = {
+  code: string;
+  name: string;
+  note: string;
+  postType: PostType;
+};
+
 export const DEFAULT_ACCOUNTING_POST_TEMPLATES = [
   { code: "611", name: "Achats de matieres et fournitures", postType: PostType.CHARGE, note: "" },
   { code: "6111", name: "Eau", postType: PostType.CHARGE, note: "" },
@@ -63,9 +70,7 @@ export const DEFAULT_ACCOUNTING_POST_TEMPLATES = [
   { code: "7514", name: "Entrees sur creances soldees", postType: PostType.PRODUCT, note: "" },
   { code: "7515", name: "Autres produits non courants", postType: PostType.PRODUCT, note: "" },
   { code: "791", name: "Reprises de depreciations sur creances douteuses", postType: PostType.PRODUCT, note: "" },
-] as const;
-
-type AccountingPostTemplate = (typeof DEFAULT_ACCOUNTING_POST_TEMPLATES)[number];
+] as const satisfies readonly AccountingPostTemplate[];
 
 async function loadSourceTemplates(
   prisma: PrismaLike,
