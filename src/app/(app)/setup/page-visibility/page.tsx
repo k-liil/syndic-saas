@@ -14,9 +14,10 @@ type PageVisibilityItem = {
   roles: Record<AppRole, boolean>;
 };
 
-const roleColumns: AppRole[] = ["OWNER", "MANAGER", "SUPER_ADMIN"];
+const roleColumns: AppRole[] = ["GUEST", "OWNER", "MANAGER", "SUPER_ADMIN"];
 
 const roleLabels: Record<AppRole, string> = {
+  GUEST: "Visiteur",
   OWNER: "Copro",
   MANAGER: "Manager",
   SUPER_ADMIN: "Super Admin",
