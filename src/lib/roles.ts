@@ -1,4 +1,4 @@
-export type AppRole = "SUPER_ADMIN" | "MANAGER" | "OWNER" | "GUEST";
+export type AppRole = "SUPER_ADMIN" | "MANAGER" | "OWNER";
 export type LegacyAppRole =
   | AppRole
   | "ADMIN"
@@ -6,7 +6,6 @@ export type LegacyAppRole =
   | "OPERATOR";
 
 const ROLE_RANK: Record<AppRole, number> = {
-  GUEST: -1,
   OWNER: 0,
   MANAGER: 1,
   SUPER_ADMIN: 2,
@@ -22,9 +21,8 @@ export function normalizeRole(role?: string | null): AppRole {
       return "MANAGER";
     case "VIEWER":
     case "OWNER":
-      return "OWNER";
     default:
-      return "GUEST";
+      return "OWNER";
   }
 }
 
@@ -54,7 +52,6 @@ export function canManageOrganizations(role: string | null | undefined) {
 
 export function getRoleLabel(role: string | null | undefined) {
   const norm = normalizeRole(role);
-  if (norm === "GUEST") return "Visiteur";
   
   switch (norm) {
     case "SUPER_ADMIN":
@@ -64,6 +61,6 @@ export function getRoleLabel(role: string | null | undefined) {
     case "OWNER":
       return "Coproprietaire";
     default:
-      return "Visiteur";
+      return "Coproprietaire";
   }
 }
