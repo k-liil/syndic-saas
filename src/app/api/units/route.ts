@@ -59,8 +59,17 @@ export async function GET(req: Request) {
 
   const items = await prisma.unit.findMany({
     where,
-    include: {
-      building: true,
+    select: {
+      id: true,
+      lotNumber: true,
+      reference: true,
+      type: true,
+      surface: true,
+      floor: true,
+      buildingId: true,
+      building: {
+        select: { id: true, name: true },
+      },
       ownerships: {
         where: { endDate: null, organizationId: orgId! },
         take: 1,
@@ -69,20 +78,19 @@ export async function GET(req: Request) {
           id: true,
           startDate: true,
           owner: {
-            select: {
-              id: true,
-              firstName: true,
-              name: true,
-            },
+            select: { id: true, firstName: true, name: true },
           },
         },
       },
       groupUnits: {
-        include: {
+        select: {
           group: {
-            include: {
+            select: {
+              id: true,
+              name: true,
               periods: {
                 orderBy: { startPeriod: "desc" },
+                select: { id: true, startPeriod: true, endPeriod: true, amount: true },
               },
             },
           },
@@ -90,6 +98,7 @@ export async function GET(req: Request) {
       },
       contributionPeriods: {
         orderBy: { startPeriod: "desc" },
+        select: { id: true, startPeriod: true, endPeriod: true, amount: true },
       },
     },
   });

@@ -33,6 +33,7 @@ export async function requireAuth() {
 
   const role = normalizeRole(session.user.role);
   const userId = session.user.id;
+  const sessionOrgId = (session.user as any).organizationId;
 
   if (isSuperAdmin(role)) {
     return { 
@@ -40,10 +41,25 @@ export async function requireAuth() {
       session, 
       userId,
       isSuperAdmin: true,
-      organizationId: null,
+      organizationId: sessionOrgId || null,
     };
   }
   
+  // Use organization from session if available (cached in JWT)
+  if (sessionOrgId) {
+    return {
+      ok: true as const,
+      session,
+      userId,
+      isSuperAdmin: false,
+      organizationId: sessionOrgId,
+      userOrganizations: [
+        { organizationId: sessionOrgId, role },
+      ],
+    };
+  }
+
+  // Fallback for sessions that don't have orgId yet
   const userOrgsRaw = await prisma.userOrganization.findMany({
     where: { userId },
     select: { organizationId: true, role: true },
