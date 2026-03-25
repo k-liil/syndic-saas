@@ -1,4 +1,5 @@
 import Link from "next/link";
+import Image from "next/image";
 import {
   ArrowRight,
   BadgeCheck,
@@ -53,7 +54,7 @@ export default function HomePage() {
         <header className="flex items-center justify-between py-4">
           <div className="flex items-center gap-4">
             <div className="flex h-16 w-16 items-center justify-center rounded-2xl bg-white p-2 shadow-md border border-slate-100">
-              <img src="/logo.png" alt="Syndicly Logo" className="h-12 w-12 object-contain" />
+              <Image src="/logo.png" alt="Syndicly Logo" width={48} height={48} className="object-contain" unoptimized />
             </div>
             <div>
               <div className="text-2xl font-bold tracking-tight text-slate-900">
