@@ -225,14 +225,11 @@ export async function PATCH(req: Request) {
 
     const role = gate.session.user?.role;
     const isAdmin = canManage(role);
-<<<<<<< HEAD
-=======
     const actorUserId = gate.userId;
 
     if (!actorUserId) {
       return NextResponse.json({ error: "UNAUTHORIZED" }, { status: 401 });
     }
->>>>>>> 6d9402c (Fix claim comments user id typing)
 
     const existing = await prisma.claim.findFirst({
       where: { id, organizationId: orgId },
@@ -269,11 +266,7 @@ export async function PATCH(req: Request) {
           data: {
             claimId: id,
             organizationId: orgId,
-<<<<<<< HEAD
-            userId: gate.userId,
-=======
             userId: actorUserId,
->>>>>>> 6d9402c (Fix claim comments user id typing)
             message: commentText,
           },
         });
