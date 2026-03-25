@@ -20,6 +20,6 @@ export const config = {
      * - login (login page)
      * - (root /)
      */
-    "/((?!api|_next/static|_next/image|favicon.ico|login|$).*)",
+    "/((?!api|_next/static|_next/image|favicon.ico|login|.*\\.(?:png|svg|jpg|jpeg|gif|webp|ico)$|$).*)",
   ],
 };
