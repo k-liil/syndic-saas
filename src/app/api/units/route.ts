@@ -66,6 +66,9 @@ export async function GET(req: Request) {
       type: true,
       surface: true,
       floor: true,
+      overrideStart: true,
+      startYear: true,
+      startMonth: true,
       buildingId: true,
       building: {
         select: { id: true, name: true },
@@ -249,6 +252,9 @@ if (existingLot) {
       ...(type === "APARTMENT" ? { buildingId } : {}),
       floor: type === "APARTMENT" ? floor : null,
       surface: surface === null ? null : Math.round(surface * 100) / 100,
+      overrideStart: !!body.overrideStart,
+      startYear: body.startYear ? Number(body.startYear) : null,
+      startMonth: body.startMonth ? Number(body.startMonth) : null,
     },
     include: { building: true },
   });

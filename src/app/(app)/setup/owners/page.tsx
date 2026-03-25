@@ -23,7 +23,6 @@ type Owner = {
   phone: string | null;
   cin: string | null;
   notes: string | null;
-  contributionStartAt?: string | null;
 
   units: {
     id: string;
@@ -60,8 +59,6 @@ export default function OwnersPage() {
   const [email, setEmail] = useState("");
   const [phone, setPhone] = useState("");
   const [notes, setNotes] = useState("");
-  const [useOrganizationContributionStart, setUseOrganizationContributionStart] = useState(true);
-  const [contributionStartMonth, setContributionStartMonth] = useState("");
 
   const [busy, setBusy] = useState(false);
   const [errorMsg, setErrorMsg] = useState<string>("");
@@ -116,8 +113,6 @@ export default function OwnersPage() {
     setEmail("");
     setPhone("");
     setNotes("");
-    setUseOrganizationContributionStart(true);
-    setContributionStartMonth("");
     setErrorMsg("");
     setOpenForm(true);
   }
@@ -130,9 +125,6 @@ export default function OwnersPage() {
     setEmail(o.email ?? "");
     setPhone(o.phone ?? "");
     setNotes(o.notes ?? "");
-    const contributionMonth = o.contributionStartAt?.slice(0, 7) ?? "";
-    setUseOrganizationContributionStart(!contributionMonth);
-    setContributionStartMonth(contributionMonth);
     setErrorMsg("");
     setOpenForm(true);
 
@@ -155,7 +147,6 @@ export default function OwnersPage() {
         email: email.trim() || null,
         phone: phone.trim() || null,
         notes: notes.trim() || null,
-        contributionStartMonth: useOrganizationContributionStart ? null : contributionStartMonth || null,
       };
 
       const res = await fetch(apiUrl("/api/owners"), {
@@ -766,33 +757,6 @@ export default function OwnersPage() {
             />
           </div>
 
-          <div className="grid gap-3 rounded-2xl border border-zinc-200 bg-zinc-50/70 p-4">
-            <div className="flex items-start justify-between gap-4">
-              <div>
-                <label className="text-sm font-medium">Mois d'entree cotisation</label>
-                <div className="mt-1 text-xs text-zinc-500">
-                  Si ce champ reste sur le parametrage organisation, le calcul reprend le mois de depart defini dans les parametres.
-                </div>
-              </div>
-
-              <label className="inline-flex items-center gap-2 text-sm text-zinc-700">
-                <input
-                  type="checkbox"
-                  checked={useOrganizationContributionStart}
-                  onChange={(e) => setUseOrganizationContributionStart(e.target.checked)}
-                />
-                Parametrage organisation
-              </label>
-            </div>
-
-            <input
-              type="month"
-              className="h-10 rounded-xl border border-zinc-200 bg-white px-3 disabled:bg-zinc-100 disabled:text-zinc-400"
-              value={contributionStartMonth}
-              onChange={(e) => setContributionStartMonth(e.target.value)}
-              disabled={useOrganizationContributionStart}
-            />
-          </div>
           <button
             onClick={submit}
             disabled={!canSubmit || busy}

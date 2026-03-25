@@ -9,13 +9,6 @@ function asString(v: unknown) {
   return typeof v === "string" ? v : "";
 }
 
-function parseContributionStartAt(value: unknown) {
-  if (typeof value !== "string") return null;
-  const trimmed = value.trim();
-  if (!trimmed) return null;
-  const parsed = new Date(`${trimmed}-01T00:00:00.000Z`);
-  return Number.isNaN(parsed.getTime()) ? null : parsed;
-}
 
 async function linkOwnerToUser(tx: any, ownerId: string, email: string, name: string, organizationId: string) {
   const cleanEmail = email.trim().toLowerCase();
@@ -92,7 +85,6 @@ export async function GET(req: Request) {
         email: true,
         phone: true,
         notes: true,
-        contributionStartAt: true,
         ownerships: {
           where: { endDate: null },
           orderBy: { startDate: "desc" },
@@ -136,7 +128,6 @@ export async function GET(req: Request) {
           email: o.email,
           phone: o.phone,
           notes: o.notes,
-          contributionStartAt: o.contributionStartAt,
           units,
           primaryBuildingName: primary?.buildingName ?? null,
           primaryUnitRef: primary?.lotNumber ?? primary?.reference ?? null,
@@ -180,7 +171,6 @@ export async function POST(req: Request) {
   const email = asString(body.email).trim();
   const phone = asString(body.phone).trim();
   const notes = asString(body.notes).trim();
-  const contributionStartAt = parseContributionStartAt(body.contributionStartMonth);
 
   if (!unitId && !lotNumber) return NextResponse.json({ error: "unitId or lotNumber is required" }, { status: 400 });
   if (!name) return NextResponse.json({ error: "Name is required" }, { status: 400 });
@@ -212,7 +202,6 @@ export async function POST(req: Request) {
           email: email || null,
           phone: phone || null,
           notes: notes || null,
-          contributionStartAt,
         },
         create: {
           organizationId: orgId,
@@ -222,7 +211,6 @@ export async function POST(req: Request) {
           email: email || null,
           phone: phone || null,
           notes: notes || null,
-          contributionStartAt,
         },
         select: { id: true, name: true, firstName: true, cin: true, email: true, phone: true, notes: true },
       });
@@ -273,7 +261,6 @@ export async function PATCH(req: Request) {
   const email = asString(body.email).trim();
   const phone = asString(body.phone).trim();
   const notes = asString(body.notes);
-  const contributionStartAt = parseContributionStartAt(body.contributionStartMonth);
 
   if (!id) return NextResponse.json({ error: "Missing id" }, { status: 400 });
   if (!unitId && !lotNumber) return NextResponse.json({ error: "unitId or lotNumber is required" }, { status: 400 });
@@ -309,7 +296,6 @@ export async function PATCH(req: Request) {
           email: email || null,
           phone: phone || null,
           notes: notes || null,
-          contributionStartAt,
         },
         select: { id: true, name: true, firstName: true, cin: true, email: true, phone: true, notes: true },
       });

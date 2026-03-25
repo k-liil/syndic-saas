@@ -43,21 +43,20 @@ export async function POST(req: Request) {
       },
       select: {
         id: true,
-        ownerships: {
-          where: { organizationId: orgId, endDate: null },
-          take: 1,
-          select: {
-            startDate: true,
-          },
-        },
+        overrideStart: true,
+        startYear: true,
+        startMonth: true,
       },
     });
 
     const toCreate = units.flatMap((u) => {
       const startPeriod = buildContributionStartPeriod(
-        u.ownerships[0]?.startDate,
-        settings?.startYear,
-        settings?.startMonth,
+        {
+          overrideStart: u.overrideStart,
+          startYear: u.startYear,
+          startMonth: u.startMonth,
+        },
+        settings,
       );
 
       if (period.getTime() < startPeriod.getTime()) {

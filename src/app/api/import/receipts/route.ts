@@ -109,6 +109,9 @@ export async function POST(req: Request) {
       id: true,
       lotNumber: true,
       buildingId: true,
+      overrideStart: true,
+      startYear: true,
+      startMonth: true,
     },
   });
 
@@ -263,9 +266,12 @@ export async function POST(req: Request) {
           await prisma.$transaction(async (tx) => {
             const receiptPeriod = firstDayOfMonth(item.receiptDate);
             const startPeriod = buildContributionStartPeriod(
-              item.ownership.startDate,
-              startYear,
-              startMonth,
+              {
+                overrideStart: item.unit.overrideStart,
+                startYear: item.unit.startYear,
+                startMonth: item.unit.startMonth,
+              },
+              settings,
             );
             const fiscalYear = item.receiptDate.getUTCFullYear();
             // Auto-allouer les cotisations selon globalFixedAmount

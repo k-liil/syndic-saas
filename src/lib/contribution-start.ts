@@ -3,16 +3,15 @@ export function firstDayOfMonthUTC(date: Date) {
 }
 
 export function buildContributionStartPeriod(
-  ownerContributionStartAt: Date | null | undefined,
-  settingsStartYear: number | null | undefined,
-  settingsStartMonth: number | null | undefined,
+  unitOverride: { overrideStart: boolean; startYear: number | null; startMonth: number | null } | null | undefined,
+  settings: { startYear: number; startMonth: number } | null | undefined,
 ) {
-  if (ownerContributionStartAt) {
-    return firstDayOfMonthUTC(ownerContributionStartAt);
+  if (unitOverride?.overrideStart && unitOverride.startYear && unitOverride.startMonth) {
+    return new Date(Date.UTC(unitOverride.startYear, unitOverride.startMonth - 1, 1));
   }
 
-  const startYear = settingsStartYear ?? new Date().getUTCFullYear();
-  const startMonth = settingsStartMonth ?? 1;
+  const startYear = settings?.startYear ?? new Date().getUTCFullYear();
+  const startMonth = settings?.startMonth ?? 1;
   return new Date(Date.UTC(startYear, startMonth - 1, 1));
 }
 

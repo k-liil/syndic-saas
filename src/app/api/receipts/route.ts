@@ -225,6 +225,9 @@ export async function POST(req: Request) {
               lotNumber: true,
               buildingId: true,
               reference: true,
+              overrideStart: true,
+              startYear: true,
+              startMonth: true,
             },
           })
         : await tx.unit.findFirst({
@@ -235,6 +238,9 @@ export async function POST(req: Request) {
               lotNumber: true,
               buildingId: true,
               reference: true,
+              overrideStart: true,
+              startYear: true,
+              startMonth: true,
             },
           });
 
@@ -293,9 +299,12 @@ export async function POST(req: Request) {
       }
 
       const startPeriod = buildContributionStartPeriod(
-        ownership.startDate,
-        startYear,
-        startMonth,
+        {
+          overrideStart: unit.overrideStart,
+          startYear: unit.startYear,
+          startMonth: unit.startMonth,
+        },
+        settings,
       );
       const receiptPeriod = firstDayOfMonth(date);
 

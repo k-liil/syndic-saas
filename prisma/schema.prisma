@@ -93,9 +93,7 @@ model Owner {
   email     String?
   phone     String?
   notes     String?
-  contributionStartAt DateTime?
   createdAt DateTime @default(now())
-
   userId    String?  @unique
   user      User?    @relation(fields: [userId], references: [id])
 
@@ -150,6 +148,10 @@ model Unit {
 
   floor   Int?
   surface Decimal? @db.Decimal(10,2)
+
+  overrideStart Boolean @default(false)
+  startYear     Int?
+  startMonth    Int?
 
   dues             MonthlyDue[]
 

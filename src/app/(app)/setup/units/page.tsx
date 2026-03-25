@@ -25,6 +25,9 @@ type Unit = {
   floor: number | null;
   surface: number | null;
   contributionAmount?: number | null;
+  overrideStart: boolean;
+  startYear: number | null;
+  startMonth: number | null;
   activeOwnership?: {
     id: string;
     startDate: string;
@@ -115,6 +118,9 @@ export default function LotsPage() {
   const [ownershipId, setOwnershipId] = useState("");
   const [entryMonth, setEntryMonth] = useState("");
   const [buildingId, setBuildingId] = useState("");
+  const [overrideStart, setOverrideStart] = useState(false);
+  const [startYear, setStartYear] = useState("");
+  const [startMonth, setStartMonth] = useState("");
 
   const [loading, setLoading] = useState(false);
 
@@ -178,6 +184,9 @@ export default function LotsPage() {
     setOwnerId("");
     setOwnershipId("");
     setEntryMonth("");
+    setOverrideStart(false);
+    setStartYear("");
+    setStartMonth("");
     if (!buildingId && buildings.length > 0) setBuildingId(buildings[0].id);
     setOpen(true);
   }
@@ -192,6 +201,9 @@ export default function LotsPage() {
     setOwnerId("");
     setOwnershipId(lot.activeOwnership?.id ?? "");
     setEntryMonth(lot.activeOwnership?.startDate?.slice(0, 7) ?? "");
+    setOverrideStart(lot.overrideStart);
+    setStartYear(lot.startYear?.toString() ?? "");
+    setStartMonth(lot.startMonth?.toString() ?? "");
     if (lot.type === "APARTMENT" && lot.building) {
       setBuildingId(lot.building.id);
     } else {
@@ -220,6 +232,9 @@ export default function LotsPage() {
             type: apiType,
             ...(type === "APARTMENT" ? { buildingId } : { buildingId: null }),
             surface: surfaceNum,
+            overrideStart,
+            startYear: startYear.trim() ? Number(startYear) : null,
+            startMonth: startMonth.trim() ? Number(startMonth) : null,
           }),
         });
 
@@ -251,6 +266,9 @@ export default function LotsPage() {
             type: apiType,
             ...(type === "APARTMENT" ? { buildingId } : {}),
             surface: surfaceNum,
+            overrideStart,
+            startYear: startYear.trim() ? Number(startYear) : null,
+            startMonth: startMonth.trim() ? Number(startMonth) : null,
           }),
         });
 
@@ -669,6 +687,55 @@ export default function LotsPage() {
                 <div className="text-xs text-zinc-500">
                   {"Géré via la section \"Copropriétaires\"."}
                 </div>
+              </div>
+
+              <div className="rounded-2xl border border-zinc-200 bg-zinc-50/70 p-4 space-y-3">
+                <div className="flex items-start justify-between gap-4">
+                  <div>
+                    <label className="text-sm font-medium">Début des cotisations spécifique</label>
+                    <div className="mt-1 text-xs text-zinc-500">
+                      Cochez pour définir une date de début différente de celle du système.
+                    </div>
+                  </div>
+                  <label className="inline-flex items-center gap-2 cursor-pointer">
+                    <input
+                      type="checkbox"
+                      checked={overrideStart}
+                      onChange={(e) => setOverrideStart(e.target.checked)}
+                      className="rounded border-zinc-300 text-zinc-900 focus:ring-zinc-900"
+                    />
+                  </label>
+                </div>
+
+                {overrideStart && (
+                  <div className="grid grid-cols-2 gap-3 pt-1">
+                    <div className="grid gap-1.5">
+                      <label className="text-xs font-medium text-zinc-600 outline-none border-none">Année</label>
+                      <input
+                        type="number"
+                        className="h-10 rounded-xl border border-zinc-200 bg-white px-3 text-sm focus:ring-zinc-900"
+                        placeholder="Ex: 2026"
+                        value={startYear}
+                        onChange={(e) => setStartYear(e.target.value)}
+                      />
+                    </div>
+                    <div className="grid gap-1.5">
+                      <label className="text-xs font-medium text-zinc-600 outline-none border-none">Mois</label>
+                      <select
+                        className="h-10 rounded-xl border border-zinc-200 bg-white px-3 text-sm focus:ring-zinc-900"
+                        value={startMonth}
+                        onChange={(e) => setStartMonth(e.target.value)}
+                      >
+                        <option value="">— Mois —</option>
+                        {Array.from({ length: 12 }).map((_, i) => (
+                          <option key={i + 1} value={i + 1}>
+                            {new Date(2000, i).toLocaleString('fr', { month: 'long' })}
+                          </option>
+                        ))}
+                      </select>
+                    </div>
+                  </div>
+                )}
               </div>
 
               <button

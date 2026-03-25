@@ -48,6 +48,9 @@ export async function PATCH(req: Request, { params }: Params) {
       buildingId,
       floor: type === "APARTMENT" ? floor : null,
       surface,
+      overrideStart: body.overrideStart !== undefined ? !!body.overrideStart : existing.overrideStart,
+      startYear: body.startYear !== undefined ? (body.startYear ? Number(body.startYear) : null) : existing.startYear,
+      startMonth: body.startMonth !== undefined ? (body.startMonth ? Number(body.startMonth) : null) : existing.startMonth,
     },
     include: { building: true },
   });
