@@ -17,18 +17,6 @@ export async function GET() {
   }
   const users = await prisma.user.findMany({
     orderBy: [{ createdAt: "asc" }],
-    where: {
-      OR: [
-        { role: "SUPER_ADMIN" },
-        {
-          organizations: {
-            some: {
-              role: { in: ["ADMIN", "MANAGER", "OPERATOR"] },
-            },
-          },
-        },
-      ],
-    },
     select: {
       id: true,
       name: true,

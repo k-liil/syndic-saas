@@ -201,9 +201,9 @@ export default function UsersPage() {
       ) : null}
 
       <div className="rounded-3xl border border-zinc-200 bg-white p-6 shadow-sm">
-        <h1 className="text-2xl font-semibold text-zinc-900">Gestionnaires</h1>
+        <h1 className="text-2xl font-semibold text-zinc-900">Utilisateurs</h1>
         <p className="mt-2 text-sm text-zinc-500">
-          Le super admin cree et affecte les gestionnaires aux organisations.
+          Le super admin cree et affecte les gestionnaires aux organisations. Les coproprietaires sont egalement affiches ici.
         </p>
 
         <div className="mt-6 grid gap-4 md:grid-cols-2 lg:grid-cols-4">
@@ -258,7 +258,7 @@ export default function UsersPage() {
 
         <div className="mt-4 flex items-center gap-4">
           <span className="rounded-full bg-cyan-50 px-3 py-1 text-xs font-medium text-cyan-700">
-            Gestionnaire
+            Profil Gestionnaire
           </span>
 
           <label className="flex items-center gap-3 text-sm text-zinc-600">

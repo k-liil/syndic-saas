@@ -198,7 +198,7 @@ export function AppShell({
                     </button>
 
                     {notificationsOpen ? (
-                      <div className="absolute right-0 mt-35 w-96 z-50 rounded-[24px] border border-slate-200 bg-white p-4 shadow-[0_20px_60px_rgba(15,23,42,0.12)]">
+                      <div className="absolute right-13 mt-[-40px] w-96 z-50 rounded-[24px] border border-slate-200 bg-white p-4 shadow-[0_20px_60px_rgba(15,23,42,0.12)]">
                         <div className="flex items-center justify-between">
                           <div>
                             <div className="text-sm font-semibold text-slate-900">Notifications</div>
