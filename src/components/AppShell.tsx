@@ -86,7 +86,7 @@ export function AppShell({
     void loadNotifications();
     const interval = window.setInterval(() => {
       void loadNotifications();
-    }, 30000);
+    }, 120000);
 
     return () => {
       cancelled = true;

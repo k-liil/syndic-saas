@@ -122,12 +122,10 @@ export async function ensureOrganizationForUser(userId?: string | null) {
 
   if (user.organizations.length > 0) {
     const orgId = user.organizations[0].organizationId;
-    await ensureFiscalYearsForOrganization(orgId);
     return { id: orgId, name: "", slug: "" };
   }
 
   const organization = await ensureDefaultOrganizationRecord();
-  await ensureFiscalYearsForOrganization(organization.id);
 
   await prisma.userOrganization.create({
     data: {
@@ -143,7 +141,6 @@ export async function ensureOrganizationForUser(userId?: string | null) {
 export async function getOrganizationForUser(userId?: string | null) {
   if (!userId) {
     const organization = await ensureDefaultOrganizationRecord();
-    await ensureFiscalYearsForOrganization(organization.id);
     return organization;
   }
 
@@ -157,12 +154,10 @@ export async function getOrganizationForUser(userId?: string | null) {
   });
 
   if (userOrg?.organization) {
-    await ensureFiscalYearsForOrganization(userOrg.organization.id);
     return userOrg.organization;
   }
 
   const organization = await ensureDefaultOrganizationRecord();
-  await ensureFiscalYearsForOrganization(organization.id);
   return organization;
 }
 

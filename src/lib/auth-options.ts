@@ -51,7 +51,12 @@ export const authOptions: NextAuthOptions = {
       if (user) {
         token.id = (user as any).id;
         token.role = normalizeRole((user as any).role);
-      } else if (token.id) {
+        // Optimization: Pre-fetch organization during login
+        const org = await ensureOrganizationForUser(String(token.id));
+        token.organizationId = org.id;
+        token.organizationName = org.name;
+      } else if (token.id && !token.organizationId) {
+        // Fallback for existing sessions without orgId
         const org = await ensureOrganizationForUser(String(token.id));
         token.organizationId = org.id;
         token.organizationName = org.name;
