@@ -25,12 +25,31 @@ const OrgContext = createContext<OrgContextType>({
   getOrgId: () => null,
 });
 
-export function OrgProvider({ children }: { children: ReactNode }) {
+export function OrgProvider({
+  children,
+  initialOrgs = [],
+  initialOrgId = null,
+}: {
+  children: ReactNode;
+  initialOrgs?: OrgInfo[];
+  initialOrgId?: string | null;
+}) {
   const [org, setOrg] = useState<OrgInfo | null>(null);
-  const [orgs, setOrgs] = useState<OrgInfo[]>([]);
-  const [loading, setLoading] = useState(true);
+  const [orgs, setOrgs] = useState<OrgInfo[]>(initialOrgs);
+  const [loading, setLoading] = useState(!initialOrgs.length);
 
   useEffect(() => {
+    if (initialOrgs.length > 0) {
+      const saved = initialOrgs.find((o: OrgInfo) => o.id === initialOrgId) || initialOrgs[0];
+      setOrg(saved);
+      setOrgs(initialOrgs);
+      setLoading(false);
+      if (!initialOrgId && saved) {
+        document.cookie = `syndic-org-id=${saved.id}; path=/; max-age=31536000`;
+      }
+      return;
+    }
+
     const savedOrgId = localStorage.getItem("syndic-org-id");
     
     fetch("/api/organizations/simple", { cache: "no-store" })
@@ -50,11 +69,12 @@ export function OrgProvider({ children }: { children: ReactNode }) {
       .catch(() => {
         setLoading(false);
       });
-  }, []);
+  }, [initialOrgs, initialOrgId]);
 
   const switchOrg = useCallback((newOrg: OrgInfo) => {
     setOrg(newOrg);
     localStorage.setItem("syndic-org-id", newOrg.id);
+    document.cookie = `syndic-org-id=${newOrg.id}; path=/; max-age=31536000`;
     localStorage.removeItem("syndic-year");
   }, []);
 
