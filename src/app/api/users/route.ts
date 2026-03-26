@@ -173,12 +173,27 @@ export async function PUT(req: Request) {
 
   const data: {
     name?: string;
+    email?: string;
     isActive?: boolean;
     passwordHash?: string;
   } = {};
 
   if (name) {
     data.name = name;
+  }
+
+  if (typeof body.email === "string" && body.email.trim()) {
+    const newEmail = body.email.trim().toLowerCase();
+    if (newEmail !== target.email) {
+      const existing = await prisma.user.findUnique({
+        where: { email: newEmail },
+        select: { id: true },
+      });
+      if (existing) {
+        return NextResponse.json({ error: "Email already exists" }, { status: 409 });
+      }
+      data.email = newEmail;
+    }
   }
 
   if (typeof isActive === "boolean") {

@@ -50,6 +50,10 @@ export default function UsersPage() {
   const [newPassword, setNewPassword] = useState("");
   const [isUpdating, setIsUpdating] = useState(false);
 
+  const [searchQuery, setSearchQuery] = useState("");
+  const [roleFilter, setRoleFilter] = useState("ALL");
+  const [openAddModal, setOpenAddModal] = useState(false);
+
   const selectedUser = selectedUserId ? users.find(u => u.id === selectedUserId) : null;
 
   const load = useCallback(async () => {
@@ -128,6 +132,7 @@ export default function UsersPage() {
       body: JSON.stringify({
         id: selectedUser.id,
         name: selectedUser.name,
+        email: selectedUser.email,
         isActive: selectedUser.isActive,
         password: newPassword.trim() || "",
       }),
@@ -142,6 +147,7 @@ export default function UsersPage() {
 
     setToast("Utilisateur mis à jour");
     setNewPassword("");
+    setSelectedUserId(null);
     await load();
   }
 
@@ -196,28 +202,124 @@ export default function UsersPage() {
     );
   }
 
+  const filteredUsers = users.filter(user => {
+    const matchesSearch = 
+      (user.name?.toLowerCase() || "").includes(searchQuery.toLowerCase()) ||
+      user.email.toLowerCase().includes(searchQuery.toLowerCase());
+    
+    const matchesRole = roleFilter === "ALL" || user.role === roleFilter;
+
+    return matchesSearch && matchesRole;
+  });
+
   const availableOrgOptions = selectedUser 
     ? organizations.filter(org => !selectedUser.organizations.some(uo => uo.organizationId === org.id))
     : [];
 
   return (
     <div className="space-y-6">
+      <div className="flex items-center justify-between mb-8 pb-6 border-b border-zinc-200">
+        <div>
+          <h1 className="text-3xl font-bold text-zinc-900 tracking-tight">Utilisateurs</h1>
+          <p className="text-zinc-500 mt-1.5 font-medium">Gestion des accès et des rôles de l&apos;organisation.</p>
+        </div>
+        <button
+          onClick={() => setOpenAddModal(true)}
+          className="h-11 px-6 rounded-2xl bg-zinc-900 text-white text-sm font-semibold hover:bg-zinc-800 transition-all active:scale-95 shadow-lg shadow-zinc-200 flex items-center gap-2"
+        >
+          <Plus size={18} />
+          Ajouter un utilisateur
+        </button>
+      </div>
+
       {toast && (
-        <div className="fixed top-6 right-6 z-[100] rounded-2xl border border-zinc-200 bg-white px-5 py-3 text-sm font-medium text-zinc-900 shadow-xl animate-in slide-in-from-top-4">
+        <div className="fixed top-6 right-6 z-[100] rounded-2xl border border-zinc-200 bg-white px-5 py-3 text-sm font-medium text-zinc-900 shadow-xl animate-in fade-in slide-in-from-top-4">
           {toast}
         </div>
       )}
 
-      {/* Formulaire d'ajout */}
-      <div className="rounded-3xl border border-zinc-200 bg-white p-6 shadow-sm">
-        <div className="flex items-center justify-between mb-6">
-          <div>
-            <h1 className="text-2xl font-semibold text-zinc-900">Gestion des Comptes</h1>
-            <p className="text-sm text-zinc-500 mt-1">Créez et affectez les gestionnaires aux organisations.</p>
-          </div>
+      {/* Filtres */}
+      <div className="flex flex-col sm:flex-row gap-4 mb-6">
+        <div className="relative flex-1 group">
+          <input
+            type="text"
+            className="h-11 w-full rounded-2xl border border-zinc-200 bg-white pl-10 pr-4 text-sm outline-none focus:ring-2 focus:ring-indigo-500 transition-all font-medium placeholder:text-zinc-400"
+            placeholder="Rechercher par nom ou email..."
+            value={searchQuery}
+            onChange={(e) => setSearchQuery(e.target.value)}
+          />
+          <User className="absolute left-3.5 top-1/2 -translate-y-1/2 text-zinc-400 group-focus-within:text-indigo-500 transition-colors" size={16} />
         </div>
+        <select
+          className="h-11 min-w-[180px] rounded-2xl border border-zinc-200 bg-white px-4 text-sm outline-none focus:ring-2 focus:ring-indigo-500 transition-all font-semibold text-zinc-700"
+          value={roleFilter}
+          onChange={(e) => setRoleFilter(e.target.value)}
+        >
+          <option value="ALL">Tous les rôles</option>
+          <option value="MANAGER">Gestionnaire</option>
+          <option value="ADMIN">Administrateur</option>
+          <option value="SUPER_ADMIN">Super Admin</option>
+        </select>
+      </div>
 
-        <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-4">
+      {/* Tableau des comptes */}
+      <Table>
+        <THead>
+          <TR>
+            <TH className="w-1/4">Nom</TH>
+            <TH>Statut</TH>
+            <TH>Rôle</TH>
+            <TH>Email</TH>
+            <TH>Création</TH>
+            <TH className="text-right">Actions</TH>
+          </TR>
+        </THead>
+        <TableBody>
+          {loading ? (
+            <TR><TD colSpan={6} className="text-center py-12 text-zinc-400 italic">Chargement des utilisateurs...</TD></TR>
+          ) : filteredUsers.length === 0 ? (
+            <TR><TD colSpan={6} className="text-center py-12 text-zinc-400 italic">Aucun compte trouvé.</TD></TR>
+          ) : (
+            filteredUsers.map((user) => (
+              <TR 
+                key={user.id} 
+                className="group hover:bg-zinc-50/50 cursor-pointer transition"
+                onClick={() => setSelectedUserId(user.id)}
+              >
+                <TD className="font-semibold text-zinc-900">{user.name || "-"}</TD>
+                <TD>
+                  <span className={`inline-flex items-center rounded-full px-2.5 py-0.5 text-xs font-medium ${
+                    user.isActive ? "bg-emerald-100 text-emerald-700" : "bg-zinc-100 text-zinc-500"
+                  }`}>
+                    {user.isActive ? "Actif" : "Inactif"}
+                  </span>
+                </TD>
+                <TD>
+                  <span className="inline-flex items-center gap-1.5 rounded-full bg-indigo-50 px-2.5 py-0.5 text-xs font-medium text-indigo-700">
+                    <Shield size={10} /> {getRoleLabel(user.role)}
+                  </span>
+                </TD>
+                <TD className="text-zinc-600 font-medium">{user.email}</TD>
+                <TD className="text-zinc-500">{new Date(user.createdAt).toLocaleDateString("fr-FR")}</TD>
+                <TD className="text-right">
+                  <button className="p-2 text-zinc-400 group-hover:text-indigo-600 transition">
+                    <Settings size={18} />
+                  </button>
+                </TD>
+              </TR>
+            ))
+          )}
+        </TableBody>
+      </Table>
+
+      {/* Modal Création */}
+      <Modal
+        open={openAddModal}
+        onClose={() => setOpenAddModal(false)}
+        title="Ajouter un nouveau compte"
+        containerClassName="w-[min(480px,94vw)]"
+      >
+        <div className="space-y-5">
           <div className="space-y-1.5">
             <label className="text-xs font-bold text-zinc-500 uppercase tracking-wider ml-1">Nom complet</label>
             <input
@@ -251,7 +353,7 @@ export default function UsersPage() {
           </div>
 
           <div className="space-y-1.5">
-            <label className="text-xs font-bold text-zinc-500 uppercase tracking-wider ml-1">Organisation</label>
+            <label className="text-xs font-bold text-zinc-500 uppercase tracking-wider ml-1">Première Organisation</label>
             <select
               className="h-11 w-full rounded-2xl border border-zinc-200 bg-zinc-50/50 px-4 text-sm outline-none focus:ring-2 focus:ring-indigo-500 transition"
               value={newOrgId}
@@ -263,79 +365,31 @@ export default function UsersPage() {
               ))}
             </select>
           </div>
+
+          <div className="flex items-center justify-between pt-2">
+            <label className="flex items-center gap-3 cursor-pointer group">
+              <input
+                checked={newActive}
+                onChange={(e) => setNewActive(e.target.checked)}
+                type="checkbox"
+                className="h-5 w-5 rounded-lg border-zinc-300 text-indigo-600 focus:ring-indigo-500"
+              />
+              <span className="text-sm font-medium text-zinc-600 group-hover:text-zinc-900 transition">Actif</span>
+            </label>
+
+            <button
+              onClick={async () => {
+                await createUser();
+                if (!toast.includes("impossible")) setOpenAddModal(false);
+              }}
+              disabled={creating}
+              className="h-11 px-6 rounded-2xl bg-indigo-600 text-white text-sm font-semibold hover:bg-indigo-700 transition-all shadow-lg shadow-indigo-100 disabled:opacity-50"
+            >
+              {creating ? "Création..." : "Créer le compte"}
+            </button>
+          </div>
         </div>
-
-        <div className="mt-6 flex items-center justify-between">
-          <label className="flex items-center gap-3 cursor-pointer group">
-            <input
-              checked={newActive}
-              onChange={(e) => setNewActive(e.target.checked)}
-              type="checkbox"
-              className="h-5 w-5 rounded-lg border-zinc-300 text-indigo-600 focus:ring-indigo-500"
-            />
-            <span className="text-sm font-medium text-zinc-600 group-hover:text-zinc-900 transition">Compte actif immédiatement</span>
-          </label>
-
-          <button
-            onClick={createUser}
-            disabled={creating}
-            className="btn-brand inline-flex h-12 items-center gap-2 rounded-2xl px-6 text-sm font-semibold shadow-lg shadow-indigo-200 disabled:opacity-50 transition active:scale-95"
-            style={{ backgroundColor: "#4f46e5", color: "white" }}
-          >
-            {creating ? "Création..." : <><Plus size={16} /> Ajouter le gestionnaire</>}
-          </button>
-        </div>
-      </div>
-
-      {/* Tableau des comptes */}
-      <Table>
-        <THead>
-          <TR>
-            <TH className="w-1/4">Nom</TH>
-            <TH>Statut</TH>
-            <TH>Rôle</TH>
-            <TH>Email</TH>
-            <TH>Création</TH>
-            <TH className="text-right">Actions</TH>
-          </TR>
-        </THead>
-        <TableBody>
-          {loading ? (
-            <TR><TD colSpan={6} className="text-center py-12 text-zinc-400 italic">Chargement des utilisateurs...</TD></TR>
-          ) : users.length === 0 ? (
-            <TR><TD colSpan={6} className="text-center py-12 text-zinc-400 italic">Aucun compte trouvé.</TD></TR>
-          ) : (
-            users.map((user) => (
-              <TR 
-                key={user.id} 
-                className="group hover:bg-zinc-50/50 cursor-pointer transition"
-                onClick={() => setSelectedUserId(user.id)}
-              >
-                <TD className="font-semibold text-zinc-900">{user.name || "-"}</TD>
-                <TD>
-                  <span className={`inline-flex items-center rounded-full px-2.5 py-0.5 text-xs font-medium ${
-                    user.isActive ? "bg-emerald-100 text-emerald-700" : "bg-zinc-100 text-zinc-500"
-                  }`}>
-                    {user.isActive ? "Actif" : "Inactif"}
-                  </span>
-                </TD>
-                <TD>
-                  <span className="inline-flex items-center gap-1.5 rounded-full bg-indigo-50 px-2.5 py-0.5 text-xs font-medium text-indigo-700">
-                    <Shield size={10} /> {getRoleLabel(user.role)}
-                  </span>
-                </TD>
-                <TD className="text-zinc-600 font-medium">{user.email}</TD>
-                <TD className="text-zinc-500">{new Date(user.createdAt).toLocaleDateString("fr-FR")}</TD>
-                <TD className="text-right">
-                  <button className="p-2 text-zinc-400 group-hover:text-indigo-600 transition">
-                    <Settings size={18} />
-                  </button>
-                </TD>
-              </TR>
-            ))
-          )}
-        </TableBody>
-      </Table>
+      </Modal>
 
       {/* Modal Détails / Edition */}
       <Modal
@@ -349,16 +403,27 @@ export default function UsersPage() {
             {/* Infos de base */}
             <div className="grid grid-cols-2 gap-6 bg-zinc-50/50 p-4 rounded-2xl border border-zinc-100">
               <div className="flex flex-col gap-1">
-                <span className="text-[10px] font-bold text-zinc-400 uppercase tracking-widest">Utilisateur</span>
-                <div className="flex items-center gap-2 font-semibold text-zinc-900">
-                  <User size={14} className="text-zinc-400" /> {selectedUser.name}
-                </div>
+                <span className="text-[10px] font-bold text-zinc-400 uppercase tracking-widest">Nom complet</span>
+                <input
+                  className="h-8 w-full rounded-lg border border-zinc-200 px-2 text-sm outline-none focus:ring-2 focus:ring-indigo-500 mt-1"
+                  value={selectedUser.name || ""}
+                  onChange={(e) => {
+                    const updatedUsers = users.map(u => u.id === selectedUser.id ? {...u, name: e.target.value} : u);
+                    setUsers(updatedUsers);
+                  }}
+                />
               </div>
               <div className="flex flex-col gap-1">
                 <span className="text-[10px] font-bold text-zinc-400 uppercase tracking-widest">Email</span>
-                <div className="flex items-center gap-2 font-medium text-zinc-600">
-                  <Mail size={14} className="text-zinc-400" /> {selectedUser.email}
-                </div>
+                <input
+                  type="email"
+                  className="h-8 w-full rounded-lg border border-zinc-200 px-2 text-sm outline-none focus:ring-2 focus:ring-indigo-500 mt-1"
+                  value={selectedUser.email}
+                  onChange={(e) => {
+                    const updatedUsers = users.map(u => u.id === selectedUser.id ? {...u, email: e.target.value} : u);
+                    setUsers(updatedUsers);
+                  }}
+                />
               </div>
               <div className="flex flex-col gap-1">
                 <span className="text-[10px] font-bold text-zinc-400 uppercase tracking-widest">Statut</span>
@@ -399,13 +464,6 @@ export default function UsersPage() {
                     onChange={(e) => setNewPassword(e.target.value)}
                   />
                 </div>
-                <button
-                  onClick={updateUserInfo}
-                  disabled={isUpdating}
-                  className="h-10 px-4 rounded-xl bg-zinc-900 text-white text-xs font-semibold hover:bg-zinc-800 transition disabled:opacity-50"
-                >
-                  {isUpdating ? "Mise à jour..." : "Enregistrer"}
-                </button>
               </div>
             </div>
 
@@ -463,6 +521,17 @@ export default function UsersPage() {
                   </div>
                 </div>
               )}
+            </div>
+
+            {/* Bouton de sauvegarde global */}
+            <div className="pt-6 border-t border-zinc-100 flex justify-end">
+              <button
+                onClick={updateUserInfo}
+                disabled={isUpdating}
+                className="h-11 px-8 rounded-2xl bg-zinc-900 text-white text-sm font-bold hover:bg-zinc-800 transition shadow-lg shadow-zinc-100 disabled:opacity-50"
+              >
+                {isUpdating ? "Enregistrement..." : "Enregistrer les modifications"}
+              </button>
             </div>
           </div>
         )}
