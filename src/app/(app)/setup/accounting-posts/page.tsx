@@ -184,13 +184,15 @@ export default function AccountingPostsPage() {
   }, [apiUrl]);
 
   useEffect(() => {
-    void load();
+    if (orgId) {
+      void load();
+    }
     return () => {
       if (toastTimeoutRef.current) {
         clearTimeout(toastTimeoutRef.current);
       }
     };
-  }, [load]);
+  }, [load, orgId]);
 
   function resetForm() {
     setCode("");

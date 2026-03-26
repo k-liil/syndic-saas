@@ -36,7 +36,7 @@ export function AppShell({
   const [notifications, setNotifications] = useState<NotificationItem[]>([]);
   const [unreadCount, setUnreadCount] = useState(0);
   const ref = useRef<HTMLDivElement>(null);
-  const { loading: orgLoading } = useOrganization();
+  const { org: orgInfo, loading: orgLoading } = useOrganization();
   const apiUrl = useApiUrl();
 
   const outerWrapperClass = "";

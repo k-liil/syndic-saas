@@ -3,7 +3,7 @@
 import Image from "next/image";
 import { forwardRef, useCallback, useEffect, useImperativeHandle, useMemo, useState } from "react";
 import { useSession } from "next-auth/react";
-import { useApiUrl } from "@/lib/org-context";
+import { useApiUrl, useOrgId } from "@/lib/org-context";
 import { canManage } from "@/lib/roles";
 import { Building2, Mail, MapPin, Pencil, Phone, Plus, Trash2, User, X } from "lucide-react";
 
@@ -133,7 +133,8 @@ const SuppliersContent = forwardRef<SuppliersPageHandle, SuppliersPageProps>(
 
     const load = useCallback(async () => {
       try {
-        const res = await fetch(apiUrl("/api/suppliers"));
+        const url = apiUrl("/api/suppliers");
+        const res = await fetch(url, { cache: "no-store" });
         if (res.ok) {
           const json = await res.json();
           setItems(Array.isArray(json) ? json : []);
@@ -153,9 +154,13 @@ const SuppliersContent = forwardRef<SuppliersPageHandle, SuppliersPageProps>(
       }
     }, [apiUrl]);
 
+    const orgId = useOrgId();
+
     useEffect(() => {
-      void load();
-    }, [load]);
+      if (orgId) {
+        void load();
+      }
+    }, [load, orgId]);
 
     useEffect(() => {
       onDirtyChange?.(isDirty && showModal);

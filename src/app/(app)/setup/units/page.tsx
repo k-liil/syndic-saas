@@ -10,7 +10,8 @@ import {
   type ImportUnitRow,
 } from "@/lib/imports/units-csv";
 import { canManage } from "@/lib/roles";
-import { useApiUrl } from "@/lib/org-context";
+import { useApiUrl, useOrgId } from "@/lib/org-context";
+import { Plus, Upload, MoreHorizontal, Pencil, Trash2 } from "lucide-react";
 
 type Building = { id: string; name: string };
 
@@ -304,10 +305,13 @@ export default function LotsPage() {
     }
   }
 
+  const orgId = useOrgId();
   useEffect(() => {
-    loadAll();
+    if (orgId) {
+      loadAll();
+    }
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [apiUrl]);
+  }, [apiUrl, orgId]);
 
   const selectedIds = useMemo(
     () => Object.entries(selected).filter(([, v]) => v).map(([k]) => k),
@@ -533,15 +537,17 @@ export default function LotsPage() {
                       <div className="flex justify-end gap-2">
                         <button
                           onClick={() => openEditModal(l)}
-                          className="rounded-lg border border-zinc-200 px-3 py-1.5 text-xs hover:bg-zinc-50"
+                          className="flex h-8 w-8 items-center justify-center rounded-lg border border-zinc-200 text-zinc-500 hover:bg-zinc-50 hover:text-indigo-600 transition-colors"
+                          title="Éditer"
                         >
-                          Éditer
+                          <Pencil size={14} />
                         </button>
                         <button
                           onClick={() => deleteLot(l.id, l.lotNumber)}
-                          className="rounded-lg border border-zinc-200 px-3 py-1.5 text-xs hover:bg-red-50 hover:text-red-600"
+                          className="flex h-8 w-8 items-center justify-center rounded-lg border border-zinc-200 text-zinc-500 hover:bg-red-50 hover:text-red-600 transition-colors"
+                          title="Supprimer"
                         >
-                          Supprimer
+                          <Trash2 size={14} />
                         </button>
                       </div>
                     ) : (

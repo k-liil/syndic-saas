@@ -50,21 +50,7 @@ export async function requireAuth() {
     };
   }
   
-  // Use organization from session if available (cached in JWT)
-  if (sessionOrgId) {
-    return {
-      ok: true as const,
-      session,
-      userId,
-      isSuperAdmin: false,
-      organizationId: sessionOrgId,
-      userOrganizations: [
-        { organizationId: sessionOrgId, role },
-      ],
-    };
-  }
-
-  // Fallback for sessions that don't have orgId yet
+  // Always fetch full list of organizations from DB to support SPA switcher
   const userOrgsRaw = await prisma.userOrganization.findMany({
     where: { userId },
     select: { organizationId: true, role: true },
@@ -77,13 +63,15 @@ export async function requireAuth() {
   if (userOrgs.length === 0) {
     return { ok: false as const, status: 403, error: "NO_ORGANIZATION" };
   }
+
+  const effectiveOrgId = sessionOrgId || (userOrgs.length > 0 ? userOrgs[0].organizationId : null);
   
   return { 
     ok: true as const, 
     session, 
     userId,
     isSuperAdmin: false,
-    organizationId: userOrgs[0].organizationId,
+    organizationId: effectiveOrgId,
     userOrganizations: userOrgs,
   };
 }
@@ -135,12 +123,13 @@ export async function requireRole(minimumRole: AppRole) {
     userId: r.userId,
     isSuperAdmin: false,
     organizationId: r.organizationId,
+    userOrganizations: r.userOrganizations,
   };
 }
 
 export function getOrganizationIdsForRole(
   gate: AuthGateSuccess,
-  minimumRole: Exclude<AppRole, "SUPER_ADMIN"> = "OWNER"
+  minimumRole: Exclude<AppRole, "SUPER_ADMIN"> = "MANAGER"
 ) {
   if (gate.isSuperAdmin) {
     return [];

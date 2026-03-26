@@ -7,7 +7,7 @@ export async function getOrgId(gate: AuthGateSuccess): Promise<string | undefine
   }
 
   return (
-    getOrganizationIdsForRole(gate, "OWNER")[0] ??
+    getOrganizationIdsForRole(gate, "MANAGER")[0] ??
     gate.organizationId ??
     undefined
   );
@@ -29,7 +29,7 @@ export async function getOrgIdFromRequest(
       return organization?.id;
     }
 
-    const accessibleOrgIds = getOrganizationIdsForRole(gate, "OWNER");
+    const accessibleOrgIds = getOrganizationIdsForRole(gate, "MANAGER");
     return accessibleOrgIds.includes(orgIdParam) ? orgIdParam : undefined;
   }
 

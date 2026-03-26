@@ -138,9 +138,15 @@ function DashboardPageContent() {
   const activeYear = useActiveYear();
   const apiUrl = useApiUrl();
   const [data, setData] = useState<DashboardData>(emptyData);
+  const [mounted, setMounted] = useState(false);
   const requestedYear = year || activeYear || null;
 
   useEffect(() => {
+    setMounted(true);
+  }, []);
+
+  useEffect(() => {
+    if (!mounted) return;
     const endpoint = requestedYear
       ? apiUrl(`/api/dashboard?year=${requestedYear}`)
       : apiUrl("/api/dashboard");
@@ -169,7 +175,7 @@ function DashboardPageContent() {
         });
       })
       .catch(() => setData(emptyData));
-  }, [requestedYear, apiUrl]);
+  }, [requestedYear, apiUrl, mounted]);
 
   const displayYear = data.year ?? (requestedYear ? Number(requestedYear) : undefined);
 
@@ -203,6 +209,10 @@ function DashboardPageContent() {
     (sum, item) => sum + Number(item.amount ?? 0),
     0
   );
+
+  if (!mounted) {
+    return null;
+  }
 
   if (!displayYear) {
     return (

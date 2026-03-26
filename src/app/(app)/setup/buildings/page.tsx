@@ -7,7 +7,7 @@ import { Table, THead, TR, TH, TD } from "@/components/ui/Table";
 import { CheckCircle2, XCircle, AlertTriangle } from "lucide-react";
 import { Pencil, Trash2 } from "lucide-react";
 import { canManage } from "@/lib/roles";
-import { useApiUrl } from "@/lib/org-context";
+import { useApiUrl, useOrgId } from "@/lib/org-context";
 
 type Building = {
   id: string;
@@ -138,9 +138,12 @@ export default function BuildingsPage() {
     }
   }
 
+  const orgId = useOrgId();
   useEffect(() => {
-    void load();
-  }, [load]);
+    if (orgId) {
+      void load();
+    }
+  }, [load, orgId]);
 
   return (
     <div className="flex flex-col h-full">

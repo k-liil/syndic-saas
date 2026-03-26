@@ -109,10 +109,33 @@ async function seedOrganizations() {
   });
 }
 
+async function seedPagePermissions() {
+  console.log("Seeding page visibility permissions...");
+  
+  const pages = [
+    { href: "/setup/suppliers", manager: true },
+    { href: "/setup/accounting-posts", manager: true },
+    { href: "/setup/settings", manager: true },
+    { href: "/setup/units", manager: true },
+  ];
+
+  for (const page of pages) {
+    await prisma.pageVisibilitySetting.updateMany({
+      where: { href: page.href },
+      data: {
+        admin: page.manager,
+        manager: page.manager,
+        operator: page.manager,
+      },
+    });
+  }
+}
+
 async function main() {
   console.log("Seed starting...");
   await seedSuperAdmin();
   await seedOrganizations();
+  await seedPagePermissions();
   console.log("Seed completed!");
 }
 

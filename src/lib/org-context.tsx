@@ -34,9 +34,14 @@ export function OrgProvider({
   initialOrgs?: OrgInfo[];
   initialOrgId?: string | null;
 }) {
-  const [org, setOrg] = useState<OrgInfo | null>(null);
+  const [org, setOrg] = useState<OrgInfo | null>(() => {
+    if (initialOrgs.length > 0) {
+      return initialOrgs.find((o: OrgInfo) => o.id === initialOrgId) || initialOrgs[0];
+    }
+    return null;
+  });
   const [orgs, setOrgs] = useState<OrgInfo[]>(initialOrgs);
-  const [loading, setLoading] = useState(!initialOrgs.length);
+  const [loading, setLoading] = useState(() => !initialOrgs.length);
 
   useEffect(() => {
     if (initialOrgs.length > 0) {
