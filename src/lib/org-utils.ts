@@ -3,12 +3,7 @@ import { AuthGateSuccess, getOrganizationIdsForRole } from "@/lib/authz";
 
 export async function getOrgId(gate: AuthGateSuccess): Promise<string | undefined> {
   if (gate.isSuperAdmin) {
-    const firstOrg = await prisma.organization.findFirst({
-      where: { isActive: true },
-      orderBy: { createdAt: "asc" },
-      select: { id: true },
-    });
-    return firstOrg?.id ?? undefined;
+    return undefined;
   }
 
   return (

@@ -107,10 +107,26 @@ if (method) where.method = method;
         bankName: true,
         bankRef: true,
         unallocatedAmount: true,
-        owner: { select: { id: true, name: true, cin: true } },
+        owner: { select: { id: true, name: true, firstName: true, cin: true } },
         building: { select: { id: true, name: true } },
         unit: {
           select: { id: true, lotNumber: true, reference: true, type: true },
+        },
+        allocations: {
+          select: {
+            amount: true,
+            due: {
+              select: {
+                period: true,
+                status: true,
+              },
+            },
+          },
+          orderBy: {
+            due: {
+              period: "asc",
+            },
+          },
         },
       },
     }),
@@ -139,11 +155,19 @@ if (method) where.method = method;
   }
 
   return NextResponse.json({
-    items: items.map((item) => ({
-      ...item,
-      amount: Number(item.amount ?? 0),
-      unallocatedAmount: Number(item.unallocatedAmount ?? 0),
-    })),
+    items: items.map((item) => {
+      const periods = item.allocations.map((a) => a.due.period);
+      const isPartial = item.allocations.some((a) => a.due.status === "PARTIAL");
+
+      return {
+        ...item,
+        amount: Number(item.amount ?? 0),
+        unallocatedAmount: Number(item.unallocatedAmount ?? 0),
+        firstPeriod: periods[0] ?? null,
+        lastPeriod: periods[periods.length - 1] ?? null,
+        isPartial,
+      };
+    }),
     pagination: {
       page,
       pageSize,

@@ -26,9 +26,12 @@ type Receipt = {
   amount: number;
   method: Method;
   note: string | null;
-  owner: { name: string };
+  owner: { name: string; firstName?: string | null };
   building: { name: string };
   unit: { id?: string; lotNumber?: string; reference: string; type: string } | null;
+  firstPeriod: string | null;
+  lastPeriod: string | null;
+  isPartial: boolean;
 };
 
 function fmtDate(d: string) {
@@ -41,7 +44,24 @@ function fmtMonth(d: string) {
   return new Date(d).toLocaleDateString("fr-FR", {
     month: "long",
     year: "numeric",
+    timeZone: "UTC",
   });
+}
+
+function fmtPeriodRange(first: string | null, last: string | null) {
+  if (!first) return "—";
+  if (!last || first === last) return fmtMonth(first);
+
+  const start = new Date(first);
+  const end = new Date(last);
+
+  if (start.getUTCFullYear() === end.getUTCFullYear()) {
+    const startMonth = start.toLocaleDateString("fr-FR", { month: "long", timeZone: "UTC" });
+    const endMonth = end.toLocaleDateString("fr-FR", { month: "long", year: "numeric", timeZone: "UTC" });
+    return `${startMonth} à ${endMonth}`;
+  }
+
+  return `${fmtMonth(first)} à ${fmtMonth(last)}`;
 }
 
 function fmtElapsed(ms: number) {
@@ -108,24 +128,7 @@ const totalCash = totals.cash;
 const totalTransfer = totals.transfer;
 const totalCheck = totals.check;
 
-const filteredReceipts = receipts.filter((r) => {
-  const q = search.toLowerCase();
-  const lotQuery = lotFilter.toLowerCase().trim();
-
-  if (lotQuery) {
-    const receiptLot = (r.unit?.lotNumber ?? r.unit?.reference ?? "").toLowerCase();
-    if (!receiptLot.includes(lotQuery)) {
-      return false;
-    }
-  }
-
-  return (
-    r.owner?.name?.toLowerCase().includes(q) ||
-    r.unit?.lotNumber?.toLowerCase().includes(q) ||
-    r.unit?.reference?.toLowerCase().includes(q) ||
-    r.building?.name?.toLowerCase().includes(q)
-  );
-});
+const filteredReceipts = receipts;
 
   const [mode, setMode] = useState<"UNIT" | "OWNER">("UNIT");
   const [deleteOpen, setDeleteOpen] = useState(false);
@@ -191,6 +194,7 @@ async function loadReceipts() {
     pageSize: String(pageSize),
     type: "CONTRIBUTION",
     year,
+    q: lotFilter,
   });
 
   if (methodFilter !== "ALL") {
@@ -227,6 +231,7 @@ async function loadReceiptsTotalCount() {
     pageSize: "1",
     type: "CONTRIBUTION",
     year,
+    q: lotFilter,
   });
 
   if (methodFilter !== "ALL") {
@@ -637,20 +642,21 @@ useEffect(() => {
   }
 
 useEffect(() => {
-  if (!year) return;
+  if (!year || !org?.id) return;
   loadReceipts();
-}, [page, methodFilter, monthFilter, year]);
+}, [page, methodFilter, monthFilter, year, org?.id, lotFilter]);
 
 useEffect(() => {
+  if (!org?.id) return;
   loadBanks();
   loadSettings();
-}, []);
+}, [org?.id]);
 
 useEffect(() => {
   setPage(1);
   setSelectedReceipts([]);
   setSelectAllAcrossResults(false);
-}, [year, monthFilter]);
+}, [year, monthFilter, lotFilter]);
 
 useEffect(() => {
   setSelectedReceipts([]);
@@ -1087,38 +1093,41 @@ useEffect(() => {
 
                 <TD className="text-zinc-600">{fmtDate(r.date)}</TD>
                 <TD>
-  <span className="font-medium text-zinc-900">{r.unit?.lotNumber ?? r.unit?.reference ?? "—"}</span>
-</TD>
+                  <span className="font-medium text-zinc-900">{r.unit?.lotNumber ?? r.unit?.reference ?? "—"}</span>
+                </TD>
                 <TD className="text-zinc-700">{r.building?.name ?? "—"}</TD>
-                <TD className="font-medium text-zinc-800">{r.owner?.name ?? "—"}</TD>
-
+                <TD className="font-medium text-zinc-900">
+                  {r.owner?.firstName ? `${r.owner.firstName} ${r.owner.name}` : r.owner?.name}
+                </TD>
                 <TD>
                   {r.method === "CASH" && (
                     <span className="inline-flex items-center rounded-full bg-emerald-100 px-2.5 py-1 text-xs font-medium text-emerald-700">
                       💵 Espèces
                     </span>
                   )}
-
                   {r.method === "TRANSFER" && (
                     <span className="inline-flex items-center rounded-full bg-blue-100 px-2.5 py-1 text-xs font-medium text-blue-700">
                       🏦 Virement
                     </span>
                   )}
-
                   {r.method === "CHECK" && (
                     <span className="inline-flex items-center rounded-full bg-amber-100 px-2.5 py-1 text-xs font-medium text-amber-700">
                       🧾 Chèque
                     </span>
                   )}
                 </TD>
-
                 <TD className="text-right">
-  <span className="font-semibold text-zinc-900">
-                  <span className="font-semibold text-zinc-900">
+                  <div className="font-semibold text-zinc-900">
                     {Number(r.amount).toLocaleString("fr-FR")} MAD
-                  </span>
-                  </span>
-</TD>
+                  </div>
+                  {r.firstPeriod && (
+                    <div className={`mt-0.5 text-[10px] font-medium ${
+                      r.isPartial ? "text-amber-600" : "text-emerald-600"
+                    }`}>
+                      {r.isPartial ? "🟠" : "🟢"} {fmtPeriodRange(r.firstPeriod, r.lastPeriod)}
+                    </div>
+                  )}
+                </TD>
 
                 <TD className="text-right">
                   <div
@@ -1267,7 +1276,9 @@ useEffect(() => {
           </div>
 
           <div>
-            <label className="text-sm font-medium">Lot / LotNumber</label>
+            <label className="text-sm font-medium">
+              {mode === "UNIT" ? "Lot" : "Copropriétaire"}
+            </label>
 
             <input
               className="h-12 w-full rounded-2xl border border-zinc-200 bg-white px-4 text-sm text-zinc-900 shadow-sm outline-none transition placeholder:text-zinc-400 focus:border-zinc-900 disabled:bg-zinc-100 disabled:text-zinc-500"
@@ -1536,7 +1547,7 @@ useEffect(() => {
                     Copropriétaire
                   </div>
                   <div className="mt-1 text-sm font-semibold text-zinc-900">
-                    {detail.owner?.name ?? "—"}
+                    {detail.owner?.firstName ? `${detail.owner.firstName} ${detail.owner.name}` : detail.owner?.name ?? "—"}
                   </div>
                   <div className="mt-1 text-xs text-zinc-500">
                     {detail.owner?.cin ?? ""}
@@ -1605,68 +1616,66 @@ useEffect(() => {
                 </div>
               </div>
 
-              {detail.allocations?.length === 0 ? (
-                <div className="mt-4 rounded-2xl border border-dashed border-zinc-200 bg-zinc-50 p-4 text-sm text-zinc-500">
-                  Aucune allocation.
-                </div>
-              ) : (
-                <div className="mt-4 space-y-3">
-                  {detail.allocations.map((a: any, index: number) => {
-                    const isAdvance =
-                      new Date(a.due.period).getTime() > new Date(detail.date).getTime();
+              {(() => {
+                const allocations = detail.allocations ?? [];
+                if (allocations.length === 0) {
+                  return (
+                    <div className="mt-4 rounded-2xl border border-dashed border-zinc-200 bg-zinc-50 p-4 text-sm text-zinc-500">
+                      Aucune allocation.
+                    </div>
+                  );
+                }
 
-                    return (
-                      <div
-                        key={a.id}
-                        className="flex items-center justify-between rounded-2xl border border-zinc-200 bg-gradient-to-r from-white to-zinc-50 px-4 py-3 shadow-sm"
-                      >
+                const paidAllocs = allocations.filter((a: any) => 
+                  new Date(a.due.period).getTime() <= new Date(detail.date).getTime()
+                );
+                const advanceAllocs = allocations.filter((a: any) => 
+                  new Date(a.due.period).getTime() > new Date(detail.date).getTime()
+                );
+
+                const paidTotal = paidAllocs.reduce((sum: number, a: any) => sum + Number(a.amount), 0);
+                const advanceTotal = advanceAllocs.reduce((sum: number, a: any) => sum + Number(a.amount), 0);
+
+                return (
+                  <div className="mt-4 space-y-4">
+                    {paidAllocs.length > 0 && (
+                      <div className="flex items-center justify-between rounded-2xl border border-emerald-100 bg-emerald-50/50 px-5 py-4 shadow-sm">
                         <div className="min-w-0">
-                          <div className="flex flex-wrap items-center gap-2">
-                            <span className="inline-flex rounded-full bg-blue-600 px-2.5 py-1 text-[11px] font-semibold text-white">
-                              {fmtMonth(a.due.period)}
-                            </span>
-
-                            {isAdvance ? (
-                              <span className="inline-flex rounded-full bg-amber-100 px-2.5 py-1 text-[11px] font-medium text-amber-700">
-                                Avance
-                              </span>
-                            ) : (
-                              <span className="inline-flex rounded-full bg-emerald-100 px-2.5 py-1 text-[11px] font-medium text-emerald-700">
-                                Payé
-                              </span>
-                            )}
-
-                            {index === 0 ? (
-                              <span className="inline-flex rounded-full bg-blue-100 px-2.5 py-1 text-[11px] font-medium text-blue-700">
-                                Début
-                              </span>
-                            ) : null}
-
-                            {index === (detail.allocations?.length ?? 0) - 1 ? (
-                              <span className="inline-flex rounded-full bg-purple-100 px-2.5 py-1 text-[11px] font-medium text-purple-700">
-                                Fin
-                              </span>
-                            ) : null}
+                          <div className="text-xs font-semibold uppercase tracking-wider text-emerald-600/80">Périodes réglées</div>
+                          <div className="mt-1 text-base font-semibold text-zinc-900">
+                            {fmtPeriodRange(paidAllocs[0].due.period, paidAllocs[paidAllocs.length - 1].due.period)}
                           </div>
-
-                          <div className="mt-2 text-xs text-zinc-500">
-                            {a.due.unit?.building?.name ?? detail.building?.name ?? "—"}
-                            {" • "}
-                            {a.due.unit?.lotNumber ?? a.due.unit?.reference ?? "—"}
+                          <div className="mt-1 text-xs text-zinc-500">
+                            {paidAllocs.length} mois couvert(s)
                           </div>
                         </div>
-
-                        <div className="ml-4 rounded-2xl bg-emerald-500/90 px-4 py-2 text-right text-white shadow-sm">
-                          <div className="text-[11px] uppercase tracking-wide text-zinc-300">
-                            Montant
-                          </div>
-                          <div className="text-base font-semibold">{a.amount}</div>
+                        <div className="ml-4 rounded-xl bg-emerald-600 px-4 py-2 text-right text-white shadow-sm">
+                          <div className="text-[10px] font-medium uppercase tracking-tight text-emerald-100">Total</div>
+                          <div className="text-lg font-bold">{paidTotal.toLocaleString("fr-FR")} <span className="text-xs font-normal">MAD</span></div>
                         </div>
                       </div>
-                    );
-                  })}
-                </div>
-              )}
+                    )}
+
+                    {advanceAllocs.length > 0 && (
+                      <div className="flex items-center justify-between rounded-2xl border border-blue-100 bg-blue-50/50 px-5 py-4 shadow-sm">
+                        <div className="min-w-0">
+                          <div className="text-xs font-semibold uppercase tracking-wider text-blue-600/80">Avances</div>
+                          <div className="mt-1 text-base font-semibold text-zinc-900">
+                            {fmtPeriodRange(advanceAllocs[0].due.period, advanceAllocs[advanceAllocs.length - 1].due.period)}
+                          </div>
+                          <div className="mt-1 text-xs text-zinc-500">
+                            {advanceAllocs.length} mois en avance
+                          </div>
+                        </div>
+                        <div className="ml-4 rounded-xl bg-blue-600 px-4 py-2 text-right text-white shadow-sm">
+                          <div className="text-[10px] font-medium uppercase tracking-tight text-blue-100">Total</div>
+                          <div className="text-lg font-bold">{advanceTotal.toLocaleString("fr-FR")} <span className="text-xs font-normal">MAD</span></div>
+                        </div>
+                      </div>
+                    )}
+                  </div>
+                );
+              })()}
             </div>
 
             {detail.unallocatedAmount > 0 ? (

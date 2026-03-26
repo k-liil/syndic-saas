@@ -1,11 +1,17 @@
 import { NextResponse } from "next/server";
 import { prisma } from "@/lib/prisma";
 import { requireAuth } from "@/lib/authz";
+import { getOrgIdFromRequest } from "@/lib/org-utils";
 
 export async function GET(req: Request) {
   const gate = await requireAuth();
   if (!gate.ok) {
     return NextResponse.json({ error: gate.error }, { status: gate.status });
+  }
+
+  const orgId = await getOrgIdFromRequest(req, gate);
+  if (!orgId) {
+    return NextResponse.json([]);
   }
 
   const { searchParams } = new URL(req.url);
@@ -17,7 +23,7 @@ export async function GET(req: Request) {
 
   const owners = await prisma.owner.findMany({
     where: {
-      organizationId: gate.organizationId ?? undefined,
+      organizationId: orgId,
       name: {
         contains: q,
         mode: "insensitive",
@@ -26,7 +32,7 @@ export async function GET(req: Request) {
     include: {
       ownerships: {
         where: {
-          organizationId: gate.organizationId ?? undefined,
+          organizationId: orgId,
           endDate: null,
         },
         include: {
@@ -41,8 +47,8 @@ export async function GET(req: Request) {
     take: 20,
   });
 
-  const result = owners.flatMap((o) =>
-    o.ownerships.map((own) => ({
+  const result = owners.flatMap((o: any) =>
+    o.ownerships.map((own: any) => ({
       id: own.unit.id,
       reference: own.unit.reference,
       type: own.unit.type,

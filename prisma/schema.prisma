@@ -86,7 +86,7 @@ enum PaymentMethod {
 model Owner {
   id        String   @id @default(uuid())
   organizationId String
-  organization   Organization @relation(fields: [organizationId], references: [id])
+  organization   Organization @relation(fields: [organizationId], references: [id], onDelete: Cascade)
   cin       String?
   firstName String?
   name      String
@@ -115,7 +115,7 @@ enum ReceiptType {
 model Building {
   id        String   @id @default(uuid())
   organizationId String
-  organization   Organization @relation(fields: [organizationId], references: [id])
+  organization   Organization @relation(fields: [organizationId], references: [id], onDelete: Cascade)
   name      String
   address   String?
   createdAt DateTime @default(now())
@@ -136,7 +136,7 @@ enum ContributionType {
 model Unit {
   id        String   @id @default(uuid())
   organizationId String
-  organization   Organization @relation(fields: [organizationId], references: [id])
+  organization   Organization @relation(fields: [organizationId], references: [id], onDelete: Cascade)
   lotNumber String?
   reference String
   type      UnitType
@@ -175,7 +175,7 @@ model Unit {
 model ContributionGroup {
   id        String   @id @default(cuid())
   organizationId String
-  organization   Organization @relation(fields: [organizationId], references: [id])
+  organization   Organization @relation(fields: [organizationId], references: [id], onDelete: Cascade)
   name      String
   isActive  Boolean  @default(true)
   createdAt DateTime @default(now())
@@ -202,7 +202,7 @@ model ContributionGroupUnit {
 model ContributionPeriod {
   id     String @id @default(uuid())
   organizationId String
-  organization   Organization @relation(fields: [organizationId], references: [id])
+  organization   Organization @relation(fields: [organizationId], references: [id], onDelete: Cascade)
 
   contributionType ContributionType
 
@@ -230,7 +230,7 @@ model ContributionPeriod {
 model Ownership {
   id        String    @id @default(uuid())
   organizationId String
-  organization   Organization @relation(fields: [organizationId], references: [id])
+  organization   Organization @relation(fields: [organizationId], references: [id], onDelete: Cascade)
   ownerId   String
   unitId    String
   startDate DateTime  @default(now())
@@ -247,7 +247,7 @@ model Ownership {
 model MonthlyDue {
   id     String @id @default(uuid())
   organizationId String
-  organization   Organization @relation(fields: [organizationId], references: [id])
+  organization   Organization @relation(fields: [organizationId], references: [id], onDelete: Cascade)
   unitId String
   unit   Unit   @relation(fields: [unitId], references: [id])
 
@@ -271,7 +271,7 @@ model Payment {
   id String @id @default(uuid())
 
   organizationId String
-  organization   Organization @relation(fields: [organizationId], references: [id])
+  organization   Organization @relation(fields: [organizationId], references: [id], onDelete: Cascade)
   paymentNumber Int @default(autoincrement())
 
   supplierId String
@@ -303,7 +303,7 @@ model Receipt {
   id String @id @default(uuid())
 
   organizationId String
-  organization   Organization @relation(fields: [organizationId], references: [id])
+  organization   Organization @relation(fields: [organizationId], references: [id], onDelete: Cascade)
   receiptNumber Int
   type          ReceiptType @default(CONTRIBUTION)
 
@@ -438,7 +438,7 @@ model VerificationToken {
 model AppSettings {
   id         String @id @default(uuid())
   organizationId String
-  organization   Organization @relation(fields: [organizationId], references: [id])
+  organization   Organization @relation(fields: [organizationId], references: [id], onDelete: Cascade)
   brandName  String @default("Syndic")
   brandColor String @default("#4f46e5")
 
@@ -469,7 +469,7 @@ model AppSettings {
 model FiscalYear {
   id String @id @default(uuid())
   organizationId String
-  organization   Organization @relation(fields: [organizationId], references: [id])
+  organization   Organization @relation(fields: [organizationId], references: [id], onDelete: Cascade)
 
   year Int
 
@@ -486,7 +486,7 @@ model FiscalYear {
 model InternalBank {
   id        String   @id @default(cuid())
   organizationId String
-  organization   Organization @relation(fields: [organizationId], references: [id])
+  organization   Organization @relation(fields: [organizationId], references: [id], onDelete: Cascade)
   name      String
   isActive  Boolean  @default(true)
   createdAt DateTime @default(now())
@@ -498,7 +498,7 @@ model InternalBank {
 model Supplier {
   id       String  @id @default(cuid())
   organizationId String
-  organization   Organization @relation(fields: [organizationId], references: [id])
+  organization   Organization @relation(fields: [organizationId], references: [id], onDelete: Cascade)
   name     String
   sector   String?
   contactName String?
@@ -520,7 +520,7 @@ model Supplier {
 model SupplierSector {
   id             String       @id @default(cuid())
   organizationId String
-  organization   Organization @relation(fields: [organizationId], references: [id])
+  organization   Organization @relation(fields: [organizationId], references: [id], onDelete: Cascade)
   name           String
   isActive       Boolean      @default(true)
   createdAt      DateTime     @default(now())
@@ -537,7 +537,7 @@ enum PostType {
 model AccountingPost {
   id       String  @id @default(cuid())
   organizationId String
-  organization   Organization @relation(fields: [organizationId], references: [id])
+  organization   Organization @relation(fields: [organizationId], references: [id], onDelete: Cascade)
   code     String
   name     String
   postType PostType
@@ -558,7 +558,7 @@ model AccountingPost {
 model Budget {
   id       String  @id @default(cuid())
   organizationId String
-  organization   Organization @relation(fields: [organizationId], references: [id])
+  organization   Organization @relation(fields: [organizationId], references: [id], onDelete: Cascade)
   accountingPostId String
   accountingPost   AccountingPost @relation(fields: [accountingPostId], references: [id])
   year     Int
@@ -578,7 +578,7 @@ model OtherReceipt {
   id String @id @default(uuid())
 
   organizationId String
-  organization   Organization @relation(fields: [organizationId], references: [id])
+  organization   Organization @relation(fields: [organizationId], references: [id], onDelete: Cascade)
   receiptNumber Int
 
   type ReceiptType
@@ -607,7 +607,7 @@ model OtherReceipt {
 model ImportJob {
   id        String   @id @default(uuid())
   organizationId String
-  organization   Organization @relation(fields: [organizationId], references: [id])
+  organization   Organization @relation(fields: [organizationId], references: [id], onDelete: Cascade)
   type      String
   totalRows Int
   processed Int      @default(0)
@@ -622,7 +622,7 @@ model DigitalVaultDocument {
   id String @id @default(uuid())
 
   organizationId String
-  organization   Organization @relation(fields: [organizationId], references: [id])
+  organization   Organization @relation(fields: [organizationId], references: [id], onDelete: Cascade)
 
   name       String
   category   String
@@ -646,7 +646,7 @@ model DigitalVaultDocument {
 model Claim {
   id             String       @id @default(uuid())
   organizationId String
-  organization   Organization @relation(fields: [organizationId], references: [id])
+  organization   Organization @relation(fields: [organizationId], references: [id], onDelete: Cascade)
   ownerId        String
   owner          Owner        @relation(fields: [ownerId], references: [id])
   unitId         String?
@@ -722,7 +722,7 @@ enum ClaimPriority {
 model Incident {
   id             String       @id @default(uuid())
   organizationId String
-  organization   Organization @relation(fields: [organizationId], references: [id])
+  organization   Organization @relation(fields: [organizationId], references: [id], onDelete: Cascade)
   title          String
   description    String
   location       String?      // Apartment or Common Area
@@ -736,7 +736,7 @@ model Incident {
 model Meeting {
   id             String       @id @default(uuid())
   organizationId String
-  organization   Organization @relation(fields: [organizationId], references: [id])
+  organization   Organization @relation(fields: [organizationId], references: [id], onDelete: Cascade)
   title          String
   date           DateTime
   type           MeetingType   @default(ORDINARY)
