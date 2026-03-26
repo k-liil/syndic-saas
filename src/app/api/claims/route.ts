@@ -125,22 +125,6 @@ export async function POST(req: Request) {
       return NextResponse.json({ error: "OWNER_ID_REQUIRED" }, { status: 400 });
     }
 
-    if (!canManage(role) && !linkedOwner) {
-      const owner = await prisma.owner.findFirst({
-        where: { userId, organizationId: orgId },
-        include: {
-          ownerships: {
-            where: { endDate: null, unit: { organizationId: orgId } },
-            select: { unitId: true },
-          },
-        },
-      });
-
-      if (!owner) {
-        return NextResponse.json({ error: "No owner profile found" }, { status: 403 });
-      }
-    }
-
     if (finalUnitId) {
       const validUnit = await prisma.unit.findFirst({
         where: {
@@ -180,7 +164,7 @@ export async function POST(req: Request) {
         recipients
           .filter((recipient) => canManage(recipient.role))
           .map((recipient) => recipient.userId)
-          .filter((recipientUserId) => recipientUserId && recipientUserId !== userId),
+          .filter((recipientUserId) => !!recipientUserId),
       ),
     );
 
