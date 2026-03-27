@@ -132,7 +132,10 @@ if (method) where.method = method;
     }
 
     where.OR = conditions;
+    console.log("[RECEIPTS] Search query:", q, "OR conditions count:", conditions.length);
   }
+
+  console.log("[RECEIPTS] Fetching with where:", JSON.stringify(where, null, 2));
 
   const [items, total, methodAgg] = await prisma.$transaction([
     prisma.receipt.findMany({

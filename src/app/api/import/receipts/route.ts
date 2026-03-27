@@ -67,6 +67,7 @@ export async function POST(req: Request) {
   }
 
   if (body.action === "start") {
+    console.log("[IMPORT] Starting job for totalRows:", body.totalRows);
     const job = await prisma.importJob.create({
       data: {
         organizationId: orgId,
@@ -76,6 +77,7 @@ export async function POST(req: Request) {
         status: "processing",
       },
     });
+    console.log("[IMPORT] Job created:", job.id);
 
     return NextResponse.json({
       ok: true,
@@ -90,8 +92,11 @@ export async function POST(req: Request) {
   });
 
   if (!job || job.organizationId !== orgId) {
+    console.warn("[IMPORT] Job not found or org mismatch:", body.jobId);
     return NextResponse.json({ error: "Job introuvable" }, { status: 404 });
   }
+
+  console.log("[IMPORT] Processing batch for jobId:", body.jobId, "rows:", body.rows.length);
 
   let imported = 0;
   const errors: { row: number; error: string }[] = [];
@@ -103,6 +108,8 @@ export async function POST(req: Request) {
         .filter((lotNumber): lotNumber is string => Boolean(lotNumber))
     )
   );
+
+  console.log("[IMPORT] Found lotNumbers:", lotNumbers.length);
 
   const units = await prisma.unit.findMany({
     where: {
@@ -264,11 +271,14 @@ export async function POST(req: Request) {
   }
 
   const groups = Array.from(rowsByUnit.values());
+  console.log("[IMPORT] Processing", groups.length, "groups in parallel...");
 
   await processInParallel(
     groups as any[],
     async (group: any[]) => {
+      const groupLot = group[0]?.lotNumber;
       try {
+        console.log("[IMPORT] Starting transaction for lot:", groupLot);
         await prisma.$transaction(
           async (tx) => {
             const fiscalYearsUpserted = new Set<number>();
