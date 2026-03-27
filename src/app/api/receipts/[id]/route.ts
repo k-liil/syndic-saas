@@ -86,6 +86,10 @@ export async function GET(
     },
   });
 
+  if (!item) {
+    return NextResponse.json({ error: "Receipt not found" }, { status: 404 });
+  }
+
   const json = item as any;
 
   if (json.allocations) {
