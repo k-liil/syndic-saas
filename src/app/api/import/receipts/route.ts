@@ -276,7 +276,7 @@ export async function POST(req: Request) {
   await processInParallel(
     groups as any[],
     async (group: any[]) => {
-      const groupLot = group[0]?.lotNumber;
+      const groupLot = group[0]?.unit?.lotNumber || "unknown";
       try {
         console.log("[IMPORT] Starting transaction for lot:", groupLot);
         await prisma.$transaction(
@@ -442,11 +442,13 @@ export async function POST(req: Request) {
             }
           },
           {
-            maxWait: 15000,
-            timeout: 90000,
+            maxWait: 30000,
+            timeout: 180000,
           }
         );
+        console.log("[IMPORT] Transaction committed for lot:", groupLot);
       } catch (error: any) {
+        console.error("[IMPORT] Error processing lot:", groupLot, error);
         // If the whole group (unit) transaction fails, report as error for all rows
         for (const item of group) {
           errors.push({
@@ -456,7 +458,7 @@ export async function POST(req: Request) {
         }
       }
     },
-    4
+    1 // Concurrency reduced to 1 for production stability
   );
 
   const processed = job.processed + body.rows.length;
