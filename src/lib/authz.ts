@@ -28,9 +28,6 @@ export type AuthGateResult = AuthGateSuccess | AuthGateFailure;
 export async function requireAuth() {
   const session = await getServerSession(authOptions);
   
-  if (process.env.NODE_ENV === "development") {
-    console.log("[AUTH DEBUG] requireAuth session found:", !!session, "userId:", (session?.user as any)?.id);
-  }
 
   if (!session?.user || !(session.user as any)?.id) {
     return { ok: false as const, status: 401, error: "UNAUTHENTICATED" };

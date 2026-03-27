@@ -1,0 +1,761 @@
+lotNumber,amount,method,date,note
+B15,1500,CASH,26/02/2025,Cotisation pour les mois de Janvier Février et Mars  2025
+E19,500,CASH,30/05/2025,Cotisation pour le mois 05/2025
+A4,500,TRANSFER,30/01/2025,Cotisation Janvier 2025
+A7,1000,TRANSFER,14/01/2025,Cotisations mois janvier et février 2025
+"A8,2500,TRANSFER,01/01/2025,Reste des paiements de 2024 sur 2025.
+cotisations Mois 01-02-03-04-05/2025"
+A18,500,TRANSFER,01/01/2025,Cotisation du mois de Janvier 2025
+A17,1000,TRANSFER,02/01/2025,Cotisations pour les mois de décembre 2024 et Janvier 2025
+A22,6000,CASH,06/01/2025,Cotisation pour l'année 2025
+A15,1500,TRANSFER,15/01/2025,Cotisations pour les mois de 01-02-03/2025
+A2,500,TRANSFER,24/01/2025,Cotisation pour le mois de Septembre 2024
+A14,500,TRANSFER,27/01/2025,Cotisation pour lr mois de Janvier 2025
+A20,1500,TRANSFER,03/01/2025,Cotisation pour les mois de Novembre, Décembre 2024 et Janvier 2025
+A16,1500,TRANSFER,21/01/2025,Cotisations pour les mois 09-10-11/2025
+A9,500,TRANSFER,07/01/2025,Cotisation du Mois 01/2025
+A10,6000,TRANSFER,01/01/2025,Règlement Cotisations 2025
+B9,1000,CHECK,02/04/2025,Février-Mars 2024
+B9,1500,CHECK,02/04/2025,Avril-Mai-Juin 2024
+B13,6000,TRANSFER,17/01/2025,Cotisation de l'année 2024
+B16,3000,TRANSFER,21/01/2025,Cotisation du 01/01/2024 au 30/06/2024
+C1,3000,CHECK,01/01/2025,Cotisation premier semestre 2025
+C3,500,TRANSFER,15/01/2025,Cotisation pour le mois de janvier 2025
+C8,1500,TRANSFER,30/01/2025,Cotisation pour les mois Jan, Fev, Mar/2025
+C5,500,TRANSFER,06/01/2025,Cotisation pour le mois de Décembre 2024
+C5,500,TRANSFER,30/01/2025,Cotisation pour le mois de Janvier 2025
+C17,1500,CASH,01/01/2025,Cotisation pour les mois de Jan-Fev-Mars/2025
+C24,1500,TRANSFER,22/01/2025,Cotisations pour les mois Jan-Fev-Mar/2025
+C14,500,TRANSFER,16/01/2025,Cotisation pour le mois de Octobre 2024
+C19,500,TRANSFER,02/01/2025,Cotisation pour le mois de Juillet 2024
+C13,500,TRANSFER,07/01/2025,Cotisation pour le mois de Janvier 2025
+D4,1000,TRANSFER,01/01/2025,Cotisation pour les mois de Janvier et Février 2025
+D6,500,TRANSFER,01/01/2025,Cotisation pour le mois de Janvier 2025
+D13,500,TRANSFER,01/01/2025,Cotisation pour le mois de Janvier 2025
+D17,500,TRANSFER,06/01/2025,Cotisation pour le mois de Janvier 2025
+D22,3000,TRANSFER,01/01/2025,Cotisation pour la période du 01/01/2025 au 30/06/2025
+D8,3000,TRANSFER,16/01/2025,Cotisation pour la période du 01/07/2024 au 31/12/2024
+D9,1500,TRANSFER,07/01/2025,Cotisation pour les mois de Janvier, Février, Mars/2025
+B7,3000,TRANSFER,21/01/2025,Cotisation pour la période du 01/10/2024 au 31/03/2025
+E12,500,TRANSFER,24/01/2025,Cotisations pour le mois de janvier 2025
+E13,1000,CASH,22/01/2025,Cotisations pour les mois de Janvier et Février 2025
+E21,500,TRANSFER,16/01/2025,Cotisation pour le mois de Janvier 2025
+E22,500,TRANSFER,02/01/2025,Cotisation pour le mois de Janvier 2025
+E23,500,TRANSFER,01/01/2025,Cotisation pour le mois de janvier 2025
+E6,2800,TRANSFER,02/01/2025,Total de deux virements pour clôturer de l'année 2024
+E2,500,TRANSFER,03/01/2025,Cotisation pour le mois de Janvier 2025
+E5,500,TRANSFER,03/01/2025,Cotisation pour le mois de Janvier 2025
+E17,2500,TRANSFER,06/01/2025,Cotisation pour les mois 08-09-10-11-12/2024
+E18,500,TRANSFER,06/01/2025,Cotisation pour le mois de Janvier 2025
+E20,500,TRANSFER,10/01/2025,Cotisation pour le mois de Janvier 2025 (Du virement 3500,00dhs en date du 10/01/2025 qui couvre 6 derniers mois de 2024)
+E24,2500,TRANSFER,21/01/2025,Cotisation pour les mois 05-06-07-08-09/2024
+E19,500,TRANSFER,31/01/2025,Cotisation pour le mois de Janvier 2025
+C15,1500,TRANSFER,15/01/2025,Cotisation pour les mois de Janvier, Février et Mars 2024
+D19,1500,CHECK,07/01/2025,Cotisation pour Décembre 2024, Janvier, Février 2025
+B8,1000,CHECK,13/01/2025,Cotisation pour les mois 10-11/2024
+A13,1000,CHECK,17/01/2025,Cotisation pour les mois: Janvier et Février  2025
+B4,3000,CHECK,31/01/2025,Cotisation pour la période du 01/01/2025 au 30/06/2025
+A24,2500,CHECK,31/01/2025,Paiement du 01/09/2024 au 21/01/2025
+J6,6000,TRANSFER,02/01/2025,Cotisation pour la Période du 01/12/2024 au 30/11/2025
+I6,2050,CHECK,02/01/2025,Cotisation pour la Période du 01/10/2024 au 31/01/2025
+G15,6000,TRANSFER,02/01/2025,Cotisation pour la Période du 01/10/2024 au 30/09/2025
+G16,6000,TRANSFER,02/01/2025,Cotisation pour la Période du 01/09/2024 au 31/08/2025
+G11,6000,TRANSFER,03/01/2025,Cotisation pour la Période du 01/12/2024 au 30/11/2025
+G31,1500,TRANSFER,03/01/2025,Cotisation pour la Période du 01/08/2024 au 31/10/2024
+J20,5000,TRANSFER,02/01/2025,Cotisation pour la Période du 01/11/2024 au 31/08/2025
+J24,3000,TRANSFER,06/01/2025,Cotisation pour la Période du 01/09/2024 au 28/02/2025
+H3,8500,CHECK,06/01/2025,Cotisation pour la Période du 01/08/2024 au 31/12/2025
+I16,3000,TRANSFER,08/01/2025,Cotisation pour la Période du 01/01/2025 au 30/06/2025
+I13,3000,TRANSFER,15/01/2025,Cotisation pour la Période du 01/02/2024 au 31/07/2025
+J16,2000,TRANSFER,16/01/2025,Cotisation pour la Période du 01/10/2024 au 31/01/2025
+G29,6000,TRANSFER,17/01/2025,Cotisation pour la Période du 01/09/2024 au 31/08/2025
+J30,3000,TRANSFER,24/01/2025,Cotisation pour la Période du 01/01/2025 au 30/06/2025
+F12,3000,TRANSFER,27/01/2025,Cotisation pour la Période du 01/02/2025 au 30/07/2025
+I12,1633.28,TRANSFER,28/01/2025,Cotisation pour la Période du 01/09/2024 au 31/12/2024
+I12,3000,TRANSFER,28/01/2025,Cotisation pour la Période du 01/01/2025 au 31/06/2025
+G27,1500,TRANSFER,29/01/2025,Cotisation pour la Période du 01/01/2024 au 31/03/2025
+J31,3000,CHECK,04/02/2025,Cotisation pour la Période du 01/08/2024 au 31/01/2025
+H14,3000,CHECK,04/02/2025,Cotisation pour la Période du 01/08/2024 au 31/01/2025
+G26,6000,TRANSFER,09/01/2025,Cotisation pour la Période du 01/08/2024 au 30/07/2025
+F6,3000,CHECK,08/02/2025,Cotisation pour la Période du 01/01/2025 au 30/06/2025
+D15,6000,CHECK,01/01/2025,Cotisation pour l'année 2025
+J21,3000,CHECK,02/01/2025,Cotisation pour la Période du 01/03/2024 au 31/08/2025
+D5,1500,TRANSFER,02/01/2025,Cotisation pour le mois de Janvier février et mars 2025
+H9,3000,TRANSFER,29/01/2025,Cotisation pour la période du 01/01/2025 au 30/06/2025
+A12,1500,CHECK,24/02/2025,Cotisations pour les mois de Janvier février et Mars 2025
+C6,6000,CHECK,04/02/2025,Cotisation pour l'exercice 2025
+C3,500,TRANSFER,01/02/2025,Cotisation pour le mois de Février 2025
+C18,500,TRANSFER,03/02/2025,Cotisation pour le mois de Février 2025
+E20,500,TRANSFER,03/02/2025,Cotisation pour le mois de Février 2025
+E6,500,TRANSFER,04/02/2025,Cotisation pour le mois de Janvier 2025
+C4,1300,TRANSFER,19/02/2025,Reliquat 2024 et Janvier 2025
+C4,500,TRANSFER,04/02/2025,Cotisation pour le mois de Février 2025
+E2,500,TRANSFER,04/02/2025,Cotisation pour le mois de Février 2025
+A17,500,TRANSFER,05/02/2025,Cotisation pour le mois de Février 2025
+F22,6000,TRANSFER,05/02/2025,Cotisation pour la période du 01/11/2024 au 30/10/2025
+C13,500,TRANSFER,05/02/2025,Cotisation pour le mois de Février 2025
+E24,500,TRANSFER,05/02/2025,Cotisation pour le mois de Octobre 2024
+E22,500,TRANSFER,05/02/2025,Cotisation pour le mois de Février 2025
+A18,500,TRANSFER,06/02/2025,Cotisation pour le mois de Février 2025
+D17,500,TRANSFER,07/02/2025,Cotisation pour le mois de Février 2025
+E23,500,TRANSFER,10/02/2025,Cotisation pour le mois de Février 2025
+D6,500,TRANSFER,10/02/2025,Cotisation pour le mois de Février 2025
+H10,2000,TRANSFER,11/02/2025,Cotisation pour les mois de Janvier Février Mars et Avril 2025
+C22,6000,TRANSFER,11/02/2025,Cotisation pour l'exercice 2025
+E17,500,TRANSFER,11/02/2025,Cotisation pour le mois de Janvier 2025
+E18,500,TRANSFER,11/02/2025,Cotisation pour le mois de Février 2025
+C19,1000,TRANSFER,12/02/2025,Cotisation pour le mois de Aout/Septembre 2024
+H17,5000,TRANSFER,18/02/2025,Cotisation du 01/02/2025 au 31/11/2025
+E24,500,TRANSFER,18/02/2025,Cotisation pour le mois de Novembre 2024
+D3,500,TRANSFER,19/02/2025,Cotisation pour le mois de Janvier 2025
+E12,500,TRANSFER,20/02/2025,Cotisation pour le mois de Février 2025
+G24,3000,TRANSFER,21/02/2025,Cotisations pour la période du 01/11/2024 au 30/04/2025
+D18,1000,TRANSFER,24/02/2025,Cotisation pour le mois de Janvier et Février 2025
+A14,500,TRANSFER,25/02/2025,Cotisation pour le mois de Février 2025
+F2,6000,TRANSFER,25/02/2025,cotisation pour la période du 01/08/2024 au 31/07/2024
+H20,3000,TRANSFER,25/02/2025,cotisation pour la periode du 01/02/2025 au 31/07/2025
+D4,1000,TRANSFER,25/02/2025,Cotisation pour le mois de Mars et Avril 2025
+E16,1000,TRANSFER,25/02/2025,Cotisation pour le mois de Aout et Septembre 2025
+G17,6000,TRANSFER,26/02/2025,Cotisation pour l'exercice 2025
+J26,3000,TRANSFER,26/02/2025,Cotisation pour la période du 01/02/2025 au 31/07/2025
+C12,3500,TRANSFER,27/02/2025,Cotisation pour la période du 01/08/2024 au 28/02/2025
+D24,2500,TRANSFER,27/02/2025,Cotisation pour la période du 01/11/2024 au 31/03/2025
+J19,3000,TRANSFER,27/02/2025,Cotisation 1er Semestre 2025
+A3,1500,TRANSFER,27/02/2025,Cotisation pour la période du 01/12/2024 au 28/02/2025
+C7,1000,TRANSFER,27/02/2025,Cotisation pour les mois de Décembre2024 et janvier 2025
+E23,500,TRANSFER,27/02/2025,Cotisation pour le mois de Mars 2025
+C19,4500,TRANSFER,28/02/2025,Cotisation pour la période du 01/10/2024 au 30/06/2025
+A2,500,TRANSFER,28/02/2025,Cotisation pour le mois de Octobre 2024
+A9,500,TRANSFER,04/02/2025,Cotisation pour le mois de février 2025
+E5,500,TRANSFER,04/02/2025,Cotisation pour le mois de février 2025
+"B2,1000,TRANSFER,05/02/2025,Cotisation pour les mois de Octobre et Novembre 2024.
+*Sauf Erreur ou omission"
+E21,500,TRANSFER,07/02/2025,Cotisation pour le mois de février 2025
+C23,3200,TRANSFER,17/02/2025,Reliquat pour l'exercice 2024
+C14,500,TRANSFER,18/02/2025,Cotisation pour le mois de Novembre 2024
+E4,500,TRANSFER,19/02/2025,Cotisation pour le mois de décembre 2024
+D12,3000,TRANSFER,27/02/2025,Cotisation pour la période du 01/06/2024 au 31/11/2024
+D16,2000,TRANSFER,27/02/2025,Cotisation pour les mois 08-09-10-11/2024
+J13,6000,TRANSFER,27/02/2025,Cotisation pour la période du 01/09/2024 au 31/08/2025
+J15,6000,TRANSFER,28/02/2025,Cotisation pour la période du 01/11/2024 au 31/10/2025
+G10,2000,TRANSFER,28/02/2025,cotisation pour les mois de Avril Mai Juin Juillet 2025
+D18,500,TRANSFER,01/03/2025,Cotisation du mois de Mars 2025
+E19,500,TRANSFER,01/03/2025,Cotisation du mois de Février 2025
+C18,500,TRANSFER,02/03/2025,Cotisation du mois de Mars 2025
+E5,500,TRANSFER,02/03/2025,Cotisation du mois de Mars 2025
+C3,500,TRANSFER,03/03/2025,Cotisation du mois de Mars 2025
+D10,1000,TRANSFER,03/03/2025,Cotisation du mois de Mars et Avril 2025
+F16,6000,TRANSFER,03/03/2025,Cotisation pour la période du 01/11/2024 au 31/10/2025
+J34,3000,TRANSFER,03/03/2025,Cotisation pour la période du 01/08/2024 au 31/01/2025
+C5,500,TRANSFER,03/03/2025,Cotisation du mois de Février 2025
+C5,500,TRANSFER,03/03/2025,Cotisation du mois de Mars 2025
+G25,2000,TRANSFER,03/03/2025,Cotisation pour les mois de Sep-Oct-Nov-Dec/2024
+E6,500,TRANSFER,03/03/2025,Cotisation du mois de Février 2025
+E6,500,TRANSFER,02/04/2025,Cotisation du mois de Mars 2025
+C11,500,TRANSFER,03/03/2025,Cotisation du mois de Décembre 2024
+J27,500,TRANSFER,03/03/2025,Cotisation pour le mois de décembre 2024
+B8,1500,TRANSFER,04/03/2025,Cotisations pour les mois Déc 2024 et Jav-Fév 2025
+E21,1000,TRANSFER,04/03/2025,Cotisation des mois de Mars et Avril 2025
+E18,500,TRANSFER,04/03/2025,Cotisation du mois de Mars 2025
+E2,500,TRANSFER,04/03/2025,Cotisation du mois de Mars 2025
+A7,500,TRANSFER,04/03/2025,Cotisation du mois de Mars 2025
+A9,500,TRANSFER,04/03/2025,Cotisation du mois de Mars 2025
+C4,500,TRANSFER,04/03/2025,Cotisation du mois de Mars 2025
+E24,500,TRANSFER,04/03/2025,Cotisation du mois de Décembre 2024
+A18,500,TRANSFER,05/03/2025,Cotisation du mois de Mars 2025
+G27,3000,TRANSFER,05/03/2025,Cotisation pour la période du 1er Avril 2025 au 30 Septembre 2025
+B3,3066.67,TRANSFER,05/03/2025,Reliquat restant du paiement de 5500,00 sur l'exercice 2024
+C13,500,TRANSFER,05/03/2025,Cotisation du mois de Mars 2025
+H15,2500,TRANSFER,06/03/2025,Cotisation pour la période du 01/11/2024 au 31/03/2025
+A23,2000,TRANSFER,06/03/2025,Cotisation du 01/01/2025 au 30/04/2025
+E22,500,TRANSFER,06/03/2025,Cotisation du mois de Mars 2025
+F20,3000,TRANSFER,07/03/2025,Cotisation pour la période du 01/02/2025 au 31/07/2025
+A20,3000,TRANSFER,07/03/2025,Cotisation pour la période du 01/02/2025 au 31/07/2025
+A17,500,TRANSFER,10/03/2025,Cotisation pour le mois de Mars 2025
+E20,500,TRANSFER,10/03/2025,Cotisation du mois de Mars 2025
+D17,500,TRANSFER,10/03/2025,Cotisation du mois de Mars 2025
+G31,2000,TRANSFER,10/03/2025,Cotisation pour la période du 01/12/2024 au 31/03/2025
+D6,500,TRANSFER,10/03/2025,Cotisation du mois de Mars 2025
+G9,3000,TRANSFER,11/03/2025,Cotisation pour la période du 01/12/2024 au 30/05/2025
+I3,2000,TRANSFER,11/03/2025,Cotisation pour la période du 01/12/2024 au 31/03/2025
+C20,1800,TRANSFER,11/03/2025,Cotisation pour la période du 01/11/2024 au 28/02/2025
+D3,500,TRANSFER,11/03/2025,Cotisation du mois de Février 2025
+F5,6000,TRANSFER,21/03/2025,Cotisation pour l'exercice 2025
+A13,1000,TRANSFER,21/03/2025,Cotisation des mois de Mars et Avril 2025
+D13,1000,TRANSFER,25/03/2025,Cotisation pour les mois de Février et Mars 2025
+H11,3000,TRANSFER,25/03/2025,Cotisation pour la période du 01/02/2025 au 31/07/2025
+A14,500,TRANSFER,25/03/2025,Cotisation du mois de Mars 2025
+G19,1500,TRANSFER,25/03/2025,Cotisation pour les mois de Janvier - Février - Mars 2025
+E24,500,TRANSFER,26/03/2025,Cotisation du mois de Janvier 2025
+E12,500,TRANSFER,28/03/2025,Cotisation du mois de Mars 2025
+A4,500,CHECK,01/03/2025,Cotisation du mois de Février 2025
+B6,1500,TRANSFER,02/03/2025,Cotisation pour les  mois de Janvier - Février et Mars 2025
+"B2,500,TRANSFER,06/03/2025,Cotisation pour le mois de Décembre 2024.
+*Sauf erreur ou omission"
+J2,6000,TRANSFER,18/03/2025,01/03/2025 au 28/02/2026
+C14,500,TRANSFER,18/03/2025,Cotisation pour le mois de Décembre 2024
+E4,500,TRANSFER,19/03/2025,Cotisation pour le mois de Janvier 2025
+A6,1300,TRANSFER,22/03/2025,Reliquat restant pour l'exercice 2024
+E13,1000,TRANSFER,26/03/2025,Cotisation pour les mois de Mars et Avril 2025
+"B2,500,TRANSFER,30/03/2025,Cotisation pour le mois de Janvier 2025.
+*Sauf erreur ou omission"
+G6,6000,CHECK,11/04/2025,Paiement annuelle chez le notaire
+G6,2500,TRANSFER,19/03/2025,Cotisation pour la période du 01/04/2025 au 31/08/2025
+B1,3000,CHECK,25/03/2025,Cotisation Pour la période du 01/05/2024 au 30/10/2024
+I15,3233.24,CHECK,03/04/2025,Cotisation pour les mois de Février-Mars-Avril-Mai-Juin-Juillet et Aout 2025
+B9,1500,CHECK,20/02/2025,Novembre - Décembre 2023 et Janvier 2024
+B14,6000,TRANSFER,26/02/2025,Cotisation pour l'exercice 2024
+B14,6000,TRANSFER,13/04/2025,Cotisation pour l'exercice 2025
+A8,6000,CASH,01/05/2025,Cotisation pour la période du 01/06/2025 au 30/05/2026
+"B11,12000,CHECK,10/05/2025,Cotisation pour la période du 01/04/2022 au 31/12/2025 par chèques
+Chèque AXD 869837 D'un montant de 5570,00.
+Chèque AXD 869835 D'un montant de 5570,00.
+Chèque AXD 869834 D'un montant de 5570,00.
+Chèque AXD 869833 D'un montant de 5570,00."
+H4,3000,TRANSFER,24/04/2025,Cotisation pour la période du 01/02/2025 au 31/07/2025
+E3,4000,TRANSFER,14/04/2025,Cotisations pour les mois 08-09-10-11-12/2024 et 01-02-03/2025
+C16,6000,CASH,20/06/2025,Cotisation pour l'exercice 2025
+B10,6000,TRANSFER,04/04/2025,Cotisation pour l'exercice 2025
+D16,1000,TRANSFER,08/04/2025,Cotisation pour les mois 12/2024 et 01/2025
+D11,6000,TRANSFER,14/04/2025,Cotisation pour l'année 2025
+C14,500,TRANSFER,16/04/2025,Cotisation pour Janvier 2025
+B6,500,TRANSFER,20/04/2025,Cotisation pour le mois 04/2025
+E4,500,TRANSFER,21/04/2025,Cotisation pour le mois 02/2025
+E13,1000,TRANSFER,22/04/2025,Cotisation pour 05 et 06/2025
+B2,500,TRANSFER,29/04/2025,Cotisation pour le mois de Février 2025
+D19,1500,TRANSFER,30/04/2025,Cotisations pour les mois 03-04-05/2025
+D16,1000,TRANSFER,04/05/2025,Cotisations pour les mois 02-03/2025
+D18,500,TRANSFER,05/05/2025,Cotisation pour le mois de Avril 2025
+D24,1000,TRANSFER,07/05/2025,Cotisations pour les mois 04-05/2025
+C14,500,TRANSFER,16/05/2025,Cotisation pour le mois 02/2025
+E4,500,TRANSFER,20/05/2025,Cotisation pour le mois de Mars 2025
+D19,500,TRANSFER,30/05/2025,Cotisation pour le mois de Juin 2025
+A4,500,TRANSFER,01/04/2025,Cotisation pour le mois de Mars 2025
+E19,500,TRANSFER,01/04/2025,Cotisation pour le mois de Mars 2025
+C3,500,TRANSFER,01/04/2025,Cotisation pour le mois de Avril 2025
+D18,500,TRANSFER,02/04/2025,Cotisation pour le mois de Mai 2025
+A18,500,TRANSFER,02/04/2025,Cotisation pour le mois de Avril 2025
+C11,500,TRANSFER,02/04/2025,Cotisation pour le mois de Janvier 2025
+C18,500,TRANSFER,02/04/2025,Cotisation pour le mois de Avril 2025
+G25,2000,TRANSFER,02/04/2025,Cotisation pour les mois 01-02-03-04 / 2025
+B12,1500,TRANSFER,02/04/2025,Cotisations pour les mois 09-10-11 / 2025
+H1,1200,TRANSFER,02/04/2025,Reliquat pour clôturer l'année 2025
+C9,1000,TRANSFER,03/04/2025,Cotisation pour le mois de Janvier et février 2025
+E5,500,TRANSFER,03/04/2025,Cotisation pour le mois de Avril 2025
+C5,500,TRANSFER,03/04/2025,Cotisation pour le mois de Avril 2025
+J27,1000,TRANSFER,03/04/2025,Cotisation pour les mois de Janvier et Février 2025
+E17,1000,TRANSFER,03/04/2025,Cotisation pour les mois de Février et Mars 2025
+A2,500,TRANSFER,03/04/2025,Cotisation pour le mois de Novembre 2024
+E6,500,TRANSFER,03/04/2025,Cotisation pour le mois de Avril 2025
+C4,500,TRANSFER,03/04/2025,Cotisation pour le mois de Avril 2025
+A9,500,TRANSFER,03/04/2025,Cotisation pour le mois de Avril 2025
+E2,500,TRANSFER,03/04/2025,Cotisation pour le mois de Avril 2025
+E18,500,TRANSFER,04/04/2025,Cotisation pour le mois de Avril 2025
+E7,6000,TRANSFER,05/04/2025,Cotisation pour l'année 2025
+A11,3000,TRANSFER,08/04/2025,Cotisation 1er Semestre 2025
+E24,500,TRANSFER,08/04/2025,Cotisation pour le mois de Février 2025
+D6,500,TRANSFER,08/04/2025,Cotisation pour le mois de Avril 2025
+A7,500,TRANSFER,08/04/2025,Cotisation pour le mois de Avril 2025
+E23,500,TRANSFER,08/04/2025,Cotisation pour le mois de Avril 2025
+C13,500,TRANSFER,08/04/2025,Cotisation pour le mois de Avril 2025
+D17,500,TRANSFER,08/04/2025,Cotisation pour le mois de Avril 2025
+H5,2000,TRANSFER,09/04/2025,Cotisation pour les mois 01-02-03-04 / 2025
+H15,500,TRANSFER,09/04/2025,Cotisation pour le mois de Avril 2025
+D3,500,TRANSFER,11/04/2025,Cotisation pour le mois de Mars 2025
+D9,1500,TRANSFER,14/04/2025,Cotisation pour les mois de 04-05-06 / 2025
+E22,500,TRANSFER,14/04/2025,Cotisation pour le mois de Avril 2025
+C15,1500,TRANSFER,15/04/2025,Cotisation pour le mois de Avril, Mai et Juin 2025
+E16,1500,TRANSFER,16/04/2025,Cotisation pour les mois 10-11-12 / 2024
+A15,1500,TRANSFER,16/04/2025,Cotisation pour les mois de Avril-Mai-Juin 2025
+E12,600,TRANSFER,21/04/2025,Cotisation pour le mois de Avril 2025
+D8,1500,TRANSFER,21/04/2025,Cotisation pour les mois 01-02-03 / 2025
+A17,500,TRANSFER,22/04/2025,Cotisation pour le mois de Avril 2025
+H10,2000,TRANSFER,22/04/2025,Cotisations pour les mois 05-06-07-08 / 2025
+A16,3000,TRANSFER,22/04/2025,Cotisations pour les mois de 04-05-06-07-08-09 / 2025
+C21,4500,TRANSFER,24/04/2025,Cotisations pour les mois 11-12/2024 et 01-02-03-04-05-06-07 / 2025
+E17,500,TRANSFER,24/04/2025,Cotisation pour le mois de Avril 2025
+B8,1000,TRANSFER,25/04/2025,Cotisations pour les mois de Mars et Avril 2025
+A14,500,TRANSFER,26/04/2025,Cotisation pour le mois de Avril 2025
+E11,2000,TRANSFER,28/04/2025,Cotisations pour les mois 01-02-03-04 / 2025
+D2,3000,TRANSFER,29/04/2025,Cotisation pour les mois 01-02-03-04-05-06 / 2025
+C7,1300,TRANSFER,29/04/2025,Cotisation pour le mois de Février Mars et Avril 2025
+E16,500,TRANSFER,29/04/2025,Cotisation pour le mois de Janvier 2025
+E19,500,TRANSFER,30/04/2025,Cotisation pour le mois de Avril 2025
+J12,3000,TRANSFER,30/04/2025,Cotisations pour les mois 12/24 et 01-02-03-04-05 / 2025
+D5,1000,TRANSFER,30/04/2025,Cotisations pour les mois de Avril et Mai 2025
+A4,500,TRANSFER,30/04/2025,Cotisation pour le mois de Avril 2025
+E1,6100,CHECK,28/06/2025,cotisations du 01/06/2024 au 30/06/2025
+C3,500,TRANSFER,01/05/2025,Cotisations Pour le mois 05/2025
+C11,500,TRANSFER,01/05/2025,Cotisations Pour le mois 02/2025
+E6,500,TRANSFER,01/05/2025,Cotisations Pour le mois 05/2025
+C8,1500,TRANSFER,02/05/2025,Cotisations Pour le mois 04-05-06/2025
+I6,1000,TRANSFER,02/05/2025,Cotisations pour le mois de février et Mars 2025
+E5,500,TRANSFER,02/05/2025,Cotisation pour le mois 05/2025
+C18,500,TRANSFER,02/05/2025,Cotisations Pour le mois 05/2025
+A18,500,TRANSFER,03/05/2025,Cotisations Pour le mois 05/2025
+D10,1000,TRANSFER,05/05/2025,Cotisations Pour le mois 05-06/2025
+C5,500,TRANSFER,05/05/2025,Cotisations Pour le mois 05/2025
+I9,2000,TRANSFER,05/05/2025,Cotisation pour les mois de Oct-Nov-Dec / 2024 et Javier 2025
+G25,1000,TRANSFER,05/05/2025,Cotisation pour les mois 05-06/2025
+J27,750,TRANSFER,05/05/2025,Cotisation pour les mois 03-04/2025
+E24,500,TRANSFER,05/05/2025,Cotisation pour le mois 03/2025
+C4,500,TRANSFER,05/05/2025,Cotisation pour le mois 05/2025
+A9,500,TRANSFER,05/05/2025,Cotisation pour le mois 05/2025
+E2,500,TRANSFER,05/05/2025,Cotisation pour le mois 05/2025
+E18,500,TRANSFER,05/05/2025,Cotisation pour le mois 05/2025
+E20,500,TRANSFER,06/05/2025,Cotisation pour le mois 04/2025
+H15,500,TRANSFER,06/05/2025,Cotisation pour le mois 05/2025
+E21,500,TRANSFER,06/05/2025,Cotisation pour le mois 05/2025
+C13,500,TRANSFER,06/05/2025,Cotisation pour le mois 05/2025
+E23,500,TRANSFER,07/05/2025,Cotisation pour le mois 05/2025
+E22,500,TRANSFER,07/05/2025,Cotisation pour le mois 05/2025
+D17,500,TRANSFER,07/05/2025,Cotisation pour le mois 05/2025
+A2,500,TRANSFER,08/05/2025,Cotisation pour le mois 12/2024
+G13,2000,TRANSFER,10/05/2025,Cotisation pour le mois 04-05-06-07/2025
+D3,500,TRANSFER,13/05/2025,Cotisation pour le mois 04/2025
+A7,500,TRANSFER,13/05/2025,Cotisation pour le mois 05/2025
+D6,500,TRANSFER,15/05/2025,Cotisation pour le mois 05/2025
+C10,2000,TRANSFER,19/05/2025,Cotisation pour les mois 12/2024 et 01-02-03/2025
+J17,2000,TRANSFER,20/05/2025,Cotisation pour le mois 12/2024 et les mois 01-02-03/2025
+E6,1000,TRANSFER,20/05/2025,Cotisation pour les mois 06-07/2025
+J29,1500,TRANSFER,22/05/2025,Cotisation pour les mois 10-11-12/2025
+A17,500,TRANSFER,23/05/2025,Cotisation pour le mois 05/2025
+G19,1500,TRANSFER,23/05/2025,Cotisation pour les mois 04-05-06/2025
+E12,400,TRANSFER,26/05/2025,Cotisation pour le mois 05/2025
+C9,1500,TRANSFER,26/05/2025,Cotisation pour le mois 03-04-05/2025
+A14,500,TRANSFER,26/05/2025,Cotisation pour le mois 05/2025
+D13,2000,TRANSFER,28/05/2025,Cotisation pour le mois 04-05-06-07/2025
+D23,2500,TRANSFER,28/05/2025,Cotisation pour les mois 11-12/2024 et 01-02-03/2025
+G5,1500,TRANSFER,28/05/2025,Cotisation pour le mois 02-03-04/2025
+F18,6000,TRANSFER,29/05/2025,Cotisation pour la période du 01/10/2024 au 30/09/2025
+G8,3250.1,TRANSFER,29/05/2025,Cotisation pour les mois 11-12/2024 et 01-02-03-04-05/2025
+A4,500,TRANSFER,30/05/2025,Cotisation pour le mois 05/2025
+D7,5000,TRANSFER,30/05/2025,Cotisation pour les mois 09-10-11-12/2024 et 01-02-03-04-05-06/2025
+G7,3000,TRANSFER,30/05/2025,Cotisation pour le mois 04-05-06-07-08-09/2025
+H12,3700,TRANSFER,06/06/2025,Cotisation pour la période du 01/10/2025
+A18,500,TRANSFER,01/06/2025,Cotisation pour le mois de Juin 2025
+E6,500,TRANSFER,01/06/2025,Cotisation pour le mois de Aout  2025
+I16,3000,TRANSFER,02/06/2025,Cotisation pour le deuxième semestre2025
+C18,500,TRANSFER,02/06/2025,Cotisation pour le mois de Juin 2025
+C11,500,TRANSFER,02/06/2025,Cotisation pour le mois de Mars 2025
+E5,500,TRANSFER,02/06/2025,Cotisation pour le mois de Juin 2025
+C3,500,TRANSFER,03/06/2025,Cotisation pour le mois de Juin 2025
+A2,2000,TRANSFER,03/06/2025,Cotisation pour les mois de 01-02-03-04 / 2025
+E17,500,TRANSFER,03/06/2025,Cotisation pour le mois de Mai 2025
+E2,500,TRANSFER,03/06/2025,Cotisation pour le mois de Juin 2025
+A9,500,TRANSFER,03/06/2025,Cotisation pour le mois de Juin 2025
+J27,500,TRANSFER,03/06/2025,Cotisation pour le mois de Mai 2025
+E16,500,TRANSFER,03/06/2025,Cotisation pour le mois de Février 2025
+C2,6000,TRANSFER,04/06/2025,Cotisation pour la période du 01/08/2024 au 30/07/2025
+E23,500,TRANSFER,04/06/2025,Cotisation pour le mois de Juin 2025
+E21,500,TRANSFER,04/06/2025,Cotisation pour le mois de Juin 2025
+F11,2000,TRANSFER,05/06/2025,Cotisation pour les mois de Aout Septembre, Octobre et Novembre 2024
+D17,500,TRANSFER,05/06/2025,Cotisation pour le mois de Juin 2025
+A13,1500,TRANSFER,05/06/2025,Cotisation pour les mois de Mai Juin et Juillet 2025
+C4,500,TRANSFER,05/06/2025,Cotisation pour le mois de Juin 2025
+C13,500,TRANSFER,05/06/2025,Cotisation pour le mois de Juin 2025
+D18,500,TRANSFER,08/06/2025,Cotisation pour le mois de Juin 2025
+E24,500,TRANSFER,08/06/2025,Cotisation pour le mois de Avril 2025
+D6,500,TRANSFER,11/06/2025,Cotisation pour le mois de Juin 2025
+D3,500,TRANSFER,12/06/2025,Cotisation pour le mois de Juin 2025
+H15,500,TRANSFER,13/06/2025,Cotisation pour le mois de Juin 2025
+C23,3000,TRANSFER,16/06/2025,Cotisation pour la période du 01/01/2025 au  30/06/2025
+B7,3000,TRANSFER,16/06/2025,Cotisation pour la période du 01/04/2025 au 30/09/2025
+E16,500,TRANSFER,16/06/2025,Cotisation pour le mois de Mars 2025
+B15,3000,TRANSFER,17/06/2025,Cotisation pour la période du 01/04/2025 au 30/09/2025
+G31,2000,TRANSFER,17/06/2025,Cotisation pour les mois 03-04-05-06/2025
+E22,500,TRANSFER,17/06/2025,Cotisation pour le mois de Juin 2025
+A17,500,TRANSFER,17/06/2025,Cotisation pour le mois de Juin 2025
+C5,500,TRANSFER,18/06/2025,Cotisation pour le mois de Juin 2025
+C24,3000,TRANSFER,18/06/2025,Cotisation pour la période du 01/04/2025 au 30/09/2025
+A3,2000,TRANSFER,18/06/2025,Cotisation pour les mois 03-04-05-06/2025
+C17,3000,TRANSFER,19/06/2025,Cotisation pour la période du 01/04/2025 au 30/09/2205
+E3,1500,TRANSFER,19/06/2025,Cotisation pour les mois de Avril, Mai et  Juin 2025
+C7,1000,TRANSFER,19/06/2025,Cotisation pour les mois de Mai et Juin 2025
+E18,500,TRANSFER,19/06/2025,Cotisation pour le mois de Juin 2025
+C12,2000,TRANSFER,20/06/2025,Cotisation pour les mois de Mars, Avril, Mai et Juin 2025
+D24,1500,TRANSFER,20/06/2025,Cotisation pour les mois de Juin, Juillet et Aout 2025
+F1,2000,TRANSFER,22/06/2025,Cotisation pour les mois de Mai, Juin, Juillet et Aout 2025
+A7,1000,TRANSFER,24/06/2025,Cotisation pour le mois de Juin et Juillet 2025
+A14,500,TRANSFER,24/06/2025,Cotisation pour le mois de Juin 2025
+E12,500,TRANSFER,26/06/2025,Cotisation pour le mois de Juin 2025
+I6,1000,TRANSFER,26/06/2025,Cotisation pour les mois de Avril et Mai 2025
+I9,2000,TRANSFER,26/06/2025,Cotisations pour les mois 02-03-04-05 /2025
+C11,500,TRANSFER,29/06/2025,Cotisation pour le mois d'Avril 2025
+C3,500,TRANSFER,30/06/2025,Cotisation pour le mois de Juillet 2025
+A4,500,TRANSFER,30/06/2025,Cotisation pour le mois de Juin 2025
+E19,500,TRANSFER,30/06/2025,Cotisation pour le mois de Juin 2025
+D9,1500,TRANSFER,30/06/2025,Cotisation pour le mois de Juillet, Aout et Septembre 2025
+I12,3000,TRANSFER,30/06/2025,Cotisation pour le deuxième semestre 2025
+B2,500,TRANSFER,02/06/2025,Cotisation pour le mois de Mars 2025
+B6,1000,TRANSFER,10/06/2025,Cotisation pour les mois de Mai et Juin 2025
+D12,3500,TRANSFER,17/06/2025,Cotisation pour les mois 12/2024, 01-02-03-04-05-06/2025
+C14,500,TRANSFER,18/06/2025,Cotisation pour le mois de Mars 2025
+E4,500,TRANSFER,19/06/2025,Cotisation pour le mois de Avril 2025
+B5,2000,TRANSFER,20/06/2025,Cotisation pour les mois de Mars, Avril, Mai et Juin 2024
+E13,1000,TRANSFER,24/06/2025,Cotisation pour les mois de Juillet et Aout 2025
+A6,2000,TRANSFER,27/06/2025,Cotisation pour la période du 01/01/2025 au 30/04/2025
+H14,3000,CHECK,05/05/2025,Cotisation pour la péeriode du 01/02/2025 au 30/07/2025
+A12,1500,CHECK,05/05/2025,Cotisation pour les mois Avril Mai et Juin 2025
+A24,2500,CHECK,19/06/2025,Cotisation pour la période du 01/02/2025 au 30/06/2025
+B9,2500,CHECK,21/07/2025,Cotisation pour la période du 01/09/2024 au 31/01/2025
+J31,3000,CHECK,21/07/2025,Cotisation pour la période du 01/02/2025 au 30/07/2025
+B1,1000,CHECK,16/06/2025,Cotisations pour les mois Novembre et Décembre 2024
+D22,6000,CHECK,18/08/2025,Cotisation pour la période du 01/07/2025 au 30/06/2026
+J18,2000,CHECK,25/08/2025,Cotisation pour la période du 01/01/2025 au 30/04/2025
+C1,6000,CHECK,04/08/2025,Cotisation pour la période du 01/07/2025 au 30/06/2026
+B16,3000,CHECK,04/08/2025,Cotisation pour le deuxième semestre 2025
+B9,2500,CHECK,04/08/2025,Cotisation pour les mois 02-03-04-05-06/2025
+F11,3000,CHECK,21/07/2025,Cotisation pour la période du 01/12/2024 au 30/05/2025
+J18,2000,CHECK,05/05/2025,Cotisation Pour les mois 05-06-07-08/2025
+A1,3000,CHECK,26/03/2025,Cotisations pour les mois 04-05-06-07-08-09/2025
+A19,2000,TRANSFER,21/03/2025,Cotisation pour la période du 01/01/2025 au 30/04/2025
+A19,1500,TRANSFER,05/06/2025,Cotisations pour les mois 05-06-07/2025
+J3,6000,CHECK,01/09/2025,Cotisation pour la période du   01/08/2025 AU 30/07/2026
+I14,3000,TRANSFER,06/03/2025,Cotisation pour les mois 10-11-12/2024 et 01-02-03/2025
+I14,3000,TRANSFER,06/09/2025,Cotisations pour les mois 04-05-06-07-08-09/2025
+I1,3000,CHECK,28/05/2025,Cotisation Deuxième semestre 2025
+I1,3000,CHECK,25/08/2025,Cotisation pour la période du 01/06/2025 au 31/12/2025
+D19,500,TRANSFER,02/07/2025,Cotisation pour le mois 07/2025
+B2,500,TRANSFER,09/07/2025,Cotisation pour le mois 04/2025
+D18,500,TRANSFER,12/07/2025,Cotisation pour le mois 07/2025
+C14,500,TRANSFER,16/07/2025,Cotisation pour le mois 04/2025
+E4,500,TRANSFER,21/07/2025,Cotisation pour le mois 05/2025
+D16,500,TRANSFER,28/07/2025,Cotisation pour le mois 04/2025
+B2,500,TRANSFER,02/08/2025,Cotisation pour le mois 05/2025
+D19,500,TRANSFER,05/08/2025,Cotisation pour le mois 08/2025
+B6,1000,TRANSFER,18/08/2025,Cotisation pour le mois 07-08/2025
+C14,500,TRANSFER,18/08/2025,Cotisation pour le mois 05/2025
+E4,500,TRANSFER,19/08/2025,Cotisation pour le mois 06/2025
+D18,500,TRANSFER,22/08/2025,Cotisation pour le mois 08/2025
+D16,1000,TRANSFER,23/08/2025,Cotisation pour les mois 05-06/2025
+A18,500,TRANSFER,01/07/2025,Cotisation pour le mois 07/2025
+D10,1000,TRANSFER,01/07/2025,Cotisation pour les mois 07-08/2025
+J27,500,TRANSFER,01/07/2025,Cotisation pour le mois 06/2025
+E6,500,TRANSFER,01/07/2025,Cotisation pour le mois 09/2025
+E23,500,TRANSFER,01/07/2025,Cotisation pour le mois 07/2025
+D5,1500,TRANSFER,02/07/2025,Cotisation pour les mois 06-07-08/2025
+C5,500,TRANSFER,02/07/2025,Cotisation pour le mois 07/2025
+I3,4300,TRANSFER,02/07/2025,Cotisation pour les mois 04-05-06-07-08-09-10-11-12/2025
+D8,3000,TRANSFER,02/07/2025,Cotisation pour les mois 04-05-06-07-08-09/2025
+C18,500,TRANSFER,02/07/2025,Cotisation pour le mois 07/2025
+E2,500,TRANSFER,02/07/2025,Cotisation pour le mois 07/2025
+A9,500,TRANSFER,02/07/2025,Cotisation pour le mois 07/2025
+E5,500,TRANSFER,02/07/2025,Cotisation pour le mois 07/2025
+I2,3000,TRANSFER,03/07/2025,Cotisation pour le deuxième semestre 2025
+C20,2000,TRANSFER,04/07/2025,Cotisation pour les mois 03-04-05-06/2025
+C4,500,TRANSFER,04/07/2025,Cotisation pour le mois 07/2025
+E22,500,TRANSFER,04/07/2025,Cotisation pour le mois 07/2025
+D13,1000,TRANSFER,07/07/2025,Cotisation pour les mois 08-09/2025
+A17,500,TRANSFER,07/07/2025,Cotisation pour le mois 07/2025
+D17,500,TRANSFER,07/07/2025,Cotisation pour le mois 07/2025
+D2,3000,TRANSFER,07/07/2025,Cotisation pour le deuxième semestre 2025
+C13,500,TRANSFER,07/07/2025,Cotisation pour le mois 07/2025
+E17,500,TRANSFER,07/07/2025,Cotisation pour le mois 06/2025
+D23,1000,TRANSFER,08/07/2025,Cotisation pour les mois 04-05/2025
+G25,1000,TRANSFER,08/07/2025,Cotisation pour le mois 07-08/2025
+D6,500,TRANSFER,08/07/2025,Cotisation pour le mois 07/2025
+E21,500,TRANSFER,08/07/2025,Cotisation pour le mois 07/2025
+E24,500,TRANSFER,08/07/2025,Cotisation pour le mois 05/2025
+D3,500,TRANSFER,09/07/2025,Cotisation pour le mois 06/2025
+C15,500,TRANSFER,10/07/2025,Cotisation pour le mois 07/2025
+I3,1800,TRANSFER,11/07/2025,Cotisation pour les mois 01-02-03/2025
+D3,500,TRANSFER,21/01/2025,cotisation pour le mois 07/25
+G9,3000,TRANSFER,14/07/2025,Cotisation pour les mois 06-07-08-09-10-11/2025
+J22,6000,TRANSFER,14/07/2025,Cotisation du 01/12/2024 au 30/11/2025
+H9,3000,TRANSFER,16/07/2025,Cotisation pour le deuxième semestre 2025
+C7,1000,TRANSFER,16/07/2025,Cotisation pour les mois 07-08/2025
+G20,6000,TRANSFER,17/07/2025,Cotisation pour la période du 01/07/2025 au 30/06/2026
+A2,500,TRANSFER,17/07/2025,Cotisation pour le mois 05/2025
+H15,500,TRANSFER,17/07/2025,Cotisation pour le mois 07/2025
+C20,500,TRANSFER,21/07/2025,Cotisation pour le mois 07/2025
+A23,2000,TRANSFER,23/07/2025,Cotisation les mois 05-06-07-08/2025
+G11,6000,TRANSFER,24/07/2025,Cotisation pour la période du 01/12/2025 au 30/11/2026
+E12,500,TRANSFER,25/07/2025,Cotisation pour le mois 07/2025
+J30,3000,TRANSFER,25/07/2025,Cotisation pour le deuxième semestre 2025
+A14,500,TRANSFER,25/07/2025,Cotisation pour le mois 07/2025
+C8,1500,TRANSFER,26/07/2025,Cotisation pour les mois 07-08-09/2025
+E18,500,TRANSFER,29/07/2025,Cotisation pour le mois 07/2025
+E19,500,TRANSFER,30/07/2025,Cotisation pour le mois 07/2025
+J34,3000,TRANSFER,31/07/2025,Cotisation pour les mois 02-03-04-05-06-07/2025
+J27,500,TRANSFER,31/07/2025,Cotisation pour le mois 07/2025
+A4,500,TRANSFER,01/08/2025,Cotisation pour le mois 07/2025
+C3,500,TRANSFER,01/08/2025,Cotisation pour le mois 08/2025
+C5,500,TRANSFER,01/08/2025,Cotisation pour le mois 08/2025
+E6,500,TRANSFER,01/08/2025,Cotisation pour le mois 10/2025
+E5,500,TRANSFER,01/08/2025,Cotisation pour le mois 08/2025
+J26,6000,TRANSFER,01/08/2025,Cotisation pour la période du 01/08/2025 au 30/07/2026
+I13,3000,TRANSFER,01/08/2025,Cotisation pour les mois 08-09-10-11-12/2025 et 01/2026
+E11,2000,TRANSFER,01/08/2025,Cotisation pour le mois 05-06-07-08/2025
+E16,500,TRANSFER,01/08/2025,Cotisation pour le mois 04/2025
+C18,500,TRANSFER,03/08/2025,Cotisation pour le mois 08/2025
+C11,500,TRANSFER,03/08/2025,Cotisation pour le mois 05/2025
+A18,500,TRANSFER,04/08/2025,Cotisation pour le mois 08/2025
+E23,500,TRANSFER,04/08/2025,Cotisation pour le mois 08/2025
+A9,500,TRANSFER,04/08/2025,Cotisation pour le mois 08/2025
+E21,500,TRANSFER,04/08/2025,Cotisation pour le mois 08/2025
+E2,500,TRANSFER,04/08/2025,Cotisation pour le mois 08/2025
+H20,3000,TRANSFER,05/08/2025,Cotisation pour les mois 08-09-10-11-12/2025 et 01/2026
+A24,1000,TRANSFER,05/08/2025,Cotisation pour les mois 07-08/2025
+D3,500,TRANSFER,05/08/2025,Cotisation pour le mois 08/2025
+C13,500,TRANSFER,05/08/2025,Cotisation pour le mois 08/2025
+C4,500,TRANSFER,06/08/2025,Cotisation pour le mois 08/2025
+E24,500,TRANSFER,06/08/2025,Cotisation pour le mois 06/2025
+D17,500,TRANSFER,06/08/2025,Cotisation pour le mois 08/2025
+D6,500,TRANSFER,07/08/2025,Cotisation pour le mois 08/2025
+C15,1000,TRANSFER,08/08/2025,Cotisation pour le mois 08-09/2025
+A13,1000,TRANSFER,08/08/2025,Cotisation pour les mois 08-09/2025
+A19,1000,TRANSFER,08/08/2025,Cotisation pour les mois 08-09/2025
+A7,500,TRANSFER,08/08/2025,Cotisation pour le mois 08/2025
+E17,500,TRANSFER,11/08/2025,Cotisation pour le mois 07/2025
+G18,6000,TRANSFER,12/08/2025,Cotisation pour la période du 01/08/2025 au 30/07/2025
+E22,500,TRANSFER,13/08/2025,Cotisation pour le mois 08/2025
+A17,500,TRANSFER,15/08/2025,Cotisation pour le mois 08/2025
+G10,1000,TRANSFER,15/08/2025,Cotisation pour le mois 08-09/2025
+B3,3000,TRANSFER,18/08/2025,Cotisation pour les mois 07-08-09-10-11-12/2024
+F9,6000,CHECK,18/08/2025,Cotisation pour la période du 01/08/2025 au 30/07/2026
+A14,500,TRANSFER,25/08/2025,Cotisation pour le mois 08/2025
+B4,1000,TRANSFER,25/08/2025,Cotisation pour les mois 07-08/2025
+A2,500,TRANSFER,25/08/2025,Cotisation pour le mois 06/2025
+E18,500,TRANSFER,25/08/2025,Cotisation pour le mois 08/2025
+B3,3500,TRANSFER,27/08/2025,Cotisation pour les mois 01-02-03-04-05-06-07/2025
+A5,3500,TRANSFER,27/08/2025,Cotisation pour les mois 06-07-08-09-10-11-12/2025
+G28,2500,TRANSFER,27/08/2025,Cotisation pour les mois 04-05-06-07-08-09/2025
+C11,500,TRANSFER,27/08/2025,Cotisation pour le mois 06/2025
+G31,516.66,TRANSFER,27/08/2025,Cotisation pour le mois 08/2025
+D10,1000,TRANSFER,28/08/2025,Cotisation pour les mois 09-10/2025
+I6,1000,TRANSFER,28/08/2025,Cotisation pour le mois 06-07/2025
+A23,2000,TRANSFER,28/08/2025,Cotisation pour les mois 09-10-11-12/2025
+C14,1200,TRANSFER,28/08/2025,Cotisation pour les mois 06-07-08/2025
+H12,1500,TRANSFER,28/08/2025,Cotisation pour les mois 06-07-08/2025
+A24,500,TRANSFER,29/08/2025,Cotisation pour le mois 09/2025
+E16,500,TRANSFER,29/08/2025,Cotisation pour le mois 05/2025
+A4,500,TRANSFER,30/08/2025,Cotisation pour le mois 08/2025
+A21,7500,TRANSFER,21/04/2025,Cotisation pour la période du 01/01/2024 au 30/03/2025
+E19,500,TRANSFER,01/10/2025,Cotisation pour le mois 10/2025
+C3,500,TRANSFER,01/10/2025,Cotisation pour le mois 09/2025
+J12,3200,TRANSFER,01/10/2025,Cotisation pour les mois 06-07-08-09-10-11/2025
+A18,500,TRANSFER,01/09/2025,Cotisation pour le mois 09/2025
+E6,500,TRANSFER,01/09/2025,Cotisation pour le mois 11/2025
+E5,500,TRANSFER,02/09/2025,Cotisation pour le mois 09/2025
+J27,600,TRANSFER,02/09/2025,Cotisation pour le mois 08/2025
+E2,500,TRANSFER,02/09/2025,Cotisation pour le mois 09/2025
+E16,500,TRANSFER,02/09/2025,Cotisation pour le mois 06/2025
+E23,500,TRANSFER,02/09/2025,Cotisation pour le mois 09/2025
+C5,500,TRANSFER,03/09/2025,Cotisation pour le mois 09/2025
+G24,3000,TRANSFER,03/09/2025,Cotisation pour les mois 05-06-07-08-09-10/2025
+E21,500,TRANSFER,03/09/2025,Cotisation pour le mois 09/2025
+C18,500,TRANSFER,04/09/2025,Cotisation mois 09/2025
+C4,500,TRANSFER,04/09/2025,Cotisation mois 09/2025
+E17,500,TRANSFER,04/09/2025,Cotisation mois 08/2025
+H10,2000,TRANSFER,06/09/2025,Cotisation mois 09-10-11-12/2025
+G3,6000,TRANSFER,06/09/2025,Cotisation pour la période du 01/10/2025 au 30/09/2026
+C13,500,TRANSFER,08/09/2025,Cotisation mois 09/2025
+B4,500,TRANSFER,08/09/2025,Cotisation mois 09/2025
+E12,500,TRANSFER,09/09/2025,Cotisation mois 08/2025
+I14,3000,TRANSFER,09/09/2025,Cotisation pour la période du 01/10/2025 au 31/03/2026
+F20,2000,TRANSFER,09/09/2025,Cotisation mois 08-09-10-11/2025
+E3,1500,TRANSFER,10/09/2025,Cotisation mois 07-08-09/2025
+D3,500,TRANSFER,10/09/2025,Cotisation mois 09/2025
+D6,500,TRANSFER,10/09/2025,Cotisation mois 09/2025
+E22,500,TRANSFER,10/09/2025,Cotisation mois 09/2025
+A9,500,TRANSFER,10/09/2025,Cotisation mois 09/2025
+J12,6000,TRANSFER,11/09/2025,Cotisation pour la période du 01/12/2025 au 30/11/2026
+I17,6000,TRANSFER,12/09/2025,Cotisation pour la période du 01/09/2024 au 30/08/2025
+E24,500,TRANSFER,12/09/2025,Cotisation mois 07/2025
+C10,2000,TRANSFER,15/09/2025,Cotisation pour les mois 04-05-06-07/2025
+E6,3000,TRANSFER,15/09/2025,Cotisation pour les mois 12/2025 et 01-02-03-04-05/2026
+C21,3000,TRANSFER,15/09/2025,Cotisations pour les mois 08-09-10-11-12/2025 et 01/2026
+E20,2500,TRANSFER,15/09/2025,Cotisation pour les mois 05-06-07-08-09/2025
+G8,2000,TRANSFER,15/09/2025,Cotisation pour les mois 06-07-08-09/2025
+E18,2000,TRANSFER,15/09/2025,Cotisation pour les mois 09-10-11-12/2025
+A3,2000,TRANSFER,15/09/2025,Cotisation pour les mois 07-08-09-10/2025
+H4,2000,TRANSFER,16/09/2025,Cotisation pour les mois 09-10-11-12/2025
+D4,3000,TRANSFER,16/09/2025,Cotisation pour les mois 05-06-07-08-09-10/2025
+C14,500,TRANSFER,16/09/2025,Cotisation mois 09/2025
+H12,500,TRANSFER,16/09/2025,Cotisation mois 09/2025
+J7,6000,TRANSFER,17/09/2025,Cotisation pour la période du 01/09/2025 au 30/08/2026
+A17,500,TRANSFER,18/09/2025,Cotisation mois 09/2025
+A7,2000,TRANSFER,19/09/2025,Cotisation pour les mois 09-10-11-12/2025
+C17,1500,TRANSFER,19/09/2025,Cotisation pour les  mois 10-11-12/2025
+C12,1500,TRANSFER,22/09/2025,Cotisation pour les mois 07-08-09/2025
+E12,500,TRANSFER,23/09/2025,Cotisation pour le mois 09/2025
+J19,3000,TRANSFER,23/09/2025,Cotisation deuxième semestre 2025
+A14,500,TRANSFER,24/09/2025,Cotisation pour le mois 09/2025
+A2,500,TRANSFER,24/09/2025,Cotisation pour le mois 07/2025
+F1,500,TRANSFER,27/09/2025,Cotisation pour le mois 09/2025
+F12,3000,TRANSFER,27/09/2025,Cotisation pour la période du 01/08/2025 au 31/01/2026
+C11,500,TRANSFER,28/09/2025,Cotisation pour le mois 07/2025
+I3,6000,TRANSFER,29/09/2025,Avance sur l'exercice 2026 et 2027
+G7,1500,TRANSFER,29/09/2025,Cotisation pour les mois 10-11-12/2025
+E24,500,TRANSFER,29/09/2025,Cotisation pour le mois 08/2025
+C8,1500,TRANSFER,30/09/2025,Cotisation pour les mois 10-11-12/2025
+A4,500,TRANSFER,30/09/2025,Cotisation pour le mois 09/2025
+A5,3000,CHECK,30/09/2025,Cotisation pour le mois 01-02-03-04-05-06/2025
+C9,2000,TRANSFER,30/09/2025,Cotisation pour les mois 06-07-08-09/2025
+J4,6000,TRANSFER,30/09/2025,Cotisation pour la période du 01/09/2025 au 30/08/2026
+F7,1500,TRANSFER,30/09/2025,Cotisation pour les mois 10-11-12/2025
+G31,2000,TRANSFER,30/09/2025,Cotisation pour les mois 09-10-11-12/2025
+H15,1000,TRANSFER,30/09/2025,Cotisation pour le mois 08-09/2025
+C7,1000,TRANSFER,30/09/2025,Cotisation pour le mois 09-10/2025
+E11,1000,TRANSFER,30/09/2025,Cotisation pour les mois 09-10/2025
+A24,500,TRANSFER,30/09/2025,Cotisation pour le mois 10/2025
+F4,6000,CHECK,01/08/2025,Cotisation pour la période du 01/08/2025 au 30/07/2026
+D19,500,TRANSFER,04/09/2025,Cotisation pour le mois 09/2025
+D18,500,TRANSFER,14/09/2025,Cotisation pour le mois 09/2025
+E4,500,TRANSFER,19/09/2025,Cotisation pour le mois 07/2025
+E13,1000,TRANSFER,24/09/2025,Cotisation pour les mois 09-10/2025
+I15,3000,CHECK,22/09/2025,Cotisation pour la période du 01/09/2025 au 28/02/2026
+A12,1500,TRANSFER,22/09/2025,Cotisation pou les mois 07-09-10/2025
+A17,500,TRANSFER,01/10/2025,Cotisation mois 10/2025
+A18,500,TRANSFER,01/10/2025,Cotisation mois 10/2025
+J35,6000,TRANSFER,01/10/2025,Cotisation pour la période du 01/08/2025 au 30/07/2026
+J27,500,TRANSFER,01/10/2025,Cotisation mois 09/2025
+D5,1500,TRANSFER,02/10/2025,Cotisation mois 09-10-11/2025
+J17,2700,TRANSFER,02/10/2025,Cotisation mois 04-05-06-07-08-09/2025
+E2,500,TRANSFER,02/10/2025,Cotisation mois 10/2025
+A9,500,TRANSFER,03/10/2025,Cotisation mois 10/2025
+C24,500,TRANSFER,03/10/2025,Cotisation mois 10/2025
+C24,500,TRANSFER,03/10/2025,Cotisation mois 11/2025
+G5,1500,TRANSFER,25/10/2025,Cotisation mois 05-06-07/2025
+E5,500,TRANSFER,06/10/2025,Cotisation mois 10/2025
+A20,1500,TRANSFER,06/10/2025,Cotisation mois 08-09-10/2025
+J10,6000,TRANSFER,07/10/2025,Cotisation pour la période du 01/08/2025 au 3/07/2026
+E23,500,TRANSFER,07/10/2025,Cotisation mois 10/2025
+D17,500,TRANSFER,07/10/2025,Cotisation mois 09/2025
+C13,500,TRANSFER,07/10/2025,Cotisation mois 10/2025
+E17,500,TRANSFER,07/10/2025,Cotisation mois 09/2025
+C4,500,TRANSFER,07/10/2025,Cotisation mois 10/2025
+C3,500,TRANSFER,08/10/2025,Cotisation mois 10/2025
+C18,500,TRANSFER,08/10/2025,Cotisation mois 10/2025
+F6,3000,TRANSFER,09/10/2025,Cotisation mois 07-08-09-10-11-12/2025
+C15,1500,TRANSFER,09/10/2025,Cotisation mois 10-11-12/2025
+D6,1500,TRANSFER,09/10/2025,Cotisation mois 10-11-12/2025
+E21,500,TRANSFER,09/10/2025,Cotisation mois 10/2025
+G27,1500,TRANSFER,10/10/2025,Cotisation mois 10-11-12/2025
+I11,2500,TRANSFER,10/10/2025,Cotisation mois 08-09-10-11-12/2025
+B4,500,TRANSFER,10/10/2025,Cotisation mois 10/2025
+H14,1500,TRANSFER,11/10/2025,Cotisation mois 08-09-10/2025
+D24,1500,TRANSFER,14/10/2025,Cotisation mois 09-10-11/2025
+C20,1000,TRANSFER,14/10/2025,Cotisation mois 08-09/2025
+D3,500,TRANSFER,14/10/2025,Cotisation mois 10/2025
+C22,2000,TRANSFER,15/10/2025,Cotisation mois 01-02-03-04/2026
+A13,1000,TRANSFER,15/10/2025,Cotisation mois 10-11/2025
+E24,500,TRANSFER,15/10/2025,Cotisation mois 09/2025
+C5,500,TRANSFER,16/10/2025,Cotisation mois 10/2025
+C14,500,TRANSFER,16/10/2025,Cotisation mois 10/2025
+H12,500,TRANSFER,16/10/2025,Cotisation mois 10/2025
+D9,1500,TRANSFER,17/10/2025,Cotisation mois 10-11-12/2025
+F2,1500,TRANSFER,17/10/2025,Cotisation mois 08-09-10/2025
+A15,3000,TRANSFER,21/10/2025,Cotisation mois 07-08-09-10-11-12/2025
+H7,2000,TRANSFER,21/10/2025,Cotisation mois 09-10-11-12/2025
+A16,1500,TRANSFER,21/10/2025,Cotisation mois 10-11-12/2025
+B7,1500,TRANSFER,21/10/2025,Cotisation mois 10-11-12/2025
+E22,500,TRANSFER,21/10/2025,Cotisation mois 10/2025
+A2,500,TRANSFER,23/10/2025,Cotisation mois 08/2025
+B15,1500,TRANSFER,28/10/2025,Cotisation mois 10-11-12/2025
+J27,500,TRANSFER,28/10/2025,Cotisation mois 10/2025
+F1,500,TRANSFER,29/10/2025,Cotisation mois 10/2025
+A4,500,TRANSFER,30/10/2025,Cotisation mois 10/2025
+A24,500,TRANSFER,30/10/2025,Cotisation mois 11/2025
+F15,6000,TRANSFER,31/10/2025,Cotisatio du 01/10/2025 au 30/09/2026
+D5,500,TRANSFER,31/10/2025,Cotisation mois 12/2025
+C11,500,TRANSFER,01/11/2025,Mois 08/2025
+A18,500,TRANSFER,01/11/2025,Cotisation mois 11/2025
+C3,500,TRANSFER,03/11/2025,Cotisation mois 11/2025
+E5,500,TRANSFER,01/11/2025,Cotisation mois 11/2025
+D10,1000,TRANSFER,03/11/2025,Cotisation mois 11-12/2025
+C5,500,TRANSFER,03/11/2025,Cotisation mois 11/2025
+H6,6000,TRANSFER,04/11/2025,Cotisation du 01/08/2025 au 30/07/2026
+A11,3100,TRANSFER,04/11/2025,Cotisation mois 06-07-08-09-10-11-12/2025
+E21,500,TRANSFER,04/11/2025,Cotisation mois 11/2025
+E17,500,TRANSFER,04/11/2025,Cotisation mois 10/2025
+B4,500,TRANSFER,04/11/2025,Cotisation mois 11/2025
+A9,500,TRANSFER,04/11/2025,Cotisation mois 11/2025
+E2,500,TRANSFER,04/11/2025,Cotisation mois 11/2025
+C13,500,TRANSFER,04/11/2025,Cotisation mois 11/2025
+C4,500,TRANSFER,05/11/2025,Cotisation mois 11/2025
+E23,500,TRANSFER,05/11/2025,Cotisation mois 11/2025
+C7,1000,TRANSFER,10/11/2025,Cotisation mois 11-12/2025
+A19,1000,TRANSFER,10/11/2025,Cotisation mois 10-11/2025
+C18,500,TRANSFER,10/11/2025,Cotisation mois 11/2025
+B8,1000,TRANSFER,11/11/2025,Cotisation mois 05-06/2025
+D3,500,TRANSFER,12/11/2025,Cotisation mois 11/2025
+C24,500,TRANSFER,11/11/2025,Cotisation mois 12/2025
+E12,500,TRANSFER,12/11/2025,Cotisation mois 10/2025
+E3,1000,TRANSFER,14/11/2025,Cotisation mois 10-11/2025
+J14,1500,TRANSFER,14/11/2025,Cotisation mois 08-09-10-11/2025
+D17,500,TRANSFER,14/11/2025,Cotisation mois 10/2025
+C12,1000,TRANSFER,17/11/2025,Cotisation mois 10-11/2025
+E24,500,TRANSFER,17/11/2025,Cotisation mois 10/2025
+A17,500,TRANSFER,17/11/2025,Cotisation mois 11/2025
+A3,1000,TRANSFER,19/11/2025,Cotisation mois 11-12/2025
+C14,500,TRANSFER,19/11/2025,Cotisation mois 11/2025
+H12,500,TRANSFER,19/11/2025,Cotisation mois 11/2025
+F1,500,TRANSFER,22/11/2025,Cotisation mois 11/2025
+A14,500,TRANSFER,24/11/2025,Cotisation mois 10/2025
+I6,1000,TRANSFER,25/11/2025,Cotisation mois 08-09/2025
+E22,500,TRANSFER,26/11/2025,Cotisation mois 11/2025
+A2,500,TRANSFER,27/11/2025,Cotisation mois 09/2025
+F11,3000,TRANSFER,28/11/2025,Cotisation mois 06-07-08-09-10- 11/2025
+A24,500,TRANSFER,28/11/2025,Cotisation mois 12/2025
+C3,500,TRANSFER,01/12/2025,Cotisation mois 12/2025
+A4,500,TRANSFER,01/12/2025,Cotisation mois 11/2025
+A18,500,TRANSFER,01/12/2025,Cotisation mois 12/2025
+C11,500,TRANSFER,01/12/2025,Cotisation mois 09/2025
+E5,500,TRANSFER,02/12/2025,Cotisation mois 12/2025
+E23,500,TRANSFER,02/12/2025,Cotisation mois 12/2025
+C5,500,TRANSFER,02/12/2025,Cotisation mois 12/2025
+E6,500,TRANSFER,02/12/2025,avance sur 2026
+E21,500,TRANSFER,02/12/2025,Cotisation mois 12/2025
+E2,500,TRANSFER,02/12/2025,Cotisation mois 12/2025
+C24,500,TRANSFER,02/12/2025,Cotisation mois 01/2026
+B4,500,TRANSFER,03/12/2025,Cotisation mois 12/2025
+C13,500,TRANSFER,05/12/2025,Cotisation mois 12/2025
+E22,500,TRANSFER,05/12/2025,Cotisation mois 12/2025
+A9,500,TRANSFER,05/12/2025,Cotisation mois 12/2025
+F1,500,TRANSFER,07/12/2025,Cotisation mois 12/2025
+C4,500,TRANSFER,08/12/2025,Cotisation mois 12/2025
+E12,500,TRANSFER,09/12/2025,Cotisation mois 12/2025
+J36,4000,TRANSFER,09/12/2025,Cotisation pour la période du 01/12/2025 au 30/05/2026
+C18,500,TRANSFER,09/12/2025,Cotisation mois 12/2025
+G21,3000,TRANSFER,09/12/2025,Cotisation pour la période du 01/11/2025 au 30/04/2026
+A13,500,TRANSFER,10/12/2025,Cotisation mois 12/2025
+A19,500,TRANSFER,10/12/2025,Cotisation mois 12/2025
+D17,500,TRANSFER,10/12/2025,Cotisation mois 11/2025
+J29,6000,TRANSFER,11/12/2025,Cotisation 2026
+J27,400,TRANSFER,12/12/2025,Cotisation mois 11/2025
+C14,500,TRANSFER,16/12/2025,Cotisation mois 12/2025
+H12,500,TRANSFER,16/12/2025,Cotisation mois 12/2025
+C10,3000,TRANSFER,17/12/2025,Cotisation mois 08-09-10-11-12/2025 et 01/2026
+G2,6400,TRANSFER,19/12/2025,Cotisation pour la période du 01/11/2025 au 30/10/2025
+H17,5600,TRANSFER,22/12/2025,Cotisation pour la période du 01/12/2025 au 30/10/2026
+D3,500,TRANSFER,22/12/2025,Cotisation mois 12/2025
+D24,1500,TRANSFER,23/12/2025,Cotisation mois 12/2025 et 01-02/2026
+G19,1500,TRANSFER,25/12/2025,Cotisation mois 07-08-09/2025
+G5,1500,TRANSFER,26/12/2025,Cotisation mois 08-09-10/2025
+G13,4000,TRANSFER,27/12/2025,Cotisation mois 08-09-10-11-12/2025 et 01-02-03/2026
+C11,500,TRANSFER,27/12/2025,Cotisation mois 10/2025
+E12,500,TRANSFER,29/12/2025,Cotisation mois 12/2025
+D10,1000,TRANSFER,29/12/2025,Cotisation mois 01-02/2026
+A2,500,TRANSFER,30/12/2025,Cotisation mois 10/2025
+A24,500,TRANSFER,30/12/2025,Cotisation mois 01/2026
+D23,3000,TRANSFER,31/12/2025,Cotisation mois 06-07-08-09-10-11/2025
+E20,1500,TRANSFER,31/12/2025,Cotisation mois 10-11-12/2025
+E3,500,TRANSFER,31/12/2025,Cotisation mois 12/2025
+I2,1500,TRANSFER,04/01/2025,Cotisation mois 01-02-03/2026
+E5,500,TRANSFER,04/01/2025,Cotisation mois 01/2026
+F1,500,TRANSFER,05/01/2025,Cotisation mois 01/2026
+E21,500,TRANSFER,05/01/2025,Cotisation mois 01/2026
+G16,1500,TRANSFER,06/01/2025,Cotisation mois 09-10-11/2025
+J20,1500,TRANSFER,06/01/2025,Cotisation mois 09-10-11/2025
+B8,1000,TRANSFER,06/01/2025,Cotisation mois 07-08/2025
+C4,500,TRANSFER,06/01/2025,Cotisation mois 01/2026
+E24,1000,TRANSFER,09/01/2025,Cotisation mois 11-12/2025
+D20,4000,TRANSFER,08/08/2025,justifs
+F13,4000,CHECK,08/08/2025,justifs
+F13,2500,CHECK,01/09/2025,justifs
+B13,4500,TRANSFER,02/10/2025,Cotisation mois 01-02-03-04-05-06-07-08-09/2025
+"J25,6000,TRANSFER,24/10/2025,Cotisation pou la période du 01/09/2025 au 30/08/2026.
+Virement de la part de Mme Fatima EL KHAYAT"
+J23,3000,TRANSFER,28/11/2025,Cotisation pour les mois 08-09-10-11-12/2025 et 01/2026

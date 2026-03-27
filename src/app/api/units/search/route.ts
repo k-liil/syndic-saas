@@ -21,23 +21,28 @@ export async function GET(req: Request) {
     return NextResponse.json([]);
   }
 
+  const searchConditions: any[] = [];
+  const fields = ["lotNumber", "reference"];
+
+  for (const field of fields) {
+    if (q.startsWith("*") && q.endsWith("*")) {
+      const term = q.slice(1, -1);
+      if (term) searchConditions.push({ [field]: { contains: term, mode: "insensitive" } });
+    } else if (q.endsWith("*")) {
+      const term = q.slice(0, -1);
+      if (term) searchConditions.push({ [field]: { startsWith: term, mode: "insensitive" } });
+    } else if (q.startsWith("*")) {
+      const term = q.slice(1);
+      if (term) searchConditions.push({ [field]: { endsWith: term, mode: "insensitive" } });
+    } else {
+      searchConditions.push({ [field]: { equals: q, mode: "insensitive" } });
+    }
+  }
+
   const units = await prisma.unit.findMany({
     where: {
       organizationId: orgId,
-      OR: [
-        {
-          lotNumber: {
-            contains: q,
-            mode: "insensitive",
-          },
-        },
-        {
-          reference: {
-            contains: q,
-            mode: "insensitive",
-          },
-        },
-      ],
+      OR: searchConditions,
     },
     include: {
       building: true,

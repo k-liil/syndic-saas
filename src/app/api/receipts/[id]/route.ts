@@ -86,11 +86,36 @@ export async function GET(
     },
   });
 
-  if (!item) {
-    return NextResponse.json({ error: "Receipt not found" }, { status: 404 });
+  const json = item as any;
+
+  if (json.allocations) {
+    for (const alloc of json.allocations) {
+      const others = await prisma.receiptAllocation.findMany({
+        where: {
+          dueId: alloc.due.id,
+          receipt: {
+            OR: [
+              { date: { lt: item.date } },
+              {
+                date: item.date,
+                receiptNumber: { lt: item.receiptNumber },
+              },
+            ],
+          },
+        },
+        select: { amount: true },
+      });
+
+      const previousTotal = others.reduce(
+        (sum, a) => sum + Number(a.amount),
+        0
+      );
+      alloc.previousTotal = previousTotal;
+      alloc.afterTotal = previousTotal + Number(alloc.amount);
+    }
   }
 
-  return NextResponse.json(item);
+  return NextResponse.json(json);
 }
 
 export async function PUT(

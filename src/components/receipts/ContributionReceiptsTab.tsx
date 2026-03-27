@@ -122,6 +122,7 @@ const [totalPages, setTotalPages] = useState(1);
 
   const [search, setSearch] = useState("");
   const [lotFilter, setLotFilter] = useState("");
+  const [sortDir, setSortDir] = useState<"asc" | "desc">("desc");
 
 const totalAll = totals.all;
 const totalCash = totals.cash;
@@ -195,6 +196,7 @@ async function loadReceipts() {
     type: "CONTRIBUTION",
     year,
     q: lotFilter,
+    sortDir,
   });
 
   if (methodFilter !== "ALL") {
@@ -232,6 +234,7 @@ async function loadReceiptsTotalCount() {
     type: "CONTRIBUTION",
     year,
     q: lotFilter,
+    sortDir,
   });
 
   if (methodFilter !== "ALL") {
@@ -644,7 +647,7 @@ useEffect(() => {
 useEffect(() => {
   if (!year || !org?.id) return;
   loadReceipts();
-}, [page, methodFilter, monthFilter, year, org?.id, lotFilter]);
+}, [page, methodFilter, monthFilter, year, org?.id, lotFilter, sortDir]);
 
 useEffect(() => {
   if (!org?.id) return;
@@ -656,7 +659,7 @@ useEffect(() => {
   setPage(1);
   setSelectedReceipts([]);
   setSelectAllAcrossResults(false);
-}, [year, monthFilter, lotFilter]);
+}, [year, monthFilter, lotFilter, sortDir]);
 
 useEffect(() => {
   setSelectedReceipts([]);
@@ -1063,7 +1066,17 @@ useEffect(() => {
     </TH>
 
     <TH className="text-[11px] font-bold uppercase tracking-[0.12em] text-zinc-500">N°</TH>
-    <TH className="text-[11px] font-bold uppercase tracking-[0.12em] text-zinc-500">Date</TH>
+    <TH 
+      className="cursor-pointer text-[11px] font-bold uppercase tracking-[0.12em] text-zinc-500 hover:text-zinc-700"
+      onClick={() => setSortDir(sortDir === "desc" ? "asc" : "desc")}
+    >
+      <div className="flex items-center gap-1">
+        Date
+        <span className="text-[10px]">
+          {sortDir === "desc" ? "▼" : "▲"}
+        </span>
+      </div>
+    </TH>
     <TH className="text-[11px] font-bold uppercase tracking-[0.12em] text-zinc-500">Lot</TH>
     <TH className="text-[11px] font-bold uppercase tracking-[0.12em] text-zinc-500">Immeuble</TH>
     <TH className="text-[11px] font-bold uppercase tracking-[0.12em] text-zinc-500">Copropriétaire</TH>
@@ -1626,53 +1639,115 @@ useEffect(() => {
                   );
                 }
 
-                const paidAllocs = allocations.filter((a: any) => 
-                  new Date(a.due.period).getTime() <= new Date(detail.date).getTime()
-                );
-                const advanceAllocs = allocations.filter((a: any) => 
-                  new Date(a.due.period).getTime() > new Date(detail.date).getTime()
-                );
+                const typedAllocs = allocations.map((a: any) => {
+                  const amountDue = Number(a.due.amountDue);
+                  const previousTotal = Number(a.previousTotal ?? 0);
+                  const afterTotal = Number(a.afterTotal ?? 0);
 
-                const paidTotal = paidAllocs.reduce((sum: number, a: any) => sum + Number(a.amount), 0);
-                const advanceTotal = advanceAllocs.reduce((sum: number, a: any) => sum + Number(a.amount), 0);
+                  let type: "COMPLEMENT" | "FULL" | "PARTIAL" = "PARTIAL";
+
+                  if (afterTotal >= amountDue) {
+                    // It is now fully paid
+                    type = previousTotal > 0 ? "COMPLEMENT" : "FULL";
+                  } else {
+                    // Still partial
+                    type = "PARTIAL";
+                  }
+
+                  return { ...a, type };
+                });
+
+                // Group consecutive FULL allocations
+                const displayGroups: any[] = [];
+                let currentGroup: any = null;
+
+                for (const a of typedAllocs) {
+                  if (a.type === "FULL") {
+                    if (!currentGroup) {
+                      currentGroup = {
+                        type: "FULL",
+                        items: [a],
+                        total: Number(a.amount),
+                      };
+                      displayGroups.push(currentGroup);
+                    } else {
+                      currentGroup.items.push(a);
+                      currentGroup.total += Number(a.amount);
+                    }
+                  } else {
+                    currentGroup = null;
+                    displayGroups.push({
+                      type: a.type,
+                      item: a,
+                      total: Number(a.amount),
+                    });
+                  }
+                }
 
                 return (
                   <div className="mt-4 space-y-4">
-                    {paidAllocs.length > 0 && (
-                      <div className="flex items-center justify-between rounded-2xl border border-emerald-100 bg-emerald-50/50 px-5 py-4 shadow-sm">
-                        <div className="min-w-0">
-                          <div className="text-xs font-semibold uppercase tracking-wider text-emerald-600/80">Périodes réglées</div>
-                          <div className="mt-1 text-base font-semibold text-zinc-900">
-                            {fmtPeriodRange(paidAllocs[0].due.period, paidAllocs[paidAllocs.length - 1].due.period)}
+                    {displayGroups.map((group, idx) => {
+                      if (group.type === "FULL") {
+                        const first = group.items[0];
+                        const last = group.items[group.items.length - 1];
+                        return (
+                          <div key={idx} className="flex items-center justify-between rounded-2xl border border-emerald-100 bg-emerald-50/50 px-5 py-4 shadow-sm">
+                            <div className="min-w-0">
+                              <div className="text-xs font-semibold uppercase tracking-wider text-emerald-600/80">Période réglée</div>
+                              <div className="mt-1 text-base font-semibold text-zinc-900">
+                                {fmtPeriodRange(first.due.period, last.due.period)}
+                              </div>
+                              <div className="mt-1 text-xs text-zinc-500">
+                                {group.items.length} mois couvert(s)
+                              </div>
+                            </div>
+                            <div className="ml-4 rounded-xl bg-emerald-600 px-4 py-2 text-right text-white shadow-sm">
+                              <div className="text-[10px] font-medium uppercase tracking-tight text-emerald-100">Total</div>
+                              <div className="text-lg font-bold">{group.total.toLocaleString("fr-FR")} <span className="text-xs font-normal">MAD</span></div>
+                            </div>
                           </div>
-                          <div className="mt-1 text-xs text-zinc-500">
-                            {paidAllocs.length} mois couvert(s)
-                          </div>
-                        </div>
-                        <div className="ml-4 rounded-xl bg-emerald-600 px-4 py-2 text-right text-white shadow-sm">
-                          <div className="text-[10px] font-medium uppercase tracking-tight text-emerald-100">Total</div>
-                          <div className="text-lg font-bold">{paidTotal.toLocaleString("fr-FR")} <span className="text-xs font-normal">MAD</span></div>
-                        </div>
-                      </div>
-                    )}
+                        );
+                      }
 
-                    {advanceAllocs.length > 0 && (
-                      <div className="flex items-center justify-between rounded-2xl border border-blue-100 bg-blue-50/50 px-5 py-4 shadow-sm">
-                        <div className="min-w-0">
-                          <div className="text-xs font-semibold uppercase tracking-wider text-blue-600/80">Avances</div>
-                          <div className="mt-1 text-base font-semibold text-zinc-900">
-                            {fmtPeriodRange(advanceAllocs[0].due.period, advanceAllocs[advanceAllocs.length - 1].due.period)}
+                      if (group.type === "COMPLEMENT") {
+                        return (
+                          <div key={idx} className="flex items-center justify-between rounded-2xl border border-emerald-100 bg-emerald-50/50 px-5 py-4 shadow-sm">
+                            <div className="min-w-0">
+                              <div className="text-xs font-semibold uppercase tracking-wider text-emerald-600/80">Règlement complémentaire</div>
+                              <div className="mt-1 text-base font-semibold text-zinc-900">
+                                {fmtMonth(group.item.due.period)}
+                              </div>
+                              <div className="mt-1 text-xs text-zinc-500">
+                                Mois complété
+                              </div>
+                            </div>
+                            <div className="ml-4 rounded-xl bg-emerald-600 px-4 py-2 text-right text-white shadow-sm">
+                              <div className="text-[10px] font-medium uppercase tracking-tight text-emerald-100">Plus</div>
+                              <div className="text-lg font-bold">{group.total.toLocaleString("fr-FR")} <span className="text-xs font-normal">MAD</span></div>
+                            </div>
                           </div>
-                          <div className="mt-1 text-xs text-zinc-500">
-                            {advanceAllocs.length} mois en avance
+                        );
+                      }
+
+                      // PARTIAL
+                      return (
+                        <div key={idx} className="flex items-center justify-between rounded-2xl border border-amber-100 bg-amber-50/50 px-5 py-4 shadow-sm">
+                          <div className="min-w-0">
+                            <div className="text-xs font-semibold uppercase tracking-wider text-amber-600/80">Paiement partiel</div>
+                            <div className="mt-1 text-base font-semibold text-zinc-900">
+                              {fmtMonth(group.item.due.period)}
+                            </div>
+                            <div className="mt-1 text-xs text-zinc-500">
+                              Reliquat alloué
+                            </div>
+                          </div>
+                          <div className="ml-4 rounded-xl bg-amber-500 px-4 py-2 text-right text-white shadow-sm">
+                            <div className="text-[10px] font-medium uppercase tracking-tight text-amber-100">Total</div>
+                            <div className="text-lg font-bold">{group.total.toLocaleString("fr-FR")} <span className="text-xs font-normal">MAD</span></div>
                           </div>
                         </div>
-                        <div className="ml-4 rounded-xl bg-blue-600 px-4 py-2 text-right text-white shadow-sm">
-                          <div className="text-[10px] font-medium uppercase tracking-tight text-blue-100">Total</div>
-                          <div className="text-lg font-bold">{advanceTotal.toLocaleString("fr-FR")} <span className="text-xs font-normal">MAD</span></div>
-                        </div>
-                      </div>
-                    )}
+                      );
+                    })}
                   </div>
                 );
               })()}

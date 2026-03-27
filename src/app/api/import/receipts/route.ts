@@ -4,6 +4,7 @@ import { requireManager } from "@/lib/authz";
 import { DueStatus, PaymentMethod, ReceiptType } from "@prisma/client";
 import { getMonthlyContributionAmount } from "@/lib/contribution-amounts";
 import { buildContributionStartPeriod } from "@/lib/contribution-start";
+import { getOrgIdFromRequest } from "@/lib/org-utils";
 
 type Row = {
   lotNumber: string;
@@ -59,11 +60,16 @@ export async function POST(req: Request) {
   }
 
   const body = (await req.json()) as Body;
+  const orgId = (await getOrgIdFromRequest(req, gate)) as string;
+
+  if (!orgId) {
+    return NextResponse.json({ error: "Missing organizationId" }, { status: 400 });
+  }
 
   if (body.action === "start") {
     const job = await prisma.importJob.create({
       data: {
-        organizationId: gate.organizationId ?? "",
+        organizationId: orgId,
         type: "receipts",
         totalRows: body.totalRows,
         processed: 0,
@@ -83,7 +89,7 @@ export async function POST(req: Request) {
     where: { id: body.jobId },
   });
 
-  if (!job || job.organizationId !== gate.organizationId) {
+  if (!job || job.organizationId !== orgId) {
     return NextResponse.json({ error: "Job introuvable" }, { status: 404 });
   }
 
@@ -103,7 +109,7 @@ export async function POST(req: Request) {
       lotNumber: {
         in: lotNumbers,
       },
-      organizationId: gate.organizationId ?? "",
+      organizationId: orgId,
     },
     select: {
       id: true,
@@ -112,7 +118,7 @@ export async function POST(req: Request) {
       overrideStart: true,
       startYear: true,
       startMonth: true,
-    },
+    } as any,
   });
 
   const unitsByLotNumber = new Map<string, (typeof units)[number]>();
@@ -128,7 +134,7 @@ export async function POST(req: Request) {
       unitId: {
         in: units.map((unit) => unit.id),
       },
-      organizationId: gate.organizationId ?? "",
+      organizationId: orgId,
       endDate: null,
     },
     select: {
@@ -143,7 +149,7 @@ export async function POST(req: Request) {
   );
 
   const settings = await prisma.appSettings.findFirst({
-    where: { organizationId: gate.organizationId ?? "" },
+    where: { organizationId: orgId },
     select: {
       startYear: true,
       startMonth: true,
@@ -157,7 +163,7 @@ export async function POST(req: Request) {
   const receiptStartNumber = settings?.receiptStartNumber ?? 1;
 
   const lastReceipt = await prisma.receipt.findFirst({
-    where: { organizationId: gate.organizationId ?? "" },
+    where: { organizationId: orgId },
     orderBy: { receiptNumber: "desc" },
     select: { receiptNumber: true },
   });
@@ -261,169 +267,179 @@ export async function POST(req: Request) {
   await processInParallel(
     groups,
     async (group) => {
-      for (const item of group) {
-        try {
-          await prisma.$transaction(async (tx) => {
-            const receiptPeriod = firstDayOfMonth(item.receiptDate);
-            const startPeriod = buildContributionStartPeriod(
-              {
-                overrideStart: item.unit.overrideStart,
-                startYear: item.unit.startYear,
-                startMonth: item.unit.startMonth,
-              },
-              settings,
-            );
-            const fiscalYear = item.receiptDate.getUTCFullYear();
-            // Auto-allouer les cotisations selon globalFixedAmount
-            const fee = getMonthlyContributionAmount(
-              settings?.globalFixedAmount !== null && settings?.globalFixedAmount !== undefined
-                ? Number(settings.globalFixedAmount)
-                : 0,
-            );
-            const maxFutureMonths = 240;
+      try {
+        await prisma.$transaction(
+          async (tx) => {
+            const fiscalYearsUpserted = new Set<number>();
 
-            await tx.fiscalYear.upsert({
-              where: {
-                organizationId_year: {
-                  organizationId: gate.organizationId ?? "",
-                  year: fiscalYear,
+            for (const item of group) {
+              const receiptPeriod = firstDayOfMonth(item.receiptDate);
+              const startPeriod = buildContributionStartPeriod(
+                {
+                  overrideStart: (item.unit as any).overrideStart,
+                  startYear: (item.unit as any).startYear,
+                  startMonth: (item.unit as any).startMonth,
                 },
-              },
-              update: {},
-              create: {
-                organizationId: gate.organizationId ?? "",
-                year: fiscalYear,
-                startsAt: new Date(Date.UTC(fiscalYear, 0, 1)),
-                endsAt: new Date(Date.UTC(fiscalYear, 11, 31)),
-              },
-            });
+                settings
+              );
+              const fiscalYear = item.receiptDate.getUTCFullYear();
+              const fee = getMonthlyContributionAmount(
+                settings?.globalFixedAmount !== null &&
+                  settings?.globalFixedAmount !== undefined
+                  ? Number(settings.globalFixedAmount)
+                  : 0
+              );
+              const maxFutureMonths = 240;
 
-            const receipt = await tx.receipt.create({
-              data: {
-                receiptNumber: item.receiptNumber,
-                organizationId: gate.organizationId ?? "",
-                type: ReceiptType.CONTRIBUTION,
-                ownerId: item.ownership.ownerId,
-                buildingId: item.unit.buildingId,
-                unitId: item.unit.id,
-                amount: item.amount,
-                method: item.method,
-                date: item.receiptDate,
-                note: item.note || null,
-                bankName: null,
-                bankRef: null,
-                unallocatedAmount: 0,
-              },
-              select: {
-                id: true,
-              },
-            });
-
-            async function ensureDue(period: Date) {
-              if (fee <= 0) return;
-
-              await tx.monthlyDue.createMany({
-                data: [
-                  {
-                    unitId: item.unit.id,
-                    organizationId: gate.organizationId ?? "",
-                    period,
-                    amountDue: fee,
-                    paidAmount: 0,
-                    status: DueStatus.UNPAID,
+              if (!fiscalYearsUpserted.has(fiscalYear)) {
+                await tx.fiscalYear.upsert({
+                  where: {
+                    organizationId_year: {
+                      organizationId: orgId,
+                      year: fiscalYear,
+                    },
                   },
-                ],
-                skipDuplicates: true,
-              });
-            }
-
-            if (fee > 0) {
-              let cursor = startPeriod;
-              while (cursor.getTime() <= receiptPeriod.getTime()) {
-                await ensureDue(cursor);
-                cursor = addMonthsUTC(cursor, 1);
+                  update: {},
+                  create: {
+                    organizationId: orgId,
+                    year: fiscalYear,
+                    startsAt: new Date(Date.UTC(fiscalYear, 0, 1)),
+                    endsAt: new Date(Date.UTC(fiscalYear, 11, 31)),
+                  },
+                });
+                fiscalYearsUpserted.add(fiscalYear);
               }
-            }
 
-            let remaining = item.amount;
-            let futureOffset = 0;
-
-            while (remaining > 0 && futureOffset <= maxFutureMonths) {
-              const dues = await tx.monthlyDue.findMany({
-                where: {
+              const receipt = await tx.receipt.create({
+                data: {
+                  receiptNumber: item.receiptNumber,
+                  organizationId: orgId,
+                  type: ReceiptType.CONTRIBUTION,
+                  ownerId: item.ownership.ownerId,
+                  buildingId: item.unit.buildingId,
                   unitId: item.unit.id,
-                  organizationId: gate.organizationId ?? "",
-                  status: { in: [DueStatus.UNPAID, DueStatus.PARTIAL] },
-                  period: { gte: startPeriod },
+                  amount: item.amount,
+                  method: item.method,
+                  date: item.receiptDate,
+                  note: item.note || null,
+                  bankName: null,
+                  bankRef: null,
+                  unallocatedAmount: 0,
                 },
-                orderBy: [{ period: "asc" }, { createdAt: "asc" }],
                 select: {
                   id: true,
-                  amountDue: true,
-                  paidAmount: true,
                 },
               });
 
-              for (const due of dues) {
-                if (remaining <= 0) break;
+              async function ensureDue(period: Date) {
+                if (fee <= 0) return;
 
-                const remainingDue = Number(due.amountDue) - Number(due.paidAmount);
-                if (remainingDue <= 0) continue;
-
-                const allocationAmount =
-                  remaining >= remainingDue ? remainingDue : remaining;
-
-                await tx.receiptAllocation.create({
-                  data: {
-                    receiptId: receipt.id,
-                    dueId: due.id,
-                    amount: allocationAmount,
-                  },
+                await tx.monthlyDue.createMany({
+                  data: [
+                    {
+                      unitId: item.unit.id,
+                      organizationId: orgId,
+                      period,
+                      amountDue: fee,
+                      paidAmount: 0,
+                      status: DueStatus.UNPAID,
+                    },
+                  ],
+                  skipDuplicates: true,
                 });
-
-                const newPaidAmount = Number(due.paidAmount) + allocationAmount;
-                const amountDue = Number(due.amountDue);
-
-                await tx.monthlyDue.update({
-                  where: { id: due.id },
-                  data: {
-                    paidAmount: newPaidAmount,
-                    status:
-                      newPaidAmount >= amountDue
-                        ? DueStatus.PAID
-                        : DueStatus.PARTIAL,
-                  },
-                });
-
-                remaining -= allocationAmount;
               }
 
-              if (remaining <= 0) break;
+              if (fee > 0) {
+                let cursor = startPeriod;
+                while (cursor.getTime() <= receiptPeriod.getTime()) {
+                  await ensureDue(cursor);
+                  cursor = addMonthsUTC(cursor, 1);
+                }
+              }
 
-              futureOffset += 1;
+              let remaining = item.amount;
+              let futureOffset = 0;
 
-              if (fee <= 0) break;
+              while (remaining > 0 && futureOffset <= maxFutureMonths) {
+                const dues = await tx.monthlyDue.findMany({
+                  where: {
+                    unitId: item.unit.id,
+                    organizationId: orgId,
+                    status: { in: [DueStatus.UNPAID, DueStatus.PARTIAL] },
+                    period: { gte: startPeriod },
+                  },
+                  orderBy: [{ period: "asc" }, { createdAt: "asc" }],
+                  select: {
+                    id: true,
+                    amountDue: true,
+                    paidAmount: true,
+                  },
+                });
 
-              const futurePeriod = addMonthsUTC(receiptPeriod, futureOffset);
-              await ensureDue(futurePeriod);
+                for (const due of dues) {
+                  if (remaining <= 0) break;
+
+                  const remainingDue =
+                    Number(due.amountDue) - Number(due.paidAmount);
+                  if (remainingDue <= 0) continue;
+
+                  const allocationAmount =
+                    remaining >= remainingDue ? remainingDue : remaining;
+
+                  await tx.receiptAllocation.create({
+                    data: {
+                      receiptId: receipt.id,
+                      dueId: due.id,
+                      amount: allocationAmount,
+                    },
+                  });
+
+                  const newPaidAmount =
+                    Number(due.paidAmount) + allocationAmount;
+                  const amountDue = Number(due.amountDue);
+
+                  await tx.monthlyDue.update({
+                    where: { id: due.id },
+                    data: {
+                      paidAmount: newPaidAmount,
+                      status:
+                        newPaidAmount >= amountDue
+                          ? DueStatus.PAID
+                          : DueStatus.PARTIAL,
+                    },
+                  });
+
+                  remaining -= allocationAmount;
+                }
+
+                if (remaining <= 0) break;
+                futureOffset += 1;
+                if (fee <= 0) break;
+
+                const futurePeriod = addMonthsUTC(receiptPeriod, futureOffset);
+                await ensureDue(futurePeriod);
+              }
+
+              if (remaining > 0) {
+                await tx.receipt.update({
+                  where: { id: receipt.id },
+                  data: { unallocatedAmount: remaining },
+                });
+              }
+              imported += 1;
             }
-
-            if (remaining > 0) {
-              await tx.receipt.update({
-                where: { id: receipt.id },
-                data: { unallocatedAmount: remaining },
-              });
-            }
-          }, {
-            maxWait: 10000,
-            timeout: 60000,
-          });
-
-          imported += 1;
-        } catch (error: any) {
+          },
+          {
+            maxWait: 15000,
+            timeout: 90000,
+          }
+        );
+      } catch (error: any) {
+        // If the whole group (unit) transaction fails, report as error for all rows
+        for (const item of group) {
           errors.push({
             row: item.rowNo,
-            error: error?.message ?? "Import failed",
+            error: error?.message ?? "Import unit failed",
           });
         }
       }

@@ -49,6 +49,7 @@ export async function GET(req: Request) {
   const ownerId = asString(searchParams.get("ownerId")).trim();
   const q = asString(searchParams.get("q")).trim();
   const method = asString(searchParams.get("method")).trim();
+  const sortDir = (searchParams.get("sortDir") === "asc" ? "asc" : "desc") as "asc" | "desc";
 
   const skip = (page - 1) * pageSize;
 
@@ -79,16 +80,58 @@ if (ownerId) where.ownerId = ownerId;
 if (method) where.method = method;
 
   if (q) {
-    where.OR = [
-      { note: { contains: q, mode: "insensitive" } },
-      { bankName: { contains: q, mode: "insensitive" } },
-      { bankRef: { contains: q, mode: "insensitive" } },
-      { owner: { name: { contains: q, mode: "insensitive" } } },
-      { owner: { cin: { contains: q, mode: "insensitive" } } },
-      { building: { name: { contains: q, mode: "insensitive" } } },
-      { unit: { lotNumber: { contains: q, mode: "insensitive" } } },
-      { unit: { reference: { contains: q, mode: "insensitive" } } },
+    const conditions: any[] = [];
+    const unitFields = ["lotNumber", "reference"];
+    const otherFields = [
+      { note: true },
+      { bankName: true },
+      { bankRef: true },
+      { owner: ["name", "cin"] },
+      { building: ["name"] },
     ];
+
+    const getCondition = (field: string, term: string, mode: "startsWith" | "endsWith" | "contains" | "equals", path: string[] = []) => {
+      let obj: any = { [mode]: term, mode: "insensitive" };
+      let current = obj;
+      
+      // Build nested object if path exists
+      const fullPath = [...path, field];
+      const result: any = {};
+      let pointer = result;
+      for (let i = 0; i < fullPath.length - 1; i++) {
+        pointer[fullPath[i]] = {};
+        pointer = pointer[fullPath[i]];
+      }
+      pointer[fullPath[fullPath.length - 1]] = { [mode]: term, mode: "insensitive" };
+      return result;
+    };
+
+    const buildConditions = (term: string, mode: "startsWith" | "endsWith" | "contains" | "equals") => {
+      const results: any[] = [];
+      unitFields.forEach(f => results.push(getCondition(f, term, mode, ["unit"])));
+      results.push(getCondition("note", term, mode));
+      results.push(getCondition("bankName", term, mode));
+      results.push(getCondition("bankRef", term, mode));
+      results.push(getCondition("name", term, mode, ["owner"]));
+      results.push(getCondition("cin", term, mode, ["owner"]));
+      results.push(getCondition("name", term, mode, ["building"]));
+      return results;
+    };
+
+    if (q.startsWith("*") && q.endsWith("*")) {
+      const term = q.slice(1, -1);
+      if (term) conditions.push(...buildConditions(term, "contains"));
+    } else if (q.endsWith("*")) {
+      const term = q.slice(0, -1);
+      if (term) conditions.push(...buildConditions(term, "startsWith"));
+    } else if (q.startsWith("*")) {
+      const term = q.slice(1);
+      if (term) conditions.push(...buildConditions(term, "endsWith"));
+    } else {
+      conditions.push(...buildConditions(q, "equals"));
+    }
+
+    where.OR = conditions;
   }
 
   const [items, total, methodAgg] = await prisma.$transaction([
@@ -96,7 +139,7 @@ if (method) where.method = method;
       where,
       skip,
       take: pageSize,
-      orderBy: [{ date: "desc" }, { receiptNumber: "desc" }],
+      orderBy: [{ date: sortDir }, { receiptNumber: "desc" }],
       select: {
         id: true,
         receiptNumber: true,
