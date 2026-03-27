@@ -171,6 +171,7 @@ const [importPercent, setImportPercent] = useState(0);
 
   const [importOpen, setImportOpen] = useState(false);
   const [importFile, setImportFile] = useState<File | null>(null);
+  const [importDateFormat, setImportDateFormat] = useState<"DMY" | "MDY">("DMY");
   const [selectedReceipts, setSelectedReceipts] = useState<string[]>([]);
   const [importResult, setImportResult] = useState<null | {
   imported: number;
@@ -424,6 +425,7 @@ setImportResult(null);
           jobId,
           rows: batch,
           offset: processed,
+          dateFormat: importDateFormat,
           isLastBatch: processed + batchSize >= rows.length,
         }),
       });
@@ -1835,6 +1837,30 @@ useEffect(() => {
             onChange={(e) => setImportFile(e.target.files?.[0] ?? null)}
             className="block w-full text-sm"
           />
+
+          <div className="flex items-center gap-4 text-sm">
+            <span className="font-medium text-zinc-700">Format date :</span>
+            <label className="flex items-center gap-1 cursor-pointer">
+              <input
+                type="radio"
+                name="dateFormat"
+                checked={importDateFormat === "DMY"}
+                onChange={() => setImportDateFormat("DMY")}
+                className="w-4 h-4 text-zinc-900 border-zinc-300 focus:ring-zinc-900"
+              />
+              <span className="text-zinc-600">JJ/MM/AAAA</span>
+            </label>
+            <label className="flex items-center gap-1 cursor-pointer">
+              <input
+                type="radio"
+                name="dateFormat"
+                checked={importDateFormat === "MDY"}
+                onChange={() => setImportDateFormat("MDY")}
+                className="w-4 h-4 text-zinc-900 border-zinc-300 focus:ring-zinc-900"
+              />
+              <span className="text-zinc-600">MM/JJ/AAAA</span>
+            </label>
+          </div>
 
 {importBusy && (
   <div className="space-y-2">

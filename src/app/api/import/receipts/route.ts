@@ -22,6 +22,7 @@ type Body =
       rows: Row[];
       offset?: number;
       isLastBatch?: boolean;
+      dateFormat?: "DMY" | "MDY";
     };
 
 function firstDayOfMonth(d: Date) {
@@ -236,11 +237,36 @@ export async function POST(req: Request) {
       continue;
     }
 
-    const receiptDate = row.date ? new Date(row.date) : new Date();
+    const parseDateInput = (val: string, format?: "DMY" | "MDY") => {
+      if (!val) return new Date();
+      if (val.includes("-")) return new Date(val); // ISO-like
+
+      const parts = val.split(/[\/\.]/);
+      if (parts.length === 3) {
+        let d = parseInt(parts[0], 10);
+        let m = parseInt(parts[1], 10);
+        const y = parseInt(parts[2], 10);
+
+        if (format === "MDY") {
+          // Swap d and m
+          const tmp = d;
+          d = m;
+          m = tmp;
+        }
+
+        const date = new Date(y, m - 1, d);
+        if (!isNaN(date.getTime()) && date.getFullYear() === y && date.getMonth() === m - 1 && date.getDate() === d) {
+          return date;
+        }
+      }
+      return new Date(val);
+    };
+
+    const receiptDate = parseDateInput(row.date, body.dateFormat);
     if (Number.isNaN(receiptDate.getTime())) {
       errors.push({
         row: rowNo,
-        error: `Lot ${row.lotNumber} : date invalide`,
+        error: `Lot ${row.lotNumber} : date invalide (${row.date})`,
       });
       continue;
     }
