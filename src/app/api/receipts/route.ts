@@ -128,7 +128,7 @@ if (method) where.method = method;
       const term = q.slice(1);
       if (term) conditions.push(...buildConditions(term, "endsWith"));
     } else {
-      conditions.push(...buildConditions(q, "equals"));
+      conditions.push(...buildConditions(q, "contains")); // Default to "contains" instead of "equals" for better UX
     }
 
     where.OR = conditions;
