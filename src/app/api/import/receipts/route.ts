@@ -121,18 +121,19 @@ export async function POST(req: Request) {
     } as any,
   });
 
-  const unitsByLotNumber = new Map<string, (typeof units)[number]>();
+  const unitsByLotNumber = new Map<string, any>();
+  const unitsArray = units as any[];
 
-  for (const unit of units) {
+  for (const unit of unitsArray) {
     if (unit.lotNumber) {
-      unitsByLotNumber.set(unit.lotNumber, unit);
+      unitsByLotNumber.set(String(unit.lotNumber), unit);
     }
   }
 
   const ownerships = await prisma.ownership.findMany({
     where: {
       unitId: {
-        in: units.map((unit) => unit.id),
+        in: unitsArray.map((u: any) => u.id),
       },
       organizationId: orgId,
       endDate: null,
@@ -176,7 +177,7 @@ export async function POST(req: Request) {
   const validRows: Array<{
     row: Row;
     rowNo: number;
-    unit: (typeof units)[number] & { buildingId: string };
+    unit: any;
     ownership: {
       unitId: string;
       ownerId: string;
@@ -265,20 +266,21 @@ export async function POST(req: Request) {
   const groups = Array.from(rowsByUnit.values());
 
   await processInParallel(
-    groups,
-    async (group) => {
+    groups as any[],
+    async (group: any[]) => {
       try {
         await prisma.$transaction(
           async (tx) => {
             const fiscalYearsUpserted = new Set<number>();
 
             for (const item of group) {
+              const unit = item.unit as any;
               const receiptPeriod = firstDayOfMonth(item.receiptDate);
               const startPeriod = buildContributionStartPeriod(
                 {
-                  overrideStart: (item.unit as any).overrideStart,
-                  startYear: (item.unit as any).startYear,
-                  startMonth: (item.unit as any).startMonth,
+                  overrideStart: unit.overrideStart,
+                  startYear: unit.startYear,
+                  startMonth: unit.startMonth,
                 },
                 settings
               );
@@ -316,8 +318,8 @@ export async function POST(req: Request) {
                   organizationId: orgId,
                   type: ReceiptType.CONTRIBUTION,
                   ownerId: item.ownership.ownerId,
-                  buildingId: item.unit.buildingId,
-                  unitId: item.unit.id,
+                  buildingId: unit.buildingId,
+                  unitId: unit.id,
                   amount: item.amount,
                   method: item.method,
                   date: item.receiptDate,
@@ -337,7 +339,7 @@ export async function POST(req: Request) {
                 await tx.monthlyDue.createMany({
                   data: [
                     {
-                      unitId: item.unit.id,
+                      unitId: unit.id,
                       organizationId: orgId,
                       period,
                       amountDue: fee,
@@ -363,7 +365,7 @@ export async function POST(req: Request) {
               while (remaining > 0 && futureOffset <= maxFutureMonths) {
                 const dues = await tx.monthlyDue.findMany({
                   where: {
-                    unitId: item.unit.id,
+                    unitId: unit.id,
                     organizationId: orgId,
                     status: { in: [DueStatus.UNPAID, DueStatus.PARTIAL] },
                     period: { gte: startPeriod },
