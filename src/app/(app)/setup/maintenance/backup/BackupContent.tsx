@@ -194,63 +194,65 @@ export default function BackupContent() {
           />
         </div>
         
-        <Table>
-          <THead>
-            <TR>
-              <TH>Fichier</TH>
-              <TH>Date</TH>
-              <TH>Taille</TH>
-              <TH className="text-right">Action</TH>
-            </TR>
-          </THead>
-          <tbody>
-            {(loading && backups.length === 0) ? (
-              <TR>
-                <TD colSpan={4} className="text-center py-12 text-zinc-400 italic">
-                  Chargement de l'historique depuis GitHub...
-                </TD>
-              </TR>
-            ) : backups.length === 0 ? (
-              <TR>
-                <TD colSpan={4} className="text-center py-12 text-zinc-400">
-                  <div className="flex flex-col items-center gap-2">
-                    <AlertCircle className="h-8 w-8 text-zinc-200" />
-                    <p>Aucune sauvegarde trouvée dans le répertoire `/backups`</p>
-                  </div>
-                </TD>
-              </TR>
-            ) : (
-              backups.map((b) => (
-                <TR key={b.sha} className="hover:bg-zinc-50/50 transition-colors">
-                  <TD className="font-medium !text-zinc-900">
-                    <div className="flex items-center gap-3 font-mono text-xs">
-                      <HardDrive className="h-4 w-4 text-zinc-400" />
-                      {b.name}
+        <div className="overflow-x-auto w-full">
+          <table className="w-full text-sm text-left">
+            <thead className="bg-zinc-50 border-b border-zinc-100">
+              <tr>
+                <th className="px-5 py-3 font-semibold text-zinc-600">Fichier</th>
+                <th className="px-5 py-3 font-semibold text-zinc-600">Date</th>
+                <th className="px-5 py-3 font-semibold text-zinc-600">Taille</th>
+                <th className="px-5 py-3 font-semibold text-zinc-600 text-right">Action</th>
+              </tr>
+            </thead>
+            <tbody>
+              {(loading && backups.length === 0) ? (
+                <tr>
+                  <td colSpan={4} className="text-center py-12 text-zinc-400 italic">
+                    Chargement de l'historique depuis GitHub...
+                  </td>
+                </tr>
+              ) : backups.length === 0 ? (
+                <tr>
+                  <td colSpan={4} className="text-center py-12 text-zinc-400">
+                    <div className="flex flex-col items-center gap-2">
+                      <AlertCircle className="h-8 w-8 text-zinc-200" />
+                      <p>Aucune sauvegarde trouvée dans le répertoire `/backups`</p>
                     </div>
-                  </TD>
-                  <TD className="text-zinc-500 whitespace-nowrap">
-                    <div className="flex items-center gap-2">
-                      <Calendar className="h-3.5 w-3.5" />
-                      {formatDate(b.name)}
-                    </div>
-                  </TD>
-                  <TD className="text-zinc-500">{formatSize(b.size)}</TD>
-                  <TD className="text-right">
-                    <a 
-                      href={b.download_url} 
-                      target="_blank" 
-                      rel="noopener noreferrer"
-                      className="inline-flex items-center gap-1.5 rounded-lg bg-zinc-100 px-3 py-1.5 text-xs font-bold text-zinc-700 hover:bg-zinc-200 transition-colors"
-                    >
-                      <Download className="h-3.5 w-3.5" />
-                      Télécharger
-                    </a>
-                  </TD>
-                </TR>
-              ))
-            )}
-          </tbody>
-        </Table>
+                  </td>
+                </tr>
+              ) : (
+                backups.map((b) => (
+                  <tr key={b.sha} className="border-b border-zinc-50 hover:bg-zinc-50/50 transition-colors">
+                    <td className="px-5 py-4 font-medium text-zinc-900">
+                      <div className="flex items-center gap-3 font-mono text-xs">
+                        <HardDrive className="h-4 w-4 text-zinc-400" />
+                        {b.name}
+                      </div>
+                    </td>
+                    <td className="px-5 py-4 text-zinc-500 whitespace-nowrap">
+                      <div className="flex items-center gap-2">
+                        <Calendar className="h-3.5 w-3.5" />
+                        {formatDate(b.name)}
+                      </div>
+                    </td>
+                    <td className="px-5 py-4 text-zinc-500">{formatSize(b.size)}</td>
+                    <td className="px-5 py-4 text-right">
+                      <a 
+                        href={b.download_url} 
+                        target="_blank" 
+                        rel="noopener noreferrer"
+                        className="inline-flex items-center gap-1.5 rounded-lg bg-zinc-100 px-3 py-1.5 text-xs font-bold text-zinc-700 hover:bg-zinc-200 transition-colors"
+                      >
+                        <Download className="h-3.5 w-3.5" />
+                        Télécharger
+                      </a>
+                    </td>
+                  </tr>
+                ))
+              )}
+            </tbody>
+          </table>
+        </div>
       </div>
 
       {config && !config.hasToken && !loading && (
