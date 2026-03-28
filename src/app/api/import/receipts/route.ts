@@ -262,7 +262,7 @@ export async function POST(req: Request) {
       return new Date(val);
     };
 
-    const receiptDate = parseDateInput(row.date, body.dateFormat);
+    const receiptDate = parseDateInput(row.date ?? "", body.dateFormat);
     if (Number.isNaN(receiptDate.getTime())) {
       errors.push({
         row: rowNo,
