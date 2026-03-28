@@ -45,7 +45,13 @@ export default function BackupContent() {
         getBackupsAction(),
         getBackupConfigAction()
       ]);
-      setBackups(files);
+      
+      // Sort once on load
+      const sortedFiles = Array.isArray(files) 
+        ? [...files].sort((a, b) => b.name.localeCompare(a.name))
+        : [];
+        
+      setBackups(sortedFiles);
       setConfig(cfg);
     } catch (error) {
       showStatus("Impossible de charger les données.", "error");
@@ -60,7 +66,7 @@ export default function BackupContent() {
     try {
       await triggerManualBackupAction();
       showStatus("Sauvegarde réussie !", "success");
-      loadData();
+      await loadData();
     } catch (error: any) {
       showStatus(error.message || "La sauvegarde a échoué.", "error");
     } finally {
@@ -77,11 +83,12 @@ export default function BackupContent() {
   };
 
   const formatDate = (dateStr: string) => {
+    if (!dateStr) return "--";
     try {
       // GitHub file names are like backup-2026-03-29-123456.sql.gz
       const parts = dateStr.replace('backup-', '').replace('manual-backup-', '').split('-');
       if (parts.length >= 3) {
-        return `${parts[2]}/${parts[1]}/${parts[0]}`;
+        return `${parts[2].substring(0,2)}/${parts[1]}/${parts[0]}`;
       }
       return dateStr;
     } catch (e) {
@@ -133,15 +140,15 @@ export default function BackupContent() {
             </div>
             <div>
               <p className="text-xs font-medium text-zinc-500 uppercase tracking-wider">Répertoire</p>
-              <p className="text-sm font-bold text-zinc-900 truncate max-w-[150px]" title={config?.repo}>
-                {config?.repo}
+              <p className="text-sm font-bold text-zinc-900 truncate max-w-[150px]" title={config?.repo || "Non configuré"}>
+                {config?.repo || "Chargement..."}
               </p>
             </div>
           </div>
           <span className={`inline-flex items-center rounded-full px-2.5 py-0.5 text-xs font-semibold ${
             config?.hasToken ? "bg-emerald-50 text-emerald-600" : "bg-red-50 text-red-600"
           }`}>
-            {config?.hasToken ? "Connecté" : "Déconnecté"}
+            {config ? (config.hasToken ? "Connecté" : "Déconnecté") : "..."}
           </span>
         </div>
 
@@ -153,7 +160,7 @@ export default function BackupContent() {
             <div>
               <p className="text-xs font-medium text-zinc-500 uppercase tracking-wider">Dernier Backup</p>
               <p className="text-xl font-bold text-zinc-900">
-                {backups.length > 0 ? formatDate(backups.sort((a,b) => b.name.localeCompare(a.name))[0].name) : "--"}
+                {backups.length > 0 ? formatDate(backups[0].name) : "--"}
               </p>
             </div>
           </div>
@@ -197,7 +204,7 @@ export default function BackupContent() {
             </TR>
           </THead>
           <tbody>
-            {loading ? (
+            {(loading && backups.length === 0) ? (
               <TR>
                 <TD colSpan={4} className="text-center py-12 text-zinc-400 italic">
                   Chargement de l'historique depuis GitHub...
@@ -213,7 +220,7 @@ export default function BackupContent() {
                 </TD>
               </TR>
             ) : (
-              backups.sort((a,b) => b.name.localeCompare(a.name)).map((b) => (
+              backups.map((b) => (
                 <TR key={b.sha} className="hover:bg-zinc-50/50 transition-colors">
                   <TD className="font-medium !text-zinc-900">
                     <div className="flex items-center gap-3 font-mono text-xs">
@@ -246,7 +253,7 @@ export default function BackupContent() {
         </Table>
       </div>
 
-      {!config?.hasToken && !loading && (
+      {config && !config.hasToken && !loading && (
         <div className="p-4 rounded-2xl border border-red-200 bg-red-50 text-red-800 flex items-start gap-4">
           <AlertCircle className="h-5 w-5 shrink-0 mt-0.5" />
           <div className="space-y-1">
