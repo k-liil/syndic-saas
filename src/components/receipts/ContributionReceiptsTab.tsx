@@ -407,7 +407,7 @@ setImportResult(null);
 
     const jobId = startData.jobId;
 
-    const batchSize = 100;
+    const batchSize = 50; // Increased from 20 due to backend optimizations
     let processed = 0;
     let imported = 0;
     const errors: { row: number; error: string }[] = [];

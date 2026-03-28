@@ -2,6 +2,7 @@ import { prisma } from "@/lib/prisma";
 import { NextResponse } from "next/server";
 import { DueStatus, Prisma } from "@prisma/client";
 import { requireManager } from "@/lib/authz";
+import { getOrgIdFromRequest } from "@/lib/org-utils";
 
 type DeleteBody = {
   ids?: string[];
@@ -111,11 +112,10 @@ export async function DELETE(req: Request) {
     return NextResponse.json({ error: gate.error }, { status: gate.status });
   }
 
-  if (!gate.organizationId) {
+  const orgId = await getOrgIdFromRequest(req, gate);
+  if (!orgId) {
     return NextResponse.json({ error: "No organization" }, { status: 400 });
   }
-
-  const orgId: string = gate.organizationId;
 
   try {
     const body = (await req.json()) as DeleteBody;

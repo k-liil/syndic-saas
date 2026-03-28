@@ -308,35 +308,14 @@ export async function POST(req: Request) {
         await prisma.$transaction(
           async (tx) => {
             const fiscalYearsUpserted = new Set<number>();
+            const unit = group[0].unit;
 
+            // 1. Pre-generate fiscal years for the whole group
             for (const item of group) {
-              const unit = item.unit as any;
-              const receiptPeriod = firstDayOfMonth(item.receiptDate);
-              const startPeriod = buildContributionStartPeriod(
-                {
-                  overrideStart: unit.overrideStart,
-                  startYear: unit.startYear,
-                  startMonth: unit.startMonth,
-                },
-                settings
-              );
               const fiscalYear = item.receiptDate.getUTCFullYear();
-              const fee = getMonthlyContributionAmount(
-                settings?.globalFixedAmount !== null &&
-                  settings?.globalFixedAmount !== undefined
-                  ? Number(settings.globalFixedAmount)
-                  : 0
-              );
-              const maxFutureMonths = 240;
-
               if (!fiscalYearsUpserted.has(fiscalYear)) {
                 await tx.fiscalYear.upsert({
-                  where: {
-                    organizationId_year: {
-                      organizationId: orgId,
-                      year: fiscalYear,
-                    },
-                  },
+                  where: { organizationId_year: { organizationId: orgId, year: fiscalYear } },
                   update: {},
                   create: {
                     organizationId: orgId,
@@ -347,7 +326,73 @@ export async function POST(req: Request) {
                 });
                 fiscalYearsUpserted.add(fiscalYear);
               }
+            }
 
+            // 2. Determine necessary period reach for the whole group
+            let earliestPeriod = firstDayOfMonth(group[0].receiptDate);
+            let latestPeriod = firstDayOfMonth(group[0].receiptDate);
+            const fee = getMonthlyContributionAmount(
+                settings?.globalFixedAmount !== null && settings?.globalFixedAmount !== undefined
+                  ? Number(settings.globalFixedAmount)
+                  : 0
+            );
+
+            for (const item of group) {
+              const rp = firstDayOfMonth(item.receiptDate);
+              if (rp < earliestPeriod) earliestPeriod = rp;
+              if (rp > latestPeriod) latestPeriod = rp;
+            }
+
+            const startPeriod = buildContributionStartPeriod(
+                { overrideStart: unit.overrideStart, startYear: unit.startYear, startMonth: unit.startMonth },
+                settings
+            );
+
+            // Pre-generate up to latestPeriod + 24 months as buffer for advances
+            const neededPeriods: Date[] = [];
+            let cur = startPeriod < earliestPeriod ? startPeriod : earliestPeriod;
+            const limitDate = addMonthsUTC(latestPeriod, 24); 
+            while (cur.getTime() <= limitDate.getTime()) {
+              neededPeriods.push(cur);
+              cur = addMonthsUTC(cur, 1);
+            }
+
+            if (fee > 0 && neededPeriods.length > 0) {
+              await tx.monthlyDue.createMany({
+                data: neededPeriods.map(p => ({
+                  unitId: unit.id,
+                  organizationId: orgId,
+                  period: p,
+                  amountDue: fee,
+                  paidAmount: 0,
+                  status: DueStatus.UNPAID,
+                })),
+                skipDuplicates: true,
+              });
+            }
+
+            // 3. Fetch all relevant dues ONCE for the whole lot
+            const allDues = await tx.monthlyDue.findMany({
+              where: {
+                unitId: unit.id,
+                organizationId: orgId,
+                period: { gte: startPeriod },
+              },
+              orderBy: { period: "asc" },
+            });
+
+            // Convert to a mutable list for in-memory allocation
+            const memoryDues = allDues.map(d => ({
+              ...d,
+              amountDue: Number(d.amountDue),
+              paidAmount: Number(d.paidAmount),
+              originalPaid: Number(d.paidAmount),
+            }));
+
+            const finalAllocations: any[] = [];
+            const finalReceipts: any[] = [];
+
+            for (const item of group) {
               const receipt = await tx.receipt.create({
                 data: {
                   receiptNumber: item.receiptNumber,
@@ -360,111 +405,58 @@ export async function POST(req: Request) {
                   method: item.method,
                   date: item.receiptDate,
                   note: item.note || null,
-                  bankName: null,
-                  bankRef: null,
                   unallocatedAmount: 0,
                 },
-                select: {
-                  id: true,
-                },
+                select: { id: true },
               });
 
-              async function ensureDue(period: Date) {
-                if (fee <= 0) return;
-
-                await tx.monthlyDue.createMany({
-                  data: [
-                    {
-                      unitId: unit.id,
-                      organizationId: orgId,
-                      period,
-                      amountDue: fee,
-                      paidAmount: 0,
-                      status: DueStatus.UNPAID,
-                    },
-                  ],
-                  skipDuplicates: true,
-                });
-              }
-
-              if (fee > 0) {
-                let cursor = startPeriod;
-                while (cursor.getTime() <= receiptPeriod.getTime()) {
-                  await ensureDue(cursor);
-                  cursor = addMonthsUTC(cursor, 1);
-                }
-              }
-
               let remaining = item.amount;
-              let futureOffset = 0;
+              for (const due of memoryDues) {
+                if (remaining <= 0) break;
+                
+                const remainingDue = due.amountDue - due.paidAmount;
+                if (remainingDue <= 0) continue;
 
-              while (remaining > 0 && futureOffset <= maxFutureMonths) {
-                const dues = await tx.monthlyDue.findMany({
-                  where: {
-                    unitId: unit.id,
-                    organizationId: orgId,
-                    status: { in: [DueStatus.UNPAID, DueStatus.PARTIAL] },
-                    period: { gte: startPeriod },
-                  },
-                  orderBy: [{ period: "asc" }, { createdAt: "asc" }],
-                  select: {
-                    id: true,
-                    amountDue: true,
-                    paidAmount: true,
-                  },
+                const allocationAmount = remaining >= remainingDue ? remainingDue : remaining;
+                
+                finalAllocations.push({
+                   receiptId: receipt.id,
+                   dueId: due.id,
+                   amount: allocationAmount,
                 });
 
-                for (const due of dues) {
-                  if (remaining <= 0) break;
-
-                  const remainingDue =
-                    Number(due.amountDue) - Number(due.paidAmount);
-                  if (remainingDue <= 0) continue;
-
-                  const allocationAmount =
-                    remaining >= remainingDue ? remainingDue : remaining;
-
-                  await tx.receiptAllocation.create({
-                    data: {
-                      receiptId: receipt.id,
-                      dueId: due.id,
-                      amount: allocationAmount,
-                    },
-                  });
-
-                  const newPaidAmount =
-                    Number(due.paidAmount) + allocationAmount;
-                  const amountDue = Number(due.amountDue);
-
-                  await tx.monthlyDue.update({
-                    where: { id: due.id },
-                    data: {
-                      paidAmount: newPaidAmount,
-                      status:
-                        newPaidAmount >= amountDue
-                          ? DueStatus.PAID
-                          : DueStatus.PARTIAL,
-                    },
-                  });
-
-                  remaining -= allocationAmount;
-                }
-
-                if (remaining <= 0) break;
-                futureOffset += 1;
-                if (fee <= 0) break;
-
-                const futurePeriod = addMonthsUTC(receiptPeriod, futureOffset);
-                await ensureDue(futurePeriod);
+                due.paidAmount += allocationAmount;
+                remaining -= allocationAmount;
               }
 
               if (remaining > 0) {
-                await tx.receipt.update({
-                  where: { id: receipt.id },
-                  data: { unallocatedAmount: remaining },
-                });
+                 // Optimization: update receipt if there's leftover
+                 await tx.receipt.update({
+                   where: { id: receipt.id },
+                   data: { unallocatedAmount: remaining }
+                 });
               }
               imported += 1;
+            }
+
+            // 4. Batch update all affected dues
+            const duesToUpdate = memoryDues.filter(d => d.paidAmount !== d.originalPaid);
+            if (duesToUpdate.length > 0) {
+               await Promise.all(duesToUpdate.map(du => 
+                 tx.monthlyDue.update({
+                   where: { id: du.id },
+                   data: {
+                     paidAmount: du.paidAmount,
+                     status: du.paidAmount >= du.amountDue ? DueStatus.PAID : (du.paidAmount > 0 ? DueStatus.PARTIAL : DueStatus.UNPAID)
+                   }
+                 })
+               ));
+            }
+
+            if (finalAllocations.length > 0) {
+               await tx.receiptAllocation.createMany({
+                 data: finalAllocations
+               });
             }
           },
           {
@@ -484,7 +476,7 @@ export async function POST(req: Request) {
         }
       }
     },
-    1 // Concurrency reduced to 1 for production stability
+    4 // Concurrency increased to 4 for local performance
   );
 
   const processed = job.processed + body.rows.length;
