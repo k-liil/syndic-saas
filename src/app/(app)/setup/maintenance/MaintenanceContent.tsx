@@ -99,6 +99,30 @@ export function MaintenanceContent({ initialLogging }: { initialLogging: boolean
           )}
         </div>
       </div>
+      <div className="rounded-xl border border-indigo-200 bg-white shadow-sm overflow-hidden">
+        <div className="p-4 border-b border-indigo-100 bg-indigo-50/50 flex items-center justify-between">
+          <h3 className="text-sm font-semibold text-indigo-900">Sauvegardes GitHub</h3>
+          <span className="inline-flex items-center rounded-full bg-indigo-100 px-2 py-0.5 text-xs font-medium text-indigo-800">
+            Nouveau
+          </span>
+        </div>
+        <div className="p-4">
+          <div className="flex items-center justify-between">
+            <div className="space-y-0.5 max-w-[70%]">
+              <span className="text-sm font-medium text-slate-700">Gérer les sauvegardes</span>
+              <p className="text-xs text-slate-500">
+                Consulter l'historique des fichiers stockés sur GitHub et déclencher une sauvegarde manuelle immédiate.
+              </p>
+            </div>
+            <button
+              onClick={() => (window.location.href = "/setup/maintenance/backup")}
+              className="rounded-lg bg-indigo-600 px-4 py-2 text-xs font-bold text-white shadow-sm hover:bg-indigo-700 transition-all active:scale-95"
+            >
+              Ouvrir le tableau de bord
+            </button>
+          </div>
+        </div>
+      </div>
     </div>
   );
 }
