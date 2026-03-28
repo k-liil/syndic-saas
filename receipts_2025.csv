@@ -3,8 +3,7 @@ B15,1500,CASH,26/02/2025,Cotisation pour les mois de Janvier Février et Mars  2
 E19,500,CASH,30/05/2025,Cotisation pour le mois 05/2025
 A4,500,TRANSFER,30/01/2025,Cotisation Janvier 2025
 A7,1000,TRANSFER,14/01/2025,Cotisations mois janvier et février 2025
-"A8,2500,TRANSFER,01/01/2025,Reste des paiements de 2024 sur 2025.
-cotisations Mois 01-02-03-04-05/2025"
+A8,2500,TRANSFER,01/01/2025,Reste des paiements de 2024 sur 2025.cotisations Mois 01-02-03-04-05/2025
 A18,500,TRANSFER,01/01/2025,Cotisation du mois de Janvier 2025
 A17,1000,TRANSFER,02/01/2025,Cotisations pour les mois de décembre 2024 et Janvier 2025
 A22,6000,CASH,06/01/2025,Cotisation pour l'année 2025
@@ -128,8 +127,7 @@ C19,4500,TRANSFER,28/02/2025,Cotisation pour la période du 01/10/2024 au 30/06/
 A2,500,TRANSFER,28/02/2025,Cotisation pour le mois de Octobre 2024
 A9,500,TRANSFER,04/02/2025,Cotisation pour le mois de février 2025
 E5,500,TRANSFER,04/02/2025,Cotisation pour le mois de février 2025
-"B2,1000,TRANSFER,05/02/2025,Cotisation pour les mois de Octobre et Novembre 2024.
-*Sauf Erreur ou omission"
+B2,1000,TRANSFER,05/02/2025,Cotisation pour les mois de Octobre et Novembre 2024. Sauf Erreur ou omission
 E21,500,TRANSFER,07/02/2025,Cotisation pour le mois de février 2025
 C23,3200,TRANSFER,17/02/2025,Reliquat pour l'exercice 2024
 C14,500,TRANSFER,18/02/2025,Cotisation pour le mois de Novembre 2024
@@ -190,15 +188,13 @@ E24,500,TRANSFER,26/03/2025,Cotisation du mois de Janvier 2025
 E12,500,TRANSFER,28/03/2025,Cotisation du mois de Mars 2025
 A4,500,CHECK,01/03/2025,Cotisation du mois de Février 2025
 B6,1500,TRANSFER,02/03/2025,Cotisation pour les  mois de Janvier - Février et Mars 2025
-"B2,500,TRANSFER,06/03/2025,Cotisation pour le mois de Décembre 2024.
-*Sauf erreur ou omission"
+B2,500,TRANSFER,06/03/2025,Cotisation pour le mois de Décembre 2024. Sauf erreur ou omission
 J2,6000,TRANSFER,18/03/2025,01/03/2025 au 28/02/2026
 C14,500,TRANSFER,18/03/2025,Cotisation pour le mois de Décembre 2024
 E4,500,TRANSFER,19/03/2025,Cotisation pour le mois de Janvier 2025
 A6,1300,TRANSFER,22/03/2025,Reliquat restant pour l'exercice 2024
 E13,1000,TRANSFER,26/03/2025,Cotisation pour les mois de Mars et Avril 2025
-"B2,500,TRANSFER,30/03/2025,Cotisation pour le mois de Janvier 2025.
-*Sauf erreur ou omission"
+B2,500,TRANSFER,30/03/2025,Cotisation pour le mois de Janvier 2025.
 G6,6000,CHECK,11/04/2025,Paiement annuelle chez le notaire
 G6,2500,TRANSFER,19/03/2025,Cotisation pour la période du 01/04/2025 au 31/08/2025
 B1,3000,CHECK,25/03/2025,Cotisation Pour la période du 01/05/2024 au 30/10/2024
@@ -207,11 +203,7 @@ B9,1500,CHECK,20/02/2025,Novembre - Décembre 2023 et Janvier 2024
 B14,6000,TRANSFER,26/02/2025,Cotisation pour l'exercice 2024
 B14,6000,TRANSFER,13/04/2025,Cotisation pour l'exercice 2025
 A8,6000,CASH,01/05/2025,Cotisation pour la période du 01/06/2025 au 30/05/2026
-"B11,12000,CHECK,10/05/2025,Cotisation pour la période du 01/04/2022 au 31/12/2025 par chèques
-Chèque AXD 869837 D'un montant de 5570,00.
-Chèque AXD 869835 D'un montant de 5570,00.
-Chèque AXD 869834 D'un montant de 5570,00.
-Chèque AXD 869833 D'un montant de 5570,00."
+B11,12000,CHECK,10/05/2025,Cotisation pour la période du 01/04/2022 au 31/12/2025 par chèques : Chèque AXD 869837 D'un montant de 5570,00. Chèque AXD 869835 D'un montant de 5570,00. Chèque AXD 869834 D'un montant de 5570,00. Chèque AXD 869833 D'un montant de 5570,00.
 H4,3000,TRANSFER,24/04/2025,Cotisation pour la période du 01/02/2025 au 31/07/2025
 E3,4000,TRANSFER,14/04/2025,Cotisations pour les mois 08-09-10-11-12/2024 et 01-02-03/2025
 C16,6000,CASH,20/06/2025,Cotisation pour l'exercice 2025
@@ -756,6 +748,5 @@ D20,4000,TRANSFER,08/08/2025,justifs
 F13,4000,CHECK,08/08/2025,justifs
 F13,2500,CHECK,01/09/2025,justifs
 B13,4500,TRANSFER,02/10/2025,Cotisation mois 01-02-03-04-05-06-07-08-09/2025
-"J25,6000,TRANSFER,24/10/2025,Cotisation pou la période du 01/09/2025 au 30/08/2026.
-Virement de la part de Mme Fatima EL KHAYAT"
+J25,6000,TRANSFER,24/10/2025,Cotisation pou la période du 01/09/2025 au 30/08/2026. Virement de la part de Mme Fatima EL KHAYAT
 J23,3000,TRANSFER,28/11/2025,Cotisation pour les mois 08-09-10-11-12/2025 et 01/2026
