@@ -1,7 +1,9 @@
-import BackupContent from "./BackupContent";
 import { Metadata } from "next";
 import { requireSuperAdmin } from "@/lib/authz";
 import { redirect } from "next/navigation";
+import dynamic from "next/dynamic";
+
+const BackupContent = dynamic(() => import("./BackupContent"), { ssr: false });
 
 export const metadata: Metadata = {
   title: "Sauvegardes | Syndicly",
