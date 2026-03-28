@@ -9,8 +9,11 @@ export const metadata: Metadata = {
 };
 
 export default async function BackupPage() {
+  console.log("[BACKUP_LOG] Entering BackupPage (Server Component)");
   const gate = await requireSuperAdmin();
+  console.log("[BACKUP_LOG] Authorization check:", gate.ok);
   if (!gate.ok) {
+    console.log("[BACKUP_LOG] Not authorized, redirecting...");
     redirect("/dashboard");
   }
 
