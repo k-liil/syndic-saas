@@ -28,51 +28,10 @@ export default function BackupContent() {
   const [statusMsg, setStatusMsg] = useState<{ type: 'success' | 'error' | 'info'; text: string } | null>(null);
 
   useEffect(() => {
-    loadData();
+    // loadData(); // Disabled to debug
+    setLoading(false);
+    setConfig({ hasToken: true, repo: "test/repo" });
   }, []);
-
-  const showStatus = (text: string, type: 'success' | 'error' | 'info' = 'info') => {
-    setStatusMsg({ text, type });
-    if (type !== 'info') {
-      setTimeout(() => setStatusMsg(null), 5000);
-    }
-  };
-
-  const loadData = async () => {
-    setLoading(true);
-    try {
-      const [files, cfg] = await Promise.all([
-        getBackupsAction(),
-        getBackupConfigAction()
-      ]);
-      
-      // Sort once on load
-      const sortedFiles = Array.isArray(files) 
-        ? [...files].sort((a, b) => b.name.localeCompare(a.name))
-        : [];
-        
-      setBackups(sortedFiles);
-      setConfig(cfg);
-    } catch (error) {
-      showStatus("Impossible de charger les données.", "error");
-    } finally {
-      setLoading(false);
-    }
-  };
-
-  const handleManualBackup = async () => {
-    setIsBackingUp(true);
-    showStatus("Sauvegarde en cours sur GitHub...", "info");
-    try {
-      await triggerManualBackupAction();
-      showStatus("Sauvegarde réussie !", "success");
-      await loadData();
-    } catch (error: any) {
-      showStatus(error.message || "La sauvegarde a échoué.", "error");
-    } finally {
-      setIsBackingUp(false);
-    }
-  };
 
   const formatSize = (bytes: number) => {
     if (bytes === 0) return "0 B";
@@ -106,7 +65,7 @@ export default function BackupContent() {
           </p>
         </div>
         <button
-          onClick={handleManualBackup} 
+          onClick={() => {}} 
           disabled={isBackingUp || !config?.hasToken}
           className="flex items-center gap-2 rounded-xl bg-gradient-to-r from-indigo-500 to-blue-600 px-4 py-2.5 text-sm font-medium text-white shadow-sm transition-all hover:from-indigo-600 hover:to-blue-700 disabled:opacity-50 active:scale-95"
         >
@@ -190,7 +149,7 @@ export default function BackupContent() {
           <h3 className="font-bold text-zinc-900">Historique des sauvegardes</h3>
           <RefreshCw 
             className={`h-4 w-4 text-zinc-400 cursor-pointer hover:text-indigo-600 transition-colors ${loading ? 'animate-spin' : ''}`} 
-            onClick={loadData}
+            onClick={() => {}}
           />
         </div>
         
