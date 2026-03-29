@@ -35,7 +35,7 @@ function LoginPageContent() {
     });
 
     if (res?.error) {
-      setMsg("Email ou mot de passe invalide.");
+      setMsg(`Connexion refusée (${res.error}).`);
       return;
     }
 
