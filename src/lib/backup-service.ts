@@ -108,22 +108,48 @@ export class BackupService {
 
       // 3. Upload
       const content = fs.readFileSync(zippedPath).toString('base64');
-      const response = await fetch(`https://api.github.com/repos/${repo}/contents/backups/${zippedName}`, {
-        method: 'PUT',
-        headers: {
-          'Authorization': `token ${token}`,
-          'Accept': 'application/vnd.github.v3+json',
-          'Content-Type': 'application/json',
-        },
-        body: JSON.stringify({
-          message: `Manual backup ${date}`,
-          content: content,
-        })
+      const payload = JSON.stringify({
+        message: `Manual backup ${date}`,
+        content,
       });
+      console.log(`[BACKUP_LOG] Upload size (base64 body): ${Buffer.byteLength(payload)} bytes`);
 
-      if (!response.ok) {
-          const err = await response.json();
-          throw new Error(`Erreur GitHub: ${JSON.stringify(err)}`);
+      let lastError: unknown = null;
+      for (let attempt = 1; attempt <= 3; attempt++) {
+        try {
+          console.log(`[BACKUP_LOG] GitHub upload attempt ${attempt}/3...`);
+          const response = await fetch(`https://api.github.com/repos/${repo}/contents/backups/${zippedName}`, {
+            method: 'PUT',
+            headers: {
+              'Authorization': `token ${token}`,
+              'Accept': 'application/vnd.github+json',
+              'X-GitHub-Api-Version': '2022-11-28',
+              'User-Agent': 'syndicly-backup-bot',
+              'Content-Type': 'application/json',
+            },
+            body: payload,
+            signal: AbortSignal.timeout(60_000),
+          });
+
+          if (!response.ok) {
+            const body = await response.text();
+            throw new Error(`GitHub upload failed (${response.status}): ${body.slice(0, 500)}`);
+          }
+
+          console.log("[BACKUP_LOG] GitHub upload successful.");
+          lastError = null;
+          break;
+        } catch (error) {
+          lastError = error;
+          console.error(`[BACKUP_LOG] GitHub upload attempt ${attempt} failed:`, error);
+          if (attempt < 3) {
+            await new Promise((resolve) => setTimeout(resolve, attempt * 1500));
+          }
+        }
+      }
+
+      if (lastError) {
+        throw lastError;
       }
 
       // Cleanup
