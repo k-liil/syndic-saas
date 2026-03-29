@@ -1,6 +1,7 @@
-import { execSync } from 'child_process';
+import { execFileSync, spawnSync } from 'child_process';
 import fs from 'fs';
 import path from 'path';
+import zlib from 'zlib';
 
 export interface GitHubBackup {
   name: string;
@@ -18,8 +19,37 @@ export class BackupService {
     return {
       token: process.env.BACKUP_GITHUB_TOKEN,
       repo: process.env.BACKUP_GITHUB_REPO,
-      dbUrl: process.env.DATABASE_URL,
+      dbUrl: process.env.BACKUP_DATABASE_URL || process.env.DIRECT_URL || process.env.DATABASE_URL,
+      appDbUrl: process.env.DATABASE_URL,
+      pgDumpPath: process.env.PG_DUMP_PATH,
     };
+  }
+
+  private static resolvePgDumpPath() {
+    const { pgDumpPath } = this.config;
+    const candidates = [
+      pgDumpPath,
+      'pg_dump',
+      '/usr/bin/pg_dump',
+      '/usr/local/bin/pg_dump',
+      '/bin/pg_dump',
+    ].filter(Boolean) as string[];
+
+    for (const candidate of candidates) {
+      try {
+        const probe = spawnSync(candidate, ['--version'], { stdio: 'pipe', encoding: 'utf8' });
+        if (probe.status === 0) {
+          console.log(`[BACKUP_LOG] pg_dump found at: ${candidate}`);
+          return candidate;
+        }
+      } catch {
+        // Try next candidate
+      }
+    }
+
+    throw new Error(
+      "pg_dump introuvable sur le serveur. Ajoute PostgreSQL au runtime ou configure PG_DUMP_PATH (ex: /usr/bin/pg_dump)."
+    );
   }
 
   static async listBackups(): Promise<GitHubBackup[]> {
@@ -37,15 +67,16 @@ export class BackupService {
 
       if (!response.ok) return [];
       const files = await response.json();
-      return Array.isArray(files) ? files.filter(f => f.name.endsWith('.gz')) : [];
+      return Array.isArray(files) ? files.filter(f => f.name.endsWith('.sql.gz')) : [];
     } catch (e) {
-      console.error('Failed to list backups:', e);
+      console.error('[BACKUP_LOG] Failed to list backups:', e);
       return [];
     }
   }
 
   static async triggerManualBackup() {
-    const { token, repo, dbUrl } = this.config;
+    console.log("[BACKUP_LOG] Triggering pg_dump backup...");
+    const { token, repo, dbUrl, appDbUrl } = this.config;
     if (!token || !repo || !dbUrl) throw new Error("Configuration de sauvegarde manquante.");
 
     const date = new Date().toISOString().split('T')[0];
@@ -54,28 +85,26 @@ export class BackupService {
     const filePath = path.join('/tmp', fileName);
 
     try {
-      console.log("[BACKUP_LOG] Current PATH:", process.env.PATH);
-      try {
-        const pgDumpPath = execSync('which pg_dump').toString().trim();
-        console.log("[BACKUP_LOG] found pg_dump at:", pgDumpPath);
-      } catch (e) {
-        console.log("[BACKUP_LOG] which pg_dump failed. Trying to find it manually...");
-        try {
-          // Some common Nix/Railway paths
-          const findRes = execSync('find /nix/store -name pg_dump -type f -executable 2>/dev/null | head -n 1').toString().trim();
-          if (findRes) {
-             console.log("[BACKUP_LOG] Manual find found pg_dump at:", findRes);
-          }
-        } catch (ee) {}
+      if (appDbUrl?.includes('pgbouncer=true')) {
+        console.warn("[BACKUP_LOG] DATABASE_URL points to pgbouncer pooler. Using BACKUP_DATABASE_URL or DIRECT_URL is recommended for pg_dump.");
       }
 
-      // 1. Dump
-      execSync(`pg_dump "${dbUrl}" > "${filePath}"`);
-      
-      // 2. Compress
-      execSync(`gzip "${filePath}"`);
+      // 1. Locate pg_dump and write SQL dump directly to file
+      const pgDumpBin = this.resolvePgDumpPath();
+      const dumpFd = fs.openSync(filePath, 'w');
+      try {
+        execFileSync(pgDumpBin, [dbUrl], { stdio: ['ignore', dumpFd, 'pipe'] });
+      } finally {
+        fs.closeSync(dumpFd);
+      }
+
+      // 2. Compress with Node.js to avoid relying on external gzip binary
       const zippedPath = `${filePath}.gz`;
       const zippedName = `${fileName}.gz`;
+      const sqlBuffer = fs.readFileSync(filePath);
+      const gzBuffer = zlib.gzipSync(sqlBuffer, { level: 9 });
+      fs.writeFileSync(zippedPath, gzBuffer);
+      fs.unlinkSync(filePath);
 
       // 3. Upload
       const content = fs.readFileSync(zippedPath).toString('base64');
@@ -83,6 +112,7 @@ export class BackupService {
         method: 'PUT',
         headers: {
           'Authorization': `token ${token}`,
+          'Accept': 'application/vnd.github.v3+json',
           'Content-Type': 'application/json',
         },
         body: JSON.stringify({
@@ -101,7 +131,7 @@ export class BackupService {
       return { success: true, fileName: zippedName };
 
     } catch (error: any) {
-      console.error('Manual backup failed:', error);
+      console.error('[BACKUP_LOG] Manual backup failed:', error);
       throw error;
     }
   }
