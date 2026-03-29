@@ -1,0 +1,3 @@
+rmdir: failed to remove '/s': No such file or directory
+rmdir: failed to remove '/q': No such file or directory
+rmdir: failed to remove 'C:\Users\kferhat\OneDrive - DXC Production\Personal\Dev\syndic-mvp\.next': Directory not empty

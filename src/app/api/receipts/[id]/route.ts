@@ -2,6 +2,7 @@ import { NextResponse } from "next/server";
 import { prisma } from "@/lib/prisma";
 import { requireAuth, requireManager } from "@/lib/authz";
 import { DueStatus } from "@prisma/client";
+import { reallocateUnitContributions } from "@/lib/allocation";
 
 export async function GET(
   _req: Request,
@@ -174,7 +175,7 @@ const note =
 
     const existing = await prisma.receipt.findFirst({
       where: { id, organizationId: gate.organizationId ?? undefined },
-      select: { id: true },
+      select: { id: true, unitId: true, type: true, date: true },
     });
 
     if (!existing) {
@@ -199,6 +200,11 @@ data: {
         bankRef: true,
       },
     });
+
+    if (existing.unitId && existing.type === "CONTRIBUTION" && existing.date.getTime() !== date.getTime() && gate.organizationId) {
+      // Re-allocate if date changed because FIFO order might have changed
+      await reallocateUnitContributions(prisma, existing.unitId, gate.organizationId);
+    }
 
     return NextResponse.json({
       ok: true,
@@ -229,37 +235,11 @@ export async function DELETE(
     await prisma.$transaction(async (tx) => {
       const receipt = await tx.receipt.findFirst({
         where: { id, organizationId: gate.organizationId ?? undefined },
-        select: { id: true },
+        select: { id: true, unitId: true, type: true },
       });
 
       if (!receipt) {
         throw new Error("Receipt not found");
-      }
-
-      const allocations = await tx.receiptAllocation.findMany({
-        where: {
-          receiptId: id,
-          receipt: { organizationId: gate.organizationId ?? undefined },
-        },
-        include: { due: true },
-      });
-
-      for (const alloc of allocations) {
-        const newPaid = Number(alloc.due.paidAmount) - Number(alloc.amount);
-        const amountDue = Number(alloc.due.amountDue);
-
-        await tx.monthlyDue.update({
-          where: { id: alloc.dueId },
-          data: {
-            paidAmount: newPaid,
-            status:
-              newPaid <= 0
-                ? DueStatus.UNPAID
-                : newPaid < amountDue
-                ? DueStatus.PARTIAL
-                : DueStatus.PAID,
-          },
-        });
       }
 
       await tx.receiptAllocation.deleteMany({
@@ -270,6 +250,9 @@ export async function DELETE(
         where: { id },
       });
 
+      if (receipt.unitId && receipt.type === "CONTRIBUTION" && gate.organizationId) {
+        await reallocateUnitContributions(tx, receipt.unitId, gate.organizationId);
+      }
     });
 
     return NextResponse.json({ ok: true });

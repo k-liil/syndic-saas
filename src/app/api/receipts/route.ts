@@ -5,6 +5,7 @@ import { DueStatus, PaymentMethod, ReceiptType } from "@prisma/client";
 import { getOrgIdFromRequest } from "@/lib/org-utils";
 import { getMonthlyContributionAmount } from "@/lib/contribution-amounts";
 import { buildContributionStartPeriod } from "@/lib/contribution-start";
+import { reallocateUnitContributions } from "@/lib/allocation";
 
 function firstDayOfMonth(d: Date) {
   return new Date(Date.UTC(d.getUTCFullYear(), d.getUTCMonth(), 1));
@@ -525,6 +526,10 @@ await tx.fiscalYear.upsert({
         });
       }
 
+      if (type === "CONTRIBUTION") {
+        await reallocateUnitContributions(tx, ensuredUnit.id, orgId!);
+      }
+
       const allocs = await tx.receiptAllocation.findMany({
         where: { receiptId: receipt.id },
         select: {
@@ -548,6 +553,11 @@ await tx.fiscalYear.upsert({
         ? periods[periods.length - 1]
         : null;
 
+      const finalReceiptState = await tx.receipt.findUnique({
+        where: { id: receipt.id },
+        select: { unallocatedAmount: true },
+      });
+
       return {
         ok: true,
         receiptId: receipt.id,
@@ -564,7 +574,7 @@ await tx.fiscalYear.upsert({
         monthsTouched: new Set(
           periods.map((p) => p.toISOString().slice(0, 7))
         ).size,
-        unallocatedAmount: remaining,
+        unallocatedAmount: finalReceiptState?.unallocatedAmount ?? remaining,
       };
     });
 
