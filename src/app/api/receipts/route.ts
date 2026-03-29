@@ -140,6 +140,35 @@ if (method) where.method = method;
 
   console.log("[RECEIPTS] Fetching with where:", JSON.stringify(where, null, 2));
 
+  // Skip aggregations if it's a specific modal request (unitId provided) to improve responsiveness
+  if (unitId) {
+     const items = await prisma.receipt.findMany({
+       where,
+       skip,
+       take: pageSize,
+       orderBy: [{ date: sortDir }, { receiptNumber: "desc" }],
+       select: {
+         id: true,
+         receiptNumber: true,
+         date: true,
+         amount: true,
+         method: true,
+         note: true,
+         bankName: true,
+         bankRef: true,
+         unallocatedAmount: true,
+         owner: { select: { id: true, name: true } },
+         unit: { select: { id: true, lotNumber: true } }
+       }
+     });
+
+     return NextResponse.json({
+       items,
+       pagination: { page, pageSize, total: items.length, totalPages: 1 },
+       totals: { all: 0, cash: 0, transfer: 0, check: 0 }
+     });
+  }
+
   const [items, total, methodAgg] = await prisma.$transaction([
     prisma.receipt.findMany({
       where,

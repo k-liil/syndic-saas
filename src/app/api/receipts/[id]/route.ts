@@ -242,10 +242,6 @@ export async function DELETE(
         throw new Error("Receipt not found");
       }
 
-      await tx.receiptAllocation.deleteMany({
-        where: { receiptId: id },
-      });
-
       await tx.receipt.delete({
         where: { id },
       });

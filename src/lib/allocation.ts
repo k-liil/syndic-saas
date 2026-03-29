@@ -81,8 +81,8 @@ export async function reallocateUnitContributions(
   // 4. Batch Updates for Dues (Only on changes)
   const dueUpdates = workingDues
     .filter((d: any) => {
-      const status = d.paidAmount >= d.amountDue ? DueStatus.PAID : d.paidAmount > 0 ? DueStatus.PARTIAL : DueStatus.UNPAID;
-      return d.paidAmount !== d.initialPaidAmount || status !== d.initialStatus;
+      const currentStatus = d.paidAmount >= d.amountDue ? DueStatus.PAID : d.paidAmount > 0 ? DueStatus.PARTIAL : DueStatus.UNPAID;
+      return d.paidAmount !== d.initialPaidAmount || currentStatus !== d.initialStatus;
     })
     .map((d: any) => {
       const status = d.paidAmount >= d.amountDue ? DueStatus.PAID : d.paidAmount > 0 ? DueStatus.PARTIAL : DueStatus.UNPAID;
@@ -107,7 +107,8 @@ export async function reallocateUnitContributions(
 
   // Run all updates in parallel (within the current transaction)
   if (dueUpdates.length > 0 || receiptUpdates.length > 0) {
-    await Promise.all([...dueUpdates, ...receiptUpdates]);
+    const allUpdates = [...dueUpdates, ...receiptUpdates];
+    await Promise.all(allUpdates);
   }
 
   console.log(`[ALLOCATION] Recalculation complete for Unit ${unitId}. ${allocations.length} allocations, ${dueUpdates.length} due updates, ${receiptUpdates.length} receipt updates.`);
