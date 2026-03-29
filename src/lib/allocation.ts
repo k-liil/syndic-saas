@@ -87,29 +87,37 @@ export async function reallocateUnitContributions(
   // 5. Batch Updates for Receipts (Only on changes)
   const receiptUpdatesNeeded = workingReceipts.filter((r: any) => r.unallocatedAmount !== r.initialUnallocatedAmount);
 
+  console.time(`[ALLOCATION] DB Updates for ${unitId}`);
+  
   // 6. Execute all updates and create allocations
+  const dbOps: Promise<any>[] = [];
+
   if (allocations.length > 0) {
-    await tx.receiptAllocation.createMany({ data: allocations });
+    dbOps.push(tx.receiptAllocation.createMany({ data: allocations }));
   }
 
-  // Update Dues sequentially for reliability
-  for (const d of dueUpdatesNeeded) {
+  // Collect Dues updates in parallel
+  dueUpdatesNeeded.forEach((d: any) => {
     const status = d.paidAmount >= d.amountDue ? DueStatus.PAID : d.paidAmount > 0 ? DueStatus.PARTIAL : DueStatus.UNPAID;
-    console.log(`[ALLOCATION] Updating Due ${d.id}: ${d.initialPaidAmount} -> ${d.paidAmount} (${status})`);
-    await tx.monthlyDue.update({
+    dbOps.push(tx.monthlyDue.update({
       where: { id: d.id },
       data: { paidAmount: d.paidAmount, status },
-    });
-  }
+    }));
+  });
 
-  // Update Receipts sequentially
-  for (const r of receiptUpdatesNeeded) {
-    console.log(`[ALLOCATION] Updating Receipt ${r.id}: unallocated ${r.initialUnallocatedAmount} -> ${r.unallocatedAmount}`);
-    await tx.receipt.update({
+  // Collect Receipts updates in parallel
+  receiptUpdatesNeeded.forEach((r: any) => {
+    dbOps.push(tx.receipt.update({
       where: { id: r.id },
       data: { unallocatedAmount: r.unallocatedAmount },
-    });
+    }));
+  });
+
+  // Run all DB operations in parallel within the same transaction
+  if (dbOps.length > 0) {
+    await Promise.all(dbOps);
   }
 
+  console.timeEnd(`[ALLOCATION] DB Updates for ${unitId}`);
   console.log(`[ALLOCATION] Recalculation complete for Unit ${unitId}. ${allocations.length} allocations, ${dueUpdatesNeeded.length} due updates, ${receiptUpdatesNeeded.length} receipt updates.`);
 }

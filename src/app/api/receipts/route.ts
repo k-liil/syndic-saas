@@ -589,6 +589,8 @@ await tx.fiscalYear.upsert({
         select: { unallocatedAmount: true },
       });
 
+      console.time(`[RECEIPT_POST] Transaction for ${unit.lotNumber}`);
+      console.timeEnd(`[RECEIPT_POST] Transaction for ${unit.lotNumber}`);
       return {
         ok: true,
         receiptId: receipt.id,
@@ -607,7 +609,7 @@ await tx.fiscalYear.upsert({
         ).size,
         unallocatedAmount: finalReceiptState?.unallocatedAmount ?? remaining,
       };
-    }, { maxWait: 10000, timeout: 30000 });
+    }, { maxWait: 15000, timeout: 60000 });
 
     return NextResponse.json(result);
   } catch (error: any) {
