@@ -20,25 +20,26 @@ function getErrorDetail(error: unknown) {
   return error instanceof Error ? error.message : String(error);
 }
 
-function toDecimalString(
+function toDecimalNumber(
   value: unknown,
   fallback: unknown,
   options?: { nullable?: boolean }
-): string | null {
+): number | null {
   const nullable = options?.nullable === true;
 
-  const normalize = (raw: unknown): string | null => {
-    if (raw == null) return nullable ? null : "0";
+  const normalize = (raw: unknown): number | null => {
+    if (raw == null) return nullable ? null : 0;
 
     if (typeof raw === "number") {
-      return Number.isFinite(raw) ? raw.toString() : null;
+      return Number.isFinite(raw) ? raw : null;
     }
 
     if (typeof raw === "string") {
       const v = raw.trim();
-      if (!v) return nullable ? null : "0";
+      if (!v) return nullable ? null : 0;
       const normalized = v.replace(",", ".");
-      return Number.isFinite(Number(normalized)) ? normalized : null;
+      const n = Number(normalized);
+      return Number.isFinite(n) ? n : null;
     }
 
     if (
@@ -49,7 +50,8 @@ function toDecimalString(
     ) {
       const s = (raw as { toString: () => string }).toString();
       const normalized = s.trim().replace(",", ".");
-      return Number.isFinite(Number(normalized)) ? normalized : null;
+      const n = Number(normalized);
+      return Number.isFinite(n) ? n : null;
     }
 
     return null;
@@ -61,7 +63,7 @@ function toDecimalString(
   const fallbackParsed = normalize(fallback);
   if (fallbackParsed !== null) return fallbackParsed;
 
-  return nullable ? null : "0";
+  return nullable ? null : 0;
 }
 
 export async function GET(req: Request) {
@@ -152,10 +154,10 @@ export async function PUT(req: Request) {
             : current.paymentPrefix,
 
         openingCashBalance:
-          toDecimalString(body.openingCashBalance, current.openingCashBalance) ?? "0",
+          toDecimalNumber(body.openingCashBalance, current.openingCashBalance) ?? 0,
 
         openingBankBalance:
-          toDecimalString(body.openingBankBalance, current.openingBankBalance) ?? "0",
+          toDecimalNumber(body.openingBankBalance, current.openingBankBalance) ?? 0,
         
         contributionType:
           typeof body.contributionType === "string"
@@ -163,7 +165,7 @@ export async function PUT(req: Request) {
             : current.contributionType,
 
         globalFixedAmount:
-          toDecimalString(body.globalFixedAmount, current.globalFixedAmount, {
+          toDecimalNumber(body.globalFixedAmount, current.globalFixedAmount, {
             nullable: true,
           }),
     };
@@ -222,20 +224,20 @@ export async function PATCH(req: Request) {
     if (body.paymentUsePrefix !== undefined) data.paymentUsePrefix = body.paymentUsePrefix;
     if (body.paymentPrefix !== undefined) data.paymentPrefix = body.paymentPrefix;
     if (body.openingCashBalance !== undefined) {
-      data.openingCashBalance = toDecimalString(
+      data.openingCashBalance = toDecimalNumber(
         body.openingCashBalance,
         current.openingCashBalance
       );
     }
     if (body.openingBankBalance !== undefined) {
-      data.openingBankBalance = toDecimalString(
+      data.openingBankBalance = toDecimalNumber(
         body.openingBankBalance,
         current.openingBankBalance
       );
     }
     if (body.contributionType !== undefined) data.contributionType = body.contributionType;
     if (body.globalFixedAmount !== undefined) {
-      data.globalFixedAmount = toDecimalString(
+      data.globalFixedAmount = toDecimalNumber(
         body.globalFixedAmount,
         current.globalFixedAmount,
         { nullable: true }
