@@ -79,37 +79,37 @@ export async function reallocateUnitContributions(
   }
 
   // 4. Batch Updates for Dues (Only on changes)
-  const dueUpdates = workingDues
-    .filter((d: any) => {
-      const currentStatus = d.paidAmount >= d.amountDue ? DueStatus.PAID : d.paidAmount > 0 ? DueStatus.PARTIAL : DueStatus.UNPAID;
-      return d.paidAmount !== d.initialPaidAmount || currentStatus !== d.initialStatus;
-    })
-    .map((d: any) => {
-      const status = d.paidAmount >= d.amountDue ? DueStatus.PAID : d.paidAmount > 0 ? DueStatus.PARTIAL : DueStatus.UNPAID;
-      return tx.monthlyDue.update({
-        where: { id: d.id },
-        data: { paidAmount: d.paidAmount, status },
-      });
-    });
+  const dueUpdatesNeeded = workingDues.filter((d: any) => {
+    const currentStatus = d.paidAmount >= d.amountDue ? DueStatus.PAID : d.paidAmount > 0 ? DueStatus.PARTIAL : DueStatus.UNPAID;
+    return d.paidAmount !== d.initialPaidAmount || currentStatus !== d.initialStatus;
+  });
 
   // 5. Batch Updates for Receipts (Only on changes)
-  const receiptUpdates = workingReceipts
-    .filter((r: any) => r.unallocatedAmount !== r.initialUnallocatedAmount)
-    .map((r: any) => tx.receipt.update({
-      where: { id: r.id },
-      data: { unallocatedAmount: r.unallocatedAmount },
-    }));
+  const receiptUpdatesNeeded = workingReceipts.filter((r: any) => r.unallocatedAmount !== r.initialUnallocatedAmount);
 
   // 6. Execute all updates and create allocations
   if (allocations.length > 0) {
     await tx.receiptAllocation.createMany({ data: allocations });
   }
 
-  // Run all updates in parallel (within the current transaction)
-  if (dueUpdates.length > 0 || receiptUpdates.length > 0) {
-    const allUpdates = [...dueUpdates, ...receiptUpdates];
-    await Promise.all(allUpdates);
+  // Update Dues sequentially for reliability
+  for (const d of dueUpdatesNeeded) {
+    const status = d.paidAmount >= d.amountDue ? DueStatus.PAID : d.paidAmount > 0 ? DueStatus.PARTIAL : DueStatus.UNPAID;
+    console.log(`[ALLOCATION] Updating Due ${d.id}: ${d.initialPaidAmount} -> ${d.paidAmount} (${status})`);
+    await tx.monthlyDue.update({
+      where: { id: d.id },
+      data: { paidAmount: d.paidAmount, status },
+    });
   }
 
-  console.log(`[ALLOCATION] Recalculation complete for Unit ${unitId}. ${allocations.length} allocations, ${dueUpdates.length} due updates, ${receiptUpdates.length} receipt updates.`);
+  // Update Receipts sequentially
+  for (const r of receiptUpdatesNeeded) {
+    console.log(`[ALLOCATION] Updating Receipt ${r.id}: unallocated ${r.initialUnallocatedAmount} -> ${r.unallocatedAmount}`);
+    await tx.receipt.update({
+      where: { id: r.id },
+      data: { unallocatedAmount: r.unallocatedAmount },
+    });
+  }
+
+  console.log(`[ALLOCATION] Recalculation complete for Unit ${unitId}. ${allocations.length} allocations, ${dueUpdatesNeeded.length} due updates, ${receiptUpdatesNeeded.length} receipt updates.`);
 }

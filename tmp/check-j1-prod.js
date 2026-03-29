@@ -1,67 +1,56 @@
-const { PrismaClient, DueStatus, ReceiptType } = require("@prisma/client");
+const { PrismaClient } = require('@prisma/client');
 const prisma = new PrismaClient();
 
-async function main() {
-  const lotName = "J1";
+async function diagnose() {
+  const lot = 'J35';
+  console.log(`Diagnosing Unit ${lot}...`);
+  
   const unit = await prisma.unit.findFirst({
-    where: {
-      OR: [
-        { lotNumber: lotName },
-        { reference: lotName }
-      ]
-    },
-    include: {
-      ownerships: {
-        where: { endDate: null },
-        include: { owner: true }
-      }
-    }
+    where: { lotNumber: lot },
   });
-
+  
   if (!unit) {
-    console.log(`Unit ${lotName} not found.`);
+    console.error('Unit not found');
     return;
   }
-
-  console.log(`--- Verification du Lot: ${unit.lotNumber} (${unit.reference}) ---`);
-  console.log(`Propriétaire: ${unit.ownerships[0]?.owner?.name || "N/A"}`);
-  console.log(`Début Co-pro (startDate): ${unit.ownerships[0]?.startDate?.toISOString().slice(0, 10)}`);
-
+  
+  console.log(`Unit ID: ${unit.id}`);
+  
   const dues = await prisma.monthlyDue.findMany({
     where: { unitId: unit.id },
-    orderBy: { period: "asc" }
+    orderBy: { period: 'asc' }
   });
-
+  
   const receipts = await prisma.receipt.findMany({
-    where: { unitId: unit.id, type: ReceiptType.CONTRIBUTION },
-    orderBy: { date: "asc" },
-    include: {
-      allocations: {
-        include: { due: true }
-      }
+    where: { unitId: unit.id, type: 'CONTRIBUTION' },
+    orderBy: [{ date: 'asc' }, { receiptNumber: 'asc' }]
+  });
+  
+  const allocations = await prisma.receiptAllocation.findMany({
+    where: { receipt: { unitId: unit.id } },
+    include: { receipt: true, due: true }
+  });
+  
+  console.log('\n--- DUES ---');
+  dues.forEach(d => {
+    if (new Date(d.period).getUTCFullYear() >= 2023) {
+      console.log(`${d.period.toISOString().slice(0, 10)}: Due=${d.amountDue}, Paid=${d.paidAmount}, Status=${d.status}`);
     }
   });
-
-  console.log("\n--- REÇUS (Paiements) ---");
+  
+  console.log('\n--- RECEIPTS ---');
   receipts.forEach(r => {
-    console.log(`Reçu #${r.receiptNumber} | Date: ${r.date.toISOString().slice(0, 10)} | Montant: ${Number(r.amount).toFixed(2)} | Note: ${r.note || ""}`);
+    console.log(`${r.date.toISOString().slice(0, 10)}: #${r.receiptNumber}, Amount=${r.amount}, Unallocated=${r.unallocatedAmount}`);
   });
-
-  console.log("\n--- COTISATIONS (Dues) ---");
-  dues.forEach(d => {
-    const statusIcon = d.status === DueStatus.PAID ? "✅" : d.status === DueStatus.PARTIAL ? "🟡" : "❌";
-    console.log(`${statusIcon} Période: ${d.period.toISOString().slice(0, 7)} | Du: ${Number(d.amountDue).toFixed(2)} | Payé: ${Number(d.paidAmount).toFixed(2)} | Status: ${d.status}`);
+  
+  console.log('\n--- ALLOCATIONS (Current) ---');
+  allocations.forEach(a => {
+    if (new Date(a.due.period).getUTCFullYear() >= 2024) {
+      console.log(`${a.due.period.toISOString().slice(0, 10)} <- Receipt #${a.receipt.receiptNumber}: ${a.amount}`);
+    }
   });
-
-  const totalDue = dues.reduce((sum, d) => sum + Number(d.amountDue), 0);
-  const totalPaid = dues.reduce((sum, d) => sum + Number(d.paidAmount), 0);
-  const totalReceipts = receipts.reduce((sum, r) => sum + Number(r.amount), 0);
-
-  console.log("\n--- TOTALS ---");
-  console.log(`Total Appels de Fonds: ${totalDue.toFixed(2)} MAD`);
-  console.log(`Total Payé (allocations): ${totalPaid.toFixed(2)} MAD`);
-  console.log(`Total Reçu (reçus): ${totalReceipts.toFixed(2)} MAD`);
-  console.log(`Solde impayé: ${(totalDue - totalPaid).toFixed(2)} MAD`);
+  
+  prisma.$disconnect();
 }
 
-main().finally(() => prisma.$disconnect());
+diagnose();
