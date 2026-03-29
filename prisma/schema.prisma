@@ -454,8 +454,8 @@ model AppSettings {
   paymentUsePrefix   Boolean @default(false)
   paymentPrefix      String?
 
-  openingCashBalance Int @default(0)
-  openingBankBalance Int @default(0)
+  openingCashBalance Decimal @default(0) @db.Decimal(12,2)
+  openingBankBalance Decimal @default(0) @db.Decimal(12,2)
 
   contributionType    ContributionType @default(GLOBAL_FIXED)
   globalFixedAmount  Decimal? @db.Decimal(10,2)

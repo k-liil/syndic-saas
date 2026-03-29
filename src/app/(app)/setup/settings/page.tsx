@@ -780,6 +780,7 @@ export default function SettingsPage() {
                     className="h-12 w-full rounded-2xl border border-zinc-200 bg-white px-4 text-sm shadow-sm outline-none"
                     value={openingCashBalance}
                     onChange={(e) => setOpeningCashBalance(Number(e.target.value))}
+                    step="0.01"
                   />
                 </div>
 
@@ -792,6 +793,7 @@ export default function SettingsPage() {
                     className="h-12 w-full rounded-2xl border border-zinc-200 bg-white px-4 text-sm shadow-sm outline-none"
                     value={openingBankBalance}
                     onChange={(e) => setOpeningBankBalance(Number(e.target.value))}
+                    step="0.01"
                   />
                 </div>
               </div>

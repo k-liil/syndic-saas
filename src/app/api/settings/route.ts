@@ -179,8 +179,16 @@ export async function PATCH(req: Request) {
     if (body.paymentStartNumber !== undefined) data.paymentStartNumber = body.paymentStartNumber;
     if (body.paymentUsePrefix !== undefined) data.paymentUsePrefix = body.paymentUsePrefix;
     if (body.paymentPrefix !== undefined) data.paymentPrefix = body.paymentPrefix;
-    if (body.openingCashBalance !== undefined) data.openingCashBalance = body.openingCashBalance;
-    if (body.openingBankBalance !== undefined) data.openingBankBalance = body.openingBankBalance;
+    if (body.openingCashBalance !== undefined) {
+      data.openingCashBalance = Number.isFinite(Number(body.openingCashBalance))
+        ? Number(body.openingCashBalance)
+        : current.openingCashBalance;
+    }
+    if (body.openingBankBalance !== undefined) {
+      data.openingBankBalance = Number.isFinite(Number(body.openingBankBalance))
+        ? Number(body.openingBankBalance)
+        : current.openingBankBalance;
+    }
     if (body.contributionType !== undefined) data.contributionType = body.contributionType;
     if (body.globalFixedAmount !== undefined) data.globalFixedAmount = body.globalFixedAmount;
 
