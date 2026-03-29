@@ -35,6 +35,7 @@ type BuildingOption = {
 type MonthStatus = "PAID" | "PARTIAL" | "UNPAID" | "ADVANCE" | null;
 
 type RowData = {
+  id: string;
   lot: string;
   owner: string;
   jan: MonthStatus;
@@ -108,6 +109,7 @@ function ContributionsYearPageContent() {
       };
 
       return {
+        id: u.id,
         lot: u.lotNumber || u.reference || "",
         owner: [u.ownerships?.[0]?.owner?.firstName, u.ownerships?.[0]?.owner?.name]
           .filter(Boolean)

@@ -1,6 +1,7 @@
 "use client";
 
 import * as React from "react";
+import { useState } from "react";
 import {
   ColumnDef,
   flexRender,
@@ -15,10 +16,14 @@ import {
   TableHeader,
   TableRow,
 } from "../ui/Table";
+import { ReceiptsDetailModal } from "./ReceiptsDetailModal";
+import { Receipt as ReceiptIcon } from "lucide-react";
+import { useSearchParams } from "next/navigation";
 
 type MonthStatus = "PAID" | "PARTIAL" | "UNPAID" | "ADVANCE" | null;
 
 type RowData = {
+  id: string;
   lot: string;
   owner: string;
   jan: MonthStatus;
@@ -105,9 +110,33 @@ const columns: ColumnDef<RowData>[] = [
 ];
 
 export function ContributionsYearTable({ data }: { data: RowData[] }) {
+  const searchParams = useSearchParams();
+  const year = Number(searchParams.get("year"));
+  
+  const [detailUnit, setDetailUnit] = useState<{id: string, name: string} | null>(null);
+
+  const tableColumns = React.useMemo<ColumnDef<RowData>[]>(() => [
+    ...columns,
+    {
+      id: "actions",
+      header: "",
+      cell: ({ row }) => (
+        <div className="flex justify-center px-2">
+          <button
+            onClick={() => setDetailUnit({ id: row.original.id, name: row.original.lot })}
+            className="flex h-8 w-8 items-center justify-center rounded-lg text-zinc-400 hover:bg-sky-50 hover:text-sky-600 transition-all border border-transparent hover:border-sky-100"
+            title="Détail des reçus"
+          >
+            <ReceiptIcon className="h-4.5 w-4.5" />
+          </button>
+        </div>
+      ),
+    }
+  ], []);
+
   const table = useReactTable({
     data,
-    columns,
+    columns: tableColumns,
     getCoreRowModel: getCoreRowModel(),
   });
 
@@ -165,7 +194,9 @@ export function ContributionsYearTable({ data }: { data: RowData[] }) {
                           ? { width: 132, minWidth: 132, maxWidth: 132 }
                           : index === 1
                             ? { width: 240, minWidth: 240, maxWidth: 240 }
-                            : { width: 72, minWidth: 72, maxWidth: 72 }
+                            : index === 14 
+                              ? { width: 60, minWidth: 60, maxWidth: 60 }
+                              : { width: 72, minWidth: 72, maxWidth: 72 }
                       }
                     >
                       {flexRender(cell.column.columnDef.cell, cell.getContext())}
@@ -175,7 +206,7 @@ export function ContributionsYearTable({ data }: { data: RowData[] }) {
               ))
             ) : (
               <TableRow>
-                <TableCell colSpan={14} className="h-28 text-center text-zinc-500">
+                <TableCell colSpan={15} className="h-28 text-center text-zinc-500">
                   Aucune donnee
                 </TableCell>
               </TableRow>
@@ -183,6 +214,14 @@ export function ContributionsYearTable({ data }: { data: RowData[] }) {
           </TableBody>
         </Table>
       </div>
+
+      <ReceiptsDetailModal
+        open={!!detailUnit}
+        onClose={() => setDetailUnit(null)}
+        unitId={detailUnit?.id || null}
+        unitName={detailUnit?.name || null}
+        year={year}
+      />
     </div>
   );
 }

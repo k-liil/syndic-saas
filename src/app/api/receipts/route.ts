@@ -47,6 +47,7 @@ export async function GET(req: Request) {
   const rawMonth = searchParams.get("month");
   const month = rawMonth ? Number(rawMonth) : null; // 1-12
   const buildingId = asString(searchParams.get("buildingId")).trim();
+  const unitId = asString(searchParams.get("unitId")).trim();
   const ownerId = asString(searchParams.get("ownerId")).trim();
   const q = asString(searchParams.get("q")).trim();
   const method = asString(searchParams.get("method")).trim();
@@ -77,6 +78,7 @@ if (year && Number.isFinite(year)) {
   }
 }
 if (buildingId) where.buildingId = buildingId;
+if (unitId) where.unitId = unitId;
 if (ownerId) where.ownerId = ownerId;
 if (method) where.method = method;
 

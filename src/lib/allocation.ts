@@ -23,79 +23,92 @@ export async function reallocateUnitContributions(
     },
   });
 
-  // 2. Reset all internal MonthlyDue tracking to 0 paid
-  await tx.monthlyDue.updateMany({
-    where: { unitId, organizationId },
-    data: { paidAmount: 0, status: DueStatus.UNPAID },
-  });
-
-  // 3. Fetch all Dues (Obligations) for this unit chronologically
-  const dues = await tx.monthlyDue.findMany({
-    where: { unitId, organizationId },
-    orderBy: { period: "asc" },
-  });
-
-  // 4. Fetch all Receipts (Payments) for this unit chronologically
-  const receipts = await tx.receipt.findMany({
-    where: { unitId, organizationId, type: ReceiptType.CONTRIBUTION },
-    orderBy: [{ date: "asc" }, { receiptNumber: "asc" }],
-  });
+  // 2. Fetch all Dues (Obligations) and Receipts (Payments) chronologically
+  const [dues, receipts] = await Promise.all([
+    tx.monthlyDue.findMany({
+      where: { unitId, organizationId },
+      orderBy: { period: "asc" },
+      select: { id: true, amountDue: true, paidAmount: true, status: true },
+    }),
+    tx.receipt.findMany({
+      where: { unitId, organizationId, type: ReceiptType.CONTRIBUTION },
+      orderBy: [{ date: "asc" }, { receiptNumber: "asc" }],
+      select: { id: true, amount: true, unallocatedAmount: true },
+    }),
+  ]);
 
   const allocations: { receiptId: string; dueId: string; amount: number }[] = [];
   
-  // Create a mutable working copy of due statuses
+  // Create a mutable working copy of due statuses starting from 0 (re-allocating everything)
   const workingDues = dues.map((d: any) => ({
     id: d.id,
     amountDue: Number(d.amountDue),
-    paidAmount: Number(d.paidAmount), // initially 0
+    paidAmount: 0,
+    initialPaidAmount: Number(d.paidAmount),
+    initialStatus: d.status,
   }));
 
-  // 5. FIFO Logic: apply each receipt to the earliest unpaid dues
-  for (const receipt of receipts) {
-    let remaining = Number(receipt.amount);
+  const workingReceipts = receipts.map((r: any) => ({
+    id: r.id,
+    amount: Number(r.amount),
+    unallocatedAmount: 0,
+    initialUnallocatedAmount: Number(r.unallocatedAmount),
+  }));
+
+  // 3. FIFO Logic: apply each receipt to the earliest unpaid dues
+  for (const wr of workingReceipts) {
+    let remaining = wr.amount;
 
     for (const d of workingDues) {
       if (remaining <= 0) break;
 
-      const dueTotal = d.amountDue;
-      const currentlyPaid = d.paidAmount;
-      const deficit = dueTotal - currentlyPaid;
+      const deficit = d.amountDue - d.paidAmount;
+      if (deficit <= 0) continue;
 
-      if (deficit <= 0) continue; // Due is already fully paid off
-
-      // Calculate how much to allocate to the due
       const allocationAmount = remaining >= deficit ? deficit : remaining;
-
       d.paidAmount += allocationAmount;
       remaining -= allocationAmount;
 
       allocations.push({
-        receiptId: receipt.id,
+        receiptId: wr.id,
         dueId: d.id,
         amount: allocationAmount,
       });
     }
-
-    // Keep track of what's left over
-    await tx.receipt.update({
-      where: { id: receipt.id },
-      data: { unallocatedAmount: remaining },
-    });
+    wr.unallocatedAmount = remaining;
   }
 
-  // 6. Build final allocations
+  // 4. Batch Updates for Dues (Only on changes)
+  const dueUpdates = workingDues
+    .filter((d: any) => {
+      const status = d.paidAmount >= d.amountDue ? DueStatus.PAID : d.paidAmount > 0 ? DueStatus.PARTIAL : DueStatus.UNPAID;
+      return d.paidAmount !== d.initialPaidAmount || status !== d.initialStatus;
+    })
+    .map((d: any) => {
+      const status = d.paidAmount >= d.amountDue ? DueStatus.PAID : d.paidAmount > 0 ? DueStatus.PARTIAL : DueStatus.UNPAID;
+      return tx.monthlyDue.update({
+        where: { id: d.id },
+        data: { paidAmount: d.paidAmount, status },
+      });
+    });
+
+  // 5. Batch Updates for Receipts (Only on changes)
+  const receiptUpdates = workingReceipts
+    .filter((r: any) => r.unallocatedAmount !== r.initialUnallocatedAmount)
+    .map((r: any) => tx.receipt.update({
+      where: { id: r.id },
+      data: { unallocatedAmount: r.unallocatedAmount },
+    }));
+
+  // 6. Execute all updates and create allocations
   if (allocations.length > 0) {
-    await tx.receiptAllocation.createMany({
-      data: allocations,
-    });
+    await tx.receiptAllocation.createMany({ data: allocations });
   }
 
-  // 7. Save final statuses of dues
-  for (const d of workingDues) {
-    const status = d.paidAmount <= 0 ? DueStatus.UNPAID : d.paidAmount >= d.amountDue ? DueStatus.PAID : DueStatus.PARTIAL;
-    await tx.monthlyDue.update({
-      where: { id: d.id },
-      data: { paidAmount: d.paidAmount, status },
-    });
+  // Run all updates in parallel (within the current transaction)
+  if (dueUpdates.length > 0 || receiptUpdates.length > 0) {
+    await Promise.all([...dueUpdates, ...receiptUpdates]);
   }
+
+  console.log(`[ALLOCATION] Recalculation complete for Unit ${unitId}. ${allocations.length} allocations, ${dueUpdates.length} due updates, ${receiptUpdates.length} receipt updates.`);
 }
