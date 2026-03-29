@@ -157,8 +157,8 @@ export function MaintenanceContent({ initialLogging }: { initialLogging: boolean
           )}
         </div>
       </div>
-      <div className="rounded-xl border border-sky-200 bg-white shadow-sm overflow-hidden">
-        <div className="p-4 border-b border-sky-100 bg-sky-50/50 flex items-center justify-between">
+      <div className="rounded-xl border border-sky-200 bg-white shadow-sm">
+        <div className="p-4 border-b border-sky-100 bg-sky-50/50 flex items-center justify-between rounded-t-xl">
           <div className="flex items-center gap-2">
             <RefreshCcw className="h-4 w-4 text-sky-600" />
             <h3 className="text-sm font-semibold text-sky-900">Recalcul Granulaire (FIFO)</h3>
