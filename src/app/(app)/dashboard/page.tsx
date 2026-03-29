@@ -16,9 +16,10 @@ import {
 } from "lucide-react";
 import {
   Bar,
-  BarChart,
+  ComposedChart,
   CartesianGrid,
   Cell,
+  Line,
   Pie,
   PieChart,
   ResponsiveContainer,
@@ -33,8 +34,10 @@ type DashboardData = {
   totalPayments: number;
   cashBalance: number;
   bankBalance: number;
+  openingTotal: number;
   receiptsByMonth: number[];
   paymentsByMonth: number[];
+  cumulativeBalanceByMonth: number[];
   collectionRate: number;
   ownersCount: number;
   paidOwnersCount: number;
@@ -50,8 +53,10 @@ const emptyData: DashboardData = {
   totalPayments: 0,
   cashBalance: 0,
   bankBalance: 0,
+  openingTotal: 0,
   receiptsByMonth: new Array(12).fill(0),
   paymentsByMonth: new Array(12).fill(0),
+  cumulativeBalanceByMonth: new Array(12).fill(0),
   collectionRate: 0,
   ownersCount: 0,
   paidOwnersCount: 0,
@@ -160,12 +165,16 @@ function DashboardPageContent() {
           totalPayments: Number(json?.totalPayments ?? 0),
           cashBalance: Number(json?.cashBalance ?? 0),
           bankBalance: Number(json?.bankBalance ?? 0),
+          openingTotal: Number(json?.openingTotal ?? 0),
           receiptsByMonth: Array.isArray(json?.receiptsByMonth)
             ? json.receiptsByMonth
             : emptyData.receiptsByMonth,
           paymentsByMonth: Array.isArray(json?.paymentsByMonth)
             ? json.paymentsByMonth
             : emptyData.paymentsByMonth,
+          cumulativeBalanceByMonth: Array.isArray(json?.cumulativeBalanceByMonth)
+            ? json.cumulativeBalanceByMonth
+            : emptyData.cumulativeBalanceByMonth,
           collectionRate: Number(json?.collectionRate ?? 0),
           ownersCount: Number(json?.ownersCount ?? 0),
           paidOwnersCount: Number(json?.paidOwnersCount ?? 0),
@@ -193,8 +202,9 @@ function DashboardPageContent() {
         month,
         encaisses: data.receiptsByMonth[index] ?? 0,
         depenses: data.paymentsByMonth[index] ?? 0,
+        soldeCumule: data.cumulativeBalanceByMonth[index] ?? 0,
       })),
-    [data.paymentsByMonth, data.receiptsByMonth]
+    [data.cumulativeBalanceByMonth, data.paymentsByMonth, data.receiptsByMonth]
   );
 
   const collectionPie =
@@ -312,7 +322,7 @@ function DashboardPageContent() {
         <Card title={`Flux de tresorerie (${year})`}>
           <div className="rounded-xl border border-slate-200 bg-gradient-to-b from-slate-50 to-white p-4">
             <ResponsiveContainer width="100%" height={320}>
-              <BarChart
+              <ComposedChart
                 data={chartData}
                 margin={{ top: 8, right: 16, left: 0, bottom: 0 }}
                 barCategoryGap="45%"
@@ -341,12 +351,24 @@ function DashboardPageContent() {
                   }}
                   formatter={(value, name) => [
                     `${Number(value ?? 0).toLocaleString("fr-FR")} MAD`,
-                    name === "encaisses" ? "Encaisse" : "Depense",
+                    name === "encaisses"
+                      ? "Encaisse"
+                      : name === "depenses"
+                      ? "Depense"
+                      : "Solde cumule",
                   ]}
                 />
                 <Bar dataKey="encaisses" fill="#38bdf8" radius={[8, 8, 0, 0]} barSize={24} />
                 <Bar dataKey="depenses" fill="#f59e0b" radius={[8, 8, 0, 0]} barSize={24} />
-              </BarChart>
+                <Line
+                  type="monotone"
+                  dataKey="soldeCumule"
+                  stroke="#0f172a"
+                  strokeWidth={2.5}
+                  dot={{ r: 2, fill: "#0f172a" }}
+                  activeDot={{ r: 4 }}
+                />
+              </ComposedChart>
             </ResponsiveContainer>
 
             <div className="mt-4 flex items-center justify-center gap-6 text-sm text-slate-500">
@@ -358,6 +380,13 @@ function DashboardPageContent() {
                 <span className="h-3 w-3 rounded-sm bg-amber-500" />
                 Depense
               </div>
+              <div className="flex items-center gap-2">
+                <span className="h-0.5 w-4 rounded-sm bg-slate-900" />
+                Solde cumule
+              </div>
+            </div>
+            <div className="mt-2 text-center text-xs text-slate-500">
+              Janvier demarre avec le solde d'ouverture ({formatMAD(data.openingTotal)}), puis chaque mois ajoute Recettes - Depenses.
             </div>
           </div>
         </Card>

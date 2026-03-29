@@ -135,6 +135,14 @@ export async function GET(req: Request) {
 
 const openingCash = toNumber(settings?.openingCashBalance);
 const openingBank = toNumber(settings?.openingBankBalance);
+const openingTotal = openingCash + openingBank;
+
+  const cumulativeBalanceByMonth = new Array(12).fill(0);
+  let runningBalance = openingTotal;
+  for (let i = 0; i < 12; i += 1) {
+    runningBalance += (receiptsByMonth[i] ?? 0) - (paymentsByMonth[i] ?? 0);
+    cumulativeBalanceByMonth[i] = runningBalance;
+  }
 
   const cashBalance = openingCash + receiptsCash - paymentsCash;
   const bankBalance = openingBank + receiptsBank - paymentsBank;
@@ -179,8 +187,10 @@ return NextResponse.json({
   totalPayments: Number(totalPayments),
   cashBalance: Number(cashBalance),
   bankBalance: Number(bankBalance),
+  openingTotal: Number(openingTotal),
   receiptsByMonth: receiptsByMonth.map(Number),
   paymentsByMonth: paymentsByMonth.map(Number),
+  cumulativeBalanceByMonth: cumulativeBalanceByMonth.map(Number),
   collectionRate: Number(collectionRate),
   ownersCount,
   paidOwnersCount,
