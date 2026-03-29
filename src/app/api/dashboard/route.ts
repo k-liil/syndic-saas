@@ -243,7 +243,7 @@ export async function GET(req: Request) {
   const collectionRate =
     ownersCount === 0
       ? 0
-      : Math.round((paidOwnersCount / ownersCount) * 100);
+      : Number(((paidOwnersCount / ownersCount) * 100).toFixed(4));
 
   const postIds = expensesByCategory
     .map((c) => c.accountingPostId)

@@ -232,10 +232,10 @@ function DashboardPageContent() {
             <AlertTriangle size={24} />
           </div>
           <h1 className="mt-5 text-2xl font-semibold tracking-tight text-slate-900">
-            Aucun exercice selectionne
+            Aucun exercice sélectionné
           </h1>
           <p className="mt-3 text-sm leading-6 text-slate-500">
-            Creez ou selectionnez un exercice fiscal depuis l'en-tete pour afficher
+            Créez ou sélectionnez un exercice fiscal depuis l'en-tête pour afficher
             votre tableau de bord.
           </p>
         </div>
@@ -265,11 +265,13 @@ function DashboardPageContent() {
               <div className="text-xs uppercase tracking-[0.16em] text-slate-500">
                 Taux d'encaissement
               </div>
-              <div className="mt-2 text-2xl font-semibold text-slate-950">{data.collectionRate}%</div>
+              <div className="mt-2 text-2xl font-semibold text-slate-950">
+                {Number(data.collectionRate ?? 0).toLocaleString("fr-FR", { minimumFractionDigits: 2, maximumFractionDigits: 2 })}%
+              </div>
             </div>
             <div className="rounded-xl border border-slate-200 bg-white px-4 py-3">
               <div className="text-xs uppercase tracking-[0.16em] text-slate-500">
-                Coproprietaires payes
+                Copropriétaires payés
               </div>
               <div className="mt-2 text-2xl font-semibold text-slate-950">
                 {paidOwners}/{data.ownersCount}
@@ -277,7 +279,7 @@ function DashboardPageContent() {
             </div>
             <div className="rounded-xl border border-slate-200 bg-white px-4 py-3">
               <div className="text-xs uppercase tracking-[0.16em] text-slate-500">
-                Tresorerie totale
+                Trésorerie totale
               </div>
               <div className="mt-2 text-2xl font-semibold text-slate-950">
                 {formatMAD(totalBalance)}
@@ -289,16 +291,16 @@ function DashboardPageContent() {
 
       <div className="grid gap-5 xl:grid-cols-4">
         <KpiCard
-          title={`Total encaisse (${year})`}
+          title={`Total encaissé (${year})`}
           value={formatMAD(data.totalReceipts)}
           subtitle="Recettes de l'exercice"
           icon={ArrowUpRight}
           tone="emerald"
         />
         <KpiCard
-          title={`Total depense (${year})`}
+          title={`Total dépensé (${year})`}
           value={formatMAD(data.totalPayments)}
-          subtitle="Charges reglees"
+          subtitle="Charges réglées"
           icon={ArrowDownRight}
           tone="rose"
         />
@@ -310,16 +312,16 @@ function DashboardPageContent() {
           tone="sky"
         />
         <KpiCard
-          title={`Creances en retard (${year})`}
+          title={`Créances en retard (${year})`}
           value={`${unpaidOwners}`}
-          subtitle="Coproprietaires restant a regulariser"
+          subtitle="Copropriétaires restant à régulariser"
           icon={AlertTriangle}
           tone="amber"
         />
       </div>
 
       <div className="grid gap-5 xl:grid-cols-[1.45fr_1fr]">
-        <Card title={`Flux de tresorerie (${year})`}>
+        <Card title={`Flux de trésorerie (${year})`}>
           <div className="rounded-xl border border-slate-200 bg-gradient-to-b from-slate-50 to-white p-4">
             <ResponsiveContainer width="100%" height={320}>
               <ComposedChart
@@ -352,10 +354,10 @@ function DashboardPageContent() {
                   formatter={(value, name) => [
                     `${Number(value ?? 0).toLocaleString("fr-FR")} MAD`,
                     name === "encaisses"
-                      ? "Encaisse"
+                      ? "Encaissé"
                       : name === "depenses"
-                      ? "Depense"
-                      : "Solde cumule",
+                      ? "Dépensé"
+                      : "Solde cumulé",
                   ]}
                 />
                 <Bar dataKey="encaisses" fill="#38bdf8" radius={[8, 8, 0, 0]} barSize={24} />
@@ -363,9 +365,9 @@ function DashboardPageContent() {
                 <Line
                   type="monotone"
                   dataKey="soldeCumule"
-                  stroke="#0f172a"
+                  stroke="#ef4444"
                   strokeWidth={2.5}
-                  dot={{ r: 2, fill: "#0f172a" }}
+                  dot={{ r: 2, fill: "#ef4444" }}
                   activeDot={{ r: 4 }}
                 />
               </ComposedChart>
@@ -374,24 +376,24 @@ function DashboardPageContent() {
             <div className="mt-4 flex items-center justify-center gap-6 text-sm text-slate-500">
               <div className="flex items-center gap-2">
                 <span className="h-3 w-3 rounded-sm bg-sky-500" />
-                Encaisse
+                Encaissé
               </div>
               <div className="flex items-center gap-2">
                 <span className="h-3 w-3 rounded-sm bg-amber-500" />
                 Depense
               </div>
               <div className="flex items-center gap-2">
-                <span className="h-0.5 w-4 rounded-sm bg-slate-900" />
+                <span className="h-1 w-4 rounded-sm bg-red-500" />
                 Solde cumule
               </div>
             </div>
             <div className="mt-2 text-center text-xs text-slate-500">
-              Janvier demarre avec le solde d'ouverture ({formatMAD(data.openingTotal)}), puis chaque mois ajoute Recettes - Depenses.
+              Janvier démarre avec le solde d'ouverture ({formatMAD(data.openingTotal)}), puis chaque mois ajoute Recettes - Dépenses.
             </div>
           </div>
         </Card>
 
-        <Card title="Synthese rapide">
+        <Card title="Synthèse rapide">
           <div className="space-y-4">
             <div className="flex items-center justify-between border border-slate-200 bg-slate-50 px-4 py-4">
               <div className="flex items-center gap-3">
@@ -409,7 +411,7 @@ function DashboardPageContent() {
                 <div className="text-sm font-bold text-emerald-600">
                   +{formatMAD(data.totalReceipts)}
                 </div>
-                <div className="text-xs text-slate-500">Total recu</div>
+                <div className="text-xs text-slate-500">Total reçu</div>
               </div>
             </div>
 
@@ -436,19 +438,21 @@ function DashboardPageContent() {
             <div className="flex items-center justify-between border border-slate-200 bg-slate-50 px-4 py-4">
               <div>
                 <div className="text-sm font-semibold text-slate-900">Taux d'encaissement</div>
-                <div className="text-xs text-slate-500">Paiements coproprietaires</div>
+                <div className="text-xs text-slate-500">Paiements copropriétaires</div>
               </div>
-              <div className="text-sm font-bold text-slate-900">{data.collectionRate}%</div>
+                <div className="text-sm font-bold text-slate-900">
+                  {Number(data.collectionRate ?? 0).toLocaleString("fr-FR", { minimumFractionDigits: 2, maximumFractionDigits: 2 })}%
+                </div>
             </div>
           </div>
         </Card>
       </div>
 
       <div className="grid gap-5 xl:grid-cols-2">
-        <Card title="Taux d'encaissement coproprietaires">
+        <Card title="Taux d'encaissement copropriétaires">
           {paidOwners === 0 ? (
             <div className="flex h-[260px] items-center justify-center border border-slate-200 bg-slate-50 text-sm font-medium text-slate-400">
-              Aucun coproprietaire n'a encore paye.
+              Aucun copropriétaire n'a encore payé.
             </div>
           ) : (
             <>
@@ -476,25 +480,25 @@ function DashboardPageContent() {
               <div className="mt-4 flex justify-center gap-6 text-sm text-slate-500">
                 <div className="flex items-center gap-2">
                   <span className="h-3 w-3 rounded-full bg-green-500" />
-                  Paye ({paidOwners})
+                  Payé ({paidOwners})
                 </div>
                 <div className="flex items-center gap-2">
                   <span className="h-3 w-3 rounded-full bg-slate-300" />
-                  Non paye ({unpaidOwners})
+                  Non payé ({unpaidOwners})
                 </div>
               </div>
 
               <div className="mt-4 text-center text-sm text-slate-500">
-                {data.collectionRate}% des coproprietaires ont paye
+                {Number(data.collectionRate ?? 0).toLocaleString("fr-FR", { minimumFractionDigits: 2, maximumFractionDigits: 2 })}% des copropriétaires ont payé
               </div>
             </>
           )}
         </Card>
 
-        <Card title="Repartition des depenses">
+        <Card title="Répartition des dépenses">
           {totalExpensesAmount <= 0 ? (
             <div className="flex h-[260px] items-center justify-center border border-slate-200 bg-slate-50 text-sm font-medium text-slate-400">
-              Aucune depense sur cet exercice.
+              Aucune dépense sur cet exercice.
             </div>
           ) : (
             <>
@@ -522,8 +526,8 @@ function DashboardPageContent() {
                       const amount = Number(payload?.amount ?? value ?? 0);
                       const percent =
                         totalExpensesAmount > 0
-                          ? Math.round((amount / totalExpensesAmount) * 100)
-                          : 0;
+                          ? ((amount / totalExpensesAmount) * 100).toLocaleString("fr-FR", { minimumFractionDigits: 2, maximumFractionDigits: 2 })
+                          : "0,00";
                       return [`${amount.toLocaleString("fr-FR")} MAD (${percent}%)`, "Montant"];
                     }}
                   />
@@ -535,12 +539,12 @@ function DashboardPageContent() {
                   const amount = Number(item.amount ?? 0);
                   const percent =
                     totalExpensesAmount > 0
-                      ? Math.round((amount / totalExpensesAmount) * 100)
-                      : 0;
+                    ? ((amount / totalExpensesAmount) * 100).toLocaleString("fr-FR", { minimumFractionDigits: 2, maximumFractionDigits: 2 })
+                      : "0,00";
                   const label =
                     item.categoryName && item.categoryName.trim() !== ""
                       ? item.categoryName
-                      : "Sans categorie";
+                      : "Sans catégorie";
 
                   return (
                     <div key={`${label}-${index}`} className="flex items-center gap-2">
@@ -578,7 +582,7 @@ function DashboardPageContent() {
             className="inline-flex items-center justify-center gap-2 border border-slate-200 bg-white px-4 py-2.5 text-sm font-medium text-slate-700 transition hover:-translate-y-px hover:border-slate-300 hover:bg-slate-50"
             href="/ops/dues_generate"
           >
-            Generer les cotisations
+            Générer les cotisations
             <ArrowRight size={14} />
           </Link>
           <Link

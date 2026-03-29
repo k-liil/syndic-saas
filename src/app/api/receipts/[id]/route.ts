@@ -253,7 +253,7 @@ export async function DELETE(
       if (receipt.unitId && receipt.type === "CONTRIBUTION" && gate.organizationId) {
         await reallocateUnitContributions(tx, receipt.unitId, gate.organizationId);
       }
-    });
+    }, { timeout: 30000, maxWait: 10000 });
 
     return NextResponse.json({ ok: true });
 

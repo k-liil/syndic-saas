@@ -576,7 +576,7 @@ await tx.fiscalYear.upsert({
         ).size,
         unallocatedAmount: finalReceiptState?.unallocatedAmount ?? remaining,
       };
-    });
+    }, { maxWait: 10000, timeout: 30000 });
 
     return NextResponse.json(result);
   } catch (error: any) {
