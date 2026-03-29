@@ -1,14 +1,17 @@
 "use client";
 
-import { togglePrismaLogging, searchGlobalUnits, reallocateUnitsFIFO } from "./actions";
+import { togglePrismaLogging, searchUnitsInOrg, reallocateUnitsFIFO } from "./actions";
 import { useState, useEffect } from "react";
-import { Search, X, RefreshCcw, Landmark, User, LayoutGrid } from "lucide-react";
+import { Search, X, RefreshCcw, Landmark, LayoutGrid } from "lucide-react";
+import { useOrgId } from "@/lib/org-context";
 
 export function MaintenanceContent({ initialLogging }: { initialLogging: boolean }) {
   const [enabled, setEnabled] = useState(initialLogging);
   const [loading, setLoading] = useState(false);
   const [repairing, setRepairing] = useState(false);
   const [recalculating, setRecalculating] = useState(false);
+  
+  const orgId = useOrgId();
   
   // Per-unit Recalculation State
   const [search, setSearch] = useState("");
@@ -17,21 +20,21 @@ export function MaintenanceContent({ initialLogging }: { initialLogging: boolean
   const [searching, setSearching] = useState(false);
 
   useEffect(() => {
-    if (search.length < 2) {
+    if (search.length < 2 || !orgId) {
       setSearchResults([]);
       return;
     }
     const timer = setTimeout(async () => {
       setSearching(true);
       try {
-        const results = await searchGlobalUnits(search);
+        const results = await searchUnitsInOrg(orgId, search);
         setSearchResults(results);
       } finally {
         setSearching(false);
       }
     }, 400);
     return () => clearTimeout(timer);
-  }, [search]);
+  }, [search, orgId]);
 
   const handleAddUnit = (unit: any) => {
     if (selectedUnits.find(u => u.id === unit.id)) return;
@@ -197,13 +200,17 @@ export function MaintenanceContent({ initialLogging }: { initialLogging: boolean
                   >
                     <div className="flex flex-col">
                       <div className="flex items-center gap-2">
-                        <span className="text-xs font-bold text-slate-800">{u.lotNumber}</span>
-                        <span className="text-[10px] text-slate-400">•</span>
-                        <span className="text-xs text-slate-600">{u.ownerName}</span>
+                        <span className="text-xs font-bold text-slate-800">Lot {u.lotNumber}</span>
+                        {u.reference && (
+                          <>
+                            <span className="text-[10px] text-slate-400">•</span>
+                            <span className="text-xs text-slate-600">{u.reference}</span>
+                          </>
+                        )}
                       </div>
                       <span className="text-[10px] text-slate-400 flex items-center gap-1 mt-0.5">
                         <Landmark className="h-2.5 w-2.5" />
-                        {u.organizationName}
+                        {u.buildingName}
                       </span>
                     </div>
                     <LayoutGrid className="h-3.5 w-3.5 text-slate-300 group-hover:text-sky-500" />
@@ -220,8 +227,7 @@ export function MaintenanceContent({ initialLogging }: { initialLogging: boolean
                   key={u.id}
                   className="flex items-center gap-2 rounded-full border border-sky-100 bg-sky-50 px-3 py-1 text-xs font-medium text-sky-700 shadow-sm"
                 >
-                  <span className="font-bold">{u.lotNumber}</span>
-                  <span className="opacity-50 text-[10px]">({u.organizationName})</span>
+                  <span className="font-bold">Lot {u.lotNumber}</span>
                   <button
                     onClick={() => handleRemoveUnit(u.id)}
                     className="hover:text-sky-900 transition-colors"

@@ -92,38 +92,48 @@ export async function repairAllDues() {
   }
 }
 
-export async function searchGlobalUnits(q: string) {
+export async function searchUnitsInOrg(orgId: string, q: string) {
   try {
     const gate = await requireSuperAdmin();
-    if (!gate.ok) return [];
+    if (!gate.ok || !orgId) return [];
 
     const units = await prisma.unit.findMany({
       where: {
+        organizationId: orgId,
         OR: [
           { lotNumber: { contains: q, mode: "insensitive" } },
           { reference: { contains: q, mode: "insensitive" } },
-          { ownerships: { some: { owner: { name: { contains: q, mode: "insensitive" } } } } },
-          { organization: { name: { contains: q, mode: "insensitive" } } },
         ],
       },
       include: {
-        organization: true,
-        ownerships: {
-          where: { endDate: null },
-          include: { owner: true },
-        },
+        building: true,
       },
-      take: 10,
+      take: 20,
     });
 
     return units.map((u) => ({
       id: u.id,
       lotNumber: u.lotNumber,
-      organizationName: u.organization.name,
-      ownerName: u.ownerships[0]?.owner?.name || "Pas de propriétaire",
+      reference: u.reference,
+      buildingName: u.building?.name || "Sans bâtiment",
     }));
   } catch (error) {
-    console.error("Global unit search failed:", error);
+    console.error("Unit search failed:", error);
+    return [];
+  }
+}
+
+export async function getOrganizations() {
+  try {
+    const gate = await requireSuperAdmin();
+    if (!gate.ok) return [];
+
+    return await prisma.organization.findMany({
+      select: { id: true, name: true },
+      orderBy: { name: "asc" },
+    });
+  } catch (error) {
+    console.error("Failed to fetch organizations:", error);
     return [];
   }
 }
