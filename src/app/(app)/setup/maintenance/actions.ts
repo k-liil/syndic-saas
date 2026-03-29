@@ -2,6 +2,8 @@
 
 import { prisma } from "@/lib/prisma";
 import { revalidatePath } from "next/cache";
+import { requireSuperAdmin } from "@/lib/authz";
+import { reallocateUnitContributions } from "@/lib/allocation";
 
 export async function togglePrismaLogging(enabled: boolean) {
   try {
@@ -86,6 +88,75 @@ export async function repairAllDues() {
     return { ok: true };
   } catch (error) {
     console.error("Maintenance repair failed:", error);
+    return { ok: false, error: String(error) };
+  }
+}
+
+export async function searchGlobalUnits(q: string) {
+  try {
+    const gate = await requireSuperAdmin();
+    if (!gate.ok) return [];
+
+    const units = await prisma.unit.findMany({
+      where: {
+        OR: [
+          { lotNumber: { contains: q, mode: "insensitive" } },
+          { reference: { contains: q, mode: "insensitive" } },
+          { ownerships: { some: { owner: { name: { contains: q, mode: "insensitive" } } } } },
+          { organization: { name: { contains: q, mode: "insensitive" } } },
+        ],
+      },
+      include: {
+        organization: true,
+        ownerships: {
+          where: { endDate: null },
+          include: { owner: true },
+        },
+      },
+      take: 10,
+    });
+
+    return units.map((u) => ({
+      id: u.id,
+      lotNumber: u.lotNumber,
+      organizationName: u.organization.name,
+      ownerName: u.ownerships[0]?.owner?.name || "Pas de propriétaire",
+    }));
+  } catch (error) {
+    console.error("Global unit search failed:", error);
+    return [];
+  }
+}
+
+export async function reallocateUnitsFIFO(unitIds: string[]) {
+  try {
+    const gate = await requireSuperAdmin();
+    if (!gate.ok) return { ok: false, error: "Non autorisé" };
+
+    console.log(`[MAINTENANCE] Starting FIFO reallocation for ${unitIds.length} units...`);
+
+    for (const unitId of unitIds) {
+      const unit = await prisma.unit.findUnique({
+        where: { id: unitId },
+        select: { organizationId: true, lotNumber: true },
+      });
+
+      if (!unit) continue;
+
+      console.log(`[MAINTENANCE] Recalculating Unit: ${unit.lotNumber}`);
+
+      await prisma.$transaction(
+        async (tx) => {
+          await reallocateUnitContributions(tx, unitId, unit.organizationId);
+        },
+        { timeout: 30000, maxWait: 10000 }
+      );
+    }
+
+    revalidatePath("/setup/maintenance");
+    return { ok: true };
+  } catch (error) {
+    console.error("FIFO Reallocation failed:", error);
     return { ok: false, error: String(error) };
   }
 }

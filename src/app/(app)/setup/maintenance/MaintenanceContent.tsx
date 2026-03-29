@@ -1,12 +1,67 @@
 "use client";
 
-import { togglePrismaLogging } from "./actions";
-import { useState } from "react";
+import { togglePrismaLogging, searchGlobalUnits, reallocateUnitsFIFO } from "./actions";
+import { useState, useEffect } from "react";
+import { Search, X, RefreshCcw, Landmark, User, LayoutGrid } from "lucide-react";
 
 export function MaintenanceContent({ initialLogging }: { initialLogging: boolean }) {
   const [enabled, setEnabled] = useState(initialLogging);
   const [loading, setLoading] = useState(false);
   const [repairing, setRepairing] = useState(false);
+  const [recalculating, setRecalculating] = useState(false);
+  
+  // Per-unit Recalculation State
+  const [search, setSearch] = useState("");
+  const [searchResults, setSearchResults] = useState<any[]>([]);
+  const [selectedUnits, setSelectedUnits] = useState<any[]>([]);
+  const [searching, setSearching] = useState(false);
+
+  useEffect(() => {
+    if (search.length < 2) {
+      setSearchResults([]);
+      return;
+    }
+    const timer = setTimeout(async () => {
+      setSearching(true);
+      try {
+        const results = await searchGlobalUnits(search);
+        setSearchResults(results);
+      } finally {
+        setSearching(false);
+      }
+    }, 400);
+    return () => clearTimeout(timer);
+  }, [search]);
+
+  const handleAddUnit = (unit: any) => {
+    if (selectedUnits.find(u => u.id === unit.id)) return;
+    setSelectedUnits([...selectedUnits, unit]);
+    setSearch("");
+    setSearchResults([]);
+  };
+
+  const handleRemoveUnit = (id: string) => {
+    setSelectedUnits(selectedUnits.filter(u => u.id !== id));
+  };
+
+  const handleRecalculate = async () => {
+    if (selectedUnits.length === 0) return;
+    if (!confirm(`Voulez-vous vraiment recalculer le moteur FIFO pour ces ${selectedUnits.length} lot(s) ?`)) return;
+    
+    setRecalculating(true);
+    try {
+      const ids = selectedUnits.map(u => u.id);
+      const res = await reallocateUnitsFIFO(ids);
+      if (res.ok) {
+        alert("Recalcul terminé avec succès !");
+        setSelectedUnits([]);
+      } else {
+        alert("Erreur lors du recalcul : " + res.error);
+      }
+    } finally {
+      setRecalculating(false);
+    }
+  };
 
   const handleToggle = async (val: boolean) => {
     setLoading(true);
@@ -99,6 +154,107 @@ export function MaintenanceContent({ initialLogging }: { initialLogging: boolean
           )}
         </div>
       </div>
+      <div className="rounded-xl border border-sky-200 bg-white shadow-sm overflow-hidden">
+        <div className="p-4 border-b border-sky-100 bg-sky-50/50 flex items-center justify-between">
+          <div className="flex items-center gap-2">
+            <RefreshCcw className="h-4 w-4 text-sky-600" />
+            <h3 className="text-sm font-semibold text-sky-900">Recalcul Granulaire (FIFO)</h3>
+          </div>
+          <span className="inline-flex items-center rounded-full bg-sky-100 px-2 py-0.5 text-xs font-medium text-sky-800">
+            Nouveau
+          </span>
+        </div>
+        <div className="p-4 space-y-4">
+          <div className="space-y-1">
+            <span className="text-sm font-medium text-slate-700">Sélectionner les lots à recalculer</span>
+            <p className="text-xs text-slate-500">
+              Recherchez des lots par numéro, copropriétaire ou copropriété pour forcer une réallocation FIFO.
+            </p>
+          </div>
+
+          <div className="relative">
+            <div className="relative flex items-center">
+              <Search className="absolute left-3 h-4 w-4 text-slate-400" />
+              <input
+                type="text"
+                placeholder="Ex: J1, Khalil, Jardins..."
+                className="w-full rounded-lg border border-slate-200 bg-slate-50 pl-10 pr-4 py-2 text-sm focus:border-sky-500 focus:bg-white focus:outline-none transition-all"
+                value={search}
+                onChange={(e) => setSearch(e.target.value)}
+              />
+              {searching && (
+                <div className="absolute right-3 h-4 w-4 animate-spin rounded-full border-2 border-slate-200 border-t-sky-500" />
+              )}
+            </div>
+
+            {searchResults.length > 0 && (
+              <div className="absolute z-10 mt-1 w-full rounded-xl border border-slate-200 bg-white p-1 shadow-lg ring-1 ring-black/5">
+                {searchResults.map((u) => (
+                  <button
+                    key={u.id}
+                    onClick={() => handleAddUnit(u)}
+                    className="flex w-full items-center justify-between rounded-lg p-2 text-left hover:bg-sky-50 transition-colors group"
+                  >
+                    <div className="flex flex-col">
+                      <div className="flex items-center gap-2">
+                        <span className="text-xs font-bold text-slate-800">{u.lotNumber}</span>
+                        <span className="text-[10px] text-slate-400">•</span>
+                        <span className="text-xs text-slate-600">{u.ownerName}</span>
+                      </div>
+                      <span className="text-[10px] text-slate-400 flex items-center gap-1 mt-0.5">
+                        <Landmark className="h-2.5 w-2.5" />
+                        {u.organizationName}
+                      </span>
+                    </div>
+                    <LayoutGrid className="h-3.5 w-3.5 text-slate-300 group-hover:text-sky-500" />
+                  </button>
+                ))}
+              </div>
+            )}
+          </div>
+
+          {selectedUnits.length > 0 && (
+            <div className="flex flex-wrap gap-2 pt-1">
+              {selectedUnits.map((u) => (
+                <div
+                  key={u.id}
+                  className="flex items-center gap-2 rounded-full border border-sky-100 bg-sky-50 px-3 py-1 text-xs font-medium text-sky-700 shadow-sm"
+                >
+                  <span className="font-bold">{u.lotNumber}</span>
+                  <span className="opacity-50 text-[10px]">({u.organizationName})</span>
+                  <button
+                    onClick={() => handleRemoveUnit(u.id)}
+                    className="hover:text-sky-900 transition-colors"
+                  >
+                    <X className="h-3 w-3" />
+                  </button>
+                </div>
+              ))}
+            </div>
+          )}
+
+          <div className="pt-2">
+            <button
+              onClick={handleRecalculate}
+              disabled={recalculating || selectedUnits.length === 0}
+              className="w-full flex items-center justify-center gap-2 rounded-lg bg-sky-600 px-4 py-2.5 text-xs font-bold text-white shadow-sm hover:bg-sky-700 disabled:opacity-50 transition-all active:scale-95"
+            >
+              {recalculating ? (
+                <>
+                  <RefreshCcw className="h-3.5 w-3.5 animate-spin" />
+                  <span>Recalcul en cours...</span>
+                </>
+              ) : (
+                <>
+                  <RefreshCcw className="h-3.5 w-3.5" />
+                  <span>Recalculer {selectedUnits.length > 0 ? `${selectedUnits.length} lot(s)` : "les lots"} sélectionné(s)</span>
+                </>
+              )}
+            </button>
+          </div>
+        </div>
+      </div>
+
       <div className="rounded-xl border border-indigo-200 bg-white shadow-sm overflow-hidden">
         <div className="p-4 border-b border-indigo-100 bg-indigo-50/50 flex items-center justify-between">
           <h3 className="text-sm font-semibold text-indigo-900">Sauvegardes GitHub</h3>
