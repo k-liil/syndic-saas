@@ -20,6 +20,50 @@ function getErrorDetail(error: unknown) {
   return error instanceof Error ? error.message : String(error);
 }
 
+function toDecimalString(
+  value: unknown,
+  fallback: unknown,
+  options?: { nullable?: boolean }
+): string | null {
+  const nullable = options?.nullable === true;
+
+  const normalize = (raw: unknown): string | null => {
+    if (raw == null) return nullable ? null : "0";
+
+    if (typeof raw === "number") {
+      return Number.isFinite(raw) ? raw.toString() : null;
+    }
+
+    if (typeof raw === "string") {
+      const v = raw.trim();
+      if (!v) return nullable ? null : "0";
+      const normalized = v.replace(",", ".");
+      return Number.isFinite(Number(normalized)) ? normalized : null;
+    }
+
+    if (
+      typeof raw === "object" &&
+      raw !== null &&
+      "toString" in raw &&
+      typeof (raw as { toString: () => string }).toString === "function"
+    ) {
+      const s = (raw as { toString: () => string }).toString();
+      const normalized = s.trim().replace(",", ".");
+      return Number.isFinite(Number(normalized)) ? normalized : null;
+    }
+
+    return null;
+  };
+
+  const parsed = normalize(value);
+  if (parsed !== null) return parsed;
+
+  const fallbackParsed = normalize(fallback);
+  if (fallbackParsed !== null) return fallbackParsed;
+
+  return nullable ? null : "0";
+}
+
 export async function GET(req: Request) {
   const gate = await requireManager();
   if (!gate.ok) {
@@ -59,9 +103,7 @@ export async function PUT(req: Request) {
 
     const current = await getSingleton(orgId);
 
-    const updated = await prisma.appSettings.update({
-      where: { id: current.id },
-      data: {
+    const updateData: any = {
 
         brandName:
           typeof body.brandName === "string" && body.brandName.trim()
@@ -110,14 +152,10 @@ export async function PUT(req: Request) {
             : current.paymentPrefix,
 
         openingCashBalance:
-          Number.isFinite(Number(body.openingCashBalance))
-            ? Number(body.openingCashBalance)
-            : current.openingCashBalance,
+          toDecimalString(body.openingCashBalance, current.openingCashBalance) ?? "0",
 
         openingBankBalance:
-          Number.isFinite(Number(body.openingBankBalance))
-            ? Number(body.openingBankBalance)
-            : current.openingBankBalance,
+          toDecimalString(body.openingBankBalance, current.openingBankBalance) ?? "0",
         
         contributionType:
           typeof body.contributionType === "string"
@@ -125,10 +163,14 @@ export async function PUT(req: Request) {
             : current.contributionType,
 
         globalFixedAmount:
-          Number.isFinite(Number(body.globalFixedAmount))
-            ? Number(body.globalFixedAmount)
-            : current.globalFixedAmount,
-      },
+          toDecimalString(body.globalFixedAmount, current.globalFixedAmount, {
+            nullable: true,
+          }),
+    };
+
+    const updated = await prisma.appSettings.update({
+      where: { id: current.id },
+      data: updateData,
     });
 
     if (typeof body.brandName === "string" && body.brandName.trim()) {
@@ -180,17 +222,25 @@ export async function PATCH(req: Request) {
     if (body.paymentUsePrefix !== undefined) data.paymentUsePrefix = body.paymentUsePrefix;
     if (body.paymentPrefix !== undefined) data.paymentPrefix = body.paymentPrefix;
     if (body.openingCashBalance !== undefined) {
-      data.openingCashBalance = Number.isFinite(Number(body.openingCashBalance))
-        ? Number(body.openingCashBalance)
-        : current.openingCashBalance;
+      data.openingCashBalance = toDecimalString(
+        body.openingCashBalance,
+        current.openingCashBalance
+      );
     }
     if (body.openingBankBalance !== undefined) {
-      data.openingBankBalance = Number.isFinite(Number(body.openingBankBalance))
-        ? Number(body.openingBankBalance)
-        : current.openingBankBalance;
+      data.openingBankBalance = toDecimalString(
+        body.openingBankBalance,
+        current.openingBankBalance
+      );
     }
     if (body.contributionType !== undefined) data.contributionType = body.contributionType;
-    if (body.globalFixedAmount !== undefined) data.globalFixedAmount = body.globalFixedAmount;
+    if (body.globalFixedAmount !== undefined) {
+      data.globalFixedAmount = toDecimalString(
+        body.globalFixedAmount,
+        current.globalFixedAmount,
+        { nullable: true }
+      );
+    }
 
     const updated = await prisma.appSettings.update({
       where: { id: current.id },
