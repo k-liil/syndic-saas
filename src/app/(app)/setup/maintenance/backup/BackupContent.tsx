@@ -238,9 +238,8 @@ export default function BackupContent() {
                     <td className="px-5 py-4 text-zinc-500">{formatSize(b.size)}</td>
                     <td className="px-5 py-4 text-right">
                       <a 
-                        href={b.download_url} 
-                        target="_blank" 
-                        rel="noopener noreferrer"
+                        href={`/api/backups/download?file=${encodeURIComponent(b.name)}`}
+                        download={b.name}
                         className="inline-flex items-center gap-1.5 rounded-lg bg-zinc-100 px-3 py-1.5 text-xs font-bold text-zinc-700 hover:bg-zinc-200 transition-colors"
                       >
                         <Download className="h-3.5 w-3.5" />
