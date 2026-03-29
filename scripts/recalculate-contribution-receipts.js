@@ -23,12 +23,14 @@ function periodKey(period) {
   return period.toISOString().slice(0, 10);
 }
 
-function buildContributionStartPeriod(ownerContributionStartAt, settingsStartYear, settingsStartMonth) {
-  if (ownerContributionStartAt) {
-    return firstDayOfMonth(new Date(ownerContributionStartAt));
+function buildContributionStartPeriod(unitOverride, settings) {
+  if (unitOverride?.overrideStart && unitOverride.startYear && unitOverride.startMonth) {
+    return new Date(Date.UTC(unitOverride.startYear, unitOverride.startMonth - 1, 1));
   }
 
-  return new Date(Date.UTC(settingsStartYear, (settingsStartMonth ?? 1) - 1, 1));
+  const startYear = settings?.startYear ?? new Date().getUTCFullYear();
+  const startMonth = settings?.startMonth ?? 1;
+  return new Date(Date.UTC(startYear, startMonth - 1, 1));
 }
 
 function ensurePeriodsUntil(periods, startPeriod, targetPeriod, fee) {
@@ -100,6 +102,9 @@ async function main() {
       receiptNumber: true,
       unit: {
         select: {
+          overrideStart: true,
+          startYear: true,
+          startMonth: true,
           ownerships: {
             where: {
               endDate: null,
@@ -144,9 +149,8 @@ async function main() {
     for (const receipt of unitReceipts) {
       const receiptPeriod = firstDayOfMonth(new Date(receipt.date));
       const startPeriod = buildContributionStartPeriod(
-        receipt.unit?.ownerships?.[0]?.startDate,
-        settings.startYear,
-        settings.startMonth,
+        receipt.unit,
+        settings
       );
       ensurePeriodsUntil(periods, startPeriod, receiptPeriod, monthlyFee);
 
