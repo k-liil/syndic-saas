@@ -54,6 +54,21 @@ export class BackupService {
     const filePath = path.join('/tmp', fileName);
 
     try {
+      console.log("[BACKUP_LOG] Current PATH:", process.env.PATH);
+      try {
+        const pgDumpPath = execSync('which pg_dump').toString().trim();
+        console.log("[BACKUP_LOG] found pg_dump at:", pgDumpPath);
+      } catch (e) {
+        console.log("[BACKUP_LOG] which pg_dump failed. Trying to find it manually...");
+        try {
+          // Some common Nix/Railway paths
+          const findRes = execSync('find /nix/store -name pg_dump -type f -executable 2>/dev/null | head -n 1').toString().trim();
+          if (findRes) {
+             console.log("[BACKUP_LOG] Manual find found pg_dump at:", findRes);
+          }
+        } catch (ee) {}
+      }
+
       // 1. Dump
       execSync(`pg_dump "${dbUrl}" > "${filePath}"`);
       
