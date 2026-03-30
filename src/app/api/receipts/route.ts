@@ -169,53 +169,58 @@ if (method) where.method = method;
      });
   }
 
-  const [items, total, methodAgg] = await prisma.$transaction([
-    prisma.receipt.findMany({
-      where,
-      skip,
-      take: pageSize,
-      orderBy: [{ date: sortDir }, { receiptNumber: "desc" }],
-      select: {
-        id: true,
-        receiptNumber: true,
-        date: true,
-        amount: true,
-        method: true,
-        note: true,
-        bankName: true,
-        bankRef: true,
-        unallocatedAmount: true,
-        owner: { select: { id: true, name: true, firstName: true, cin: true } },
-        building: { select: { id: true, name: true } },
-        unit: {
-          select: { id: true, lotNumber: true, reference: true, type: true },
-        },
-        allocations: {
-          select: {
-            amount: true,
-            due: {
-              select: {
-                period: true,
-                status: true,
-              },
+  console.time(`[RECEIPTS_LIST] Parallel Queries ${orgId}`);
+
+  const pItems = prisma.receipt.findMany({
+    where,
+    skip,
+    take: pageSize,
+    orderBy: [{ date: sortDir }, { receiptNumber: "desc" }],
+    select: {
+      id: true,
+      receiptNumber: true,
+      date: true,
+      amount: true,
+      method: true,
+      note: true,
+      bankName: true,
+      bankRef: true,
+      unallocatedAmount: true,
+      owner: { select: { id: true, name: true, firstName: true, cin: true } },
+      building: { select: { id: true, name: true } },
+      unit: {
+        select: { id: true, lotNumber: true, reference: true, type: true },
+      },
+      allocations: {
+        select: {
+          amount: true,
+          due: {
+            select: {
+              period: true,
+              status: true,
             },
           },
-          orderBy: {
-            due: {
-              period: "asc",
-            },
+        },
+        orderBy: {
+          due: {
+            period: "asc",
           },
         },
       },
-    }),
-    prisma.receipt.count({ where }),
-    prisma.receipt.groupBy({
-      where,
-      by: ["method"],
-      _sum: { amount: true },
-      orderBy: { method: "asc" },
-    }),
-  ]);
+    },
+  });
+
+  const pCount = prisma.receipt.count({ where });
+  const pTotals = prisma.receipt.groupBy({
+    where,
+    by: ["method"],
+    _sum: { amount: true },
+    orderBy: { method: "asc" },
+  });
+
+  const [items, total, methodAgg] = await Promise.all([pItems, pCount, pTotals]);
+
+  console.timeEnd(`[RECEIPTS_LIST] Parallel Queries ${orgId}`);
 
   const totals = {
     all: 0,

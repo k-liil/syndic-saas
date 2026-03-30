@@ -1,7 +1,7 @@
 import { NextResponse } from "next/server";
 import { prisma } from "@/lib/prisma";
 import { requireAuth, requireManager } from "@/lib/authz";
-import { DueStatus } from "@prisma/client";
+import { DueStatus, Prisma } from "@prisma/client";
 import { reallocateUnitContributions } from "@/lib/allocation";
 
 export async function GET(
@@ -14,8 +14,9 @@ export async function GET(
   }
 
   const { id } = await params;
-  console.time(`[RECEIPT_DETAIL] API Load ${id}`);
+  console.time(`[RECEIPT_DETAIL] HighPerf Load ${id}`);
 
+  // Fetch only the core receipt data first (very fast)
   const item = await prisma.receipt.findFirst({
     where: { id, organizationId: gate.organizationId ?? undefined },
     select: {
@@ -28,35 +29,11 @@ export async function GET(
       bankName: true,
       bankRef: true,
       unallocatedAmount: true,
-      owner: {
-        select: {
-          id: true,
-          name: true,
-          cin: true,
-          email: true,
-          phone: true,
-        },
-      },
-      building: {
-        select: {
-          id: true,
-          name: true,
-        },
-      },
-      unit: {
-        select: {
-          id: true,
-          lotNumber: true,
-          reference: true,
-          type: true,
-        },
-      },
+      owner: { select: { id: true, name: true, cin: true, email: true, phone: true } },
+      building: { select: { id: true, name: true } },
+      unit: { select: { id: true, lotNumber: true, reference: true, type: true } },
       allocations: {
-        orderBy: {
-          due: {
-            period: "asc",
-          },
-        },
+        orderBy: { due: { period: "asc" } },
         select: {
           id: true,
           amount: true,
@@ -67,20 +44,6 @@ export async function GET(
               amountDue: true,
               paidAmount: true,
               status: true,
-              unit: {
-                select: {
-                  id: true,
-                  lotNumber: true,
-                  reference: true,
-                  type: true,
-                  building: {
-                    select: {
-                      id: true,
-                      name: true,
-                    },
-                  },
-                },
-              },
             },
           },
         },
@@ -89,7 +52,7 @@ export async function GET(
   });
 
   if (!item) {
-    console.timeEnd(`[RECEIPT_DETAIL] API Load ${id}`);
+    console.timeEnd(`[RECEIPT_DETAIL] HighPerf Load ${id}`);
     return NextResponse.json({ error: "Receipt not found" }, { status: 404 });
   }
 
@@ -98,29 +61,29 @@ export async function GET(
   if (json.allocations && json.allocations.length > 0) {
     const dueIds = json.allocations.map((a: any) => a.due.id);
     
-    // Optimisation N+1: Fetch all past allocations for all participating months in ONE call
-    const otherAllocs = await prisma.receiptAllocation.findMany({
-      where: {
-        dueId: { in: dueIds },
-        receiptId: { not: id }, // Don't include ourselves
-        receipt: {
-          OR: [
-            { date: { lt: item.date } },
-            {
-              date: item.date,
-              receiptNumber: { lt: item.receiptNumber },
-            },
-          ],
-        },
-      },
-      select: { dueId: true, amount: true },
-    });
+    console.time(`[RECEIPT_DETAIL] DB Sums ${id}`);
+    // Ultra-optimized SQL query to get all previous sums for these dues in one go
+    // This uses a subquery to sum up all allocations that happen before our receipt
+    const otherAllocs: any[] = await prisma.$queryRaw`
+      SELECT 
+        "dueId", 
+        SUM("amount")::float as "total"
+      FROM "ReceiptAllocation" ra
+      JOIN "Receipt" r ON ra."receiptId" = r.id
+      WHERE ra."dueId" IN (${Prisma.join(dueIds)})
+        AND ra."receiptId" != ${id}
+        AND (
+          r."date" < ${item.date}::timestamp 
+          OR (r."date" = ${item.date}::timestamp AND r."receiptNumber" < ${item.receiptNumber})
+        )
+      GROUP BY "dueId"
+    `;
+    console.timeEnd(`[RECEIPT_DETAIL] DB Sums ${id}`);
 
     // Map the sums per dueId
     const sumsMap = new Map<string, number>();
-    otherAllocs.forEach(oa => {
-      const current = sumsMap.get(oa.dueId) || 0;
-      sumsMap.set(oa.dueId, current + Number(oa.amount));
+    otherAllocs.forEach(row => {
+      sumsMap.set(row.dueId, row.total || 0);
     });
 
     // Apply the pre-calculated sums
@@ -131,7 +94,7 @@ export async function GET(
     }
   }
 
-  console.timeEnd(`[RECEIPT_DETAIL] API Load ${id}`);
+  console.timeEnd(`[RECEIPT_DETAIL] HighPerf Load ${id}`);
   return NextResponse.json(json);
 }
 
