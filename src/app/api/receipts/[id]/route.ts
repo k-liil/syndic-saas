@@ -66,8 +66,8 @@ export async function GET(
     // This uses a subquery to sum up all allocations that happen before our receipt
     const otherAllocs: any[] = await prisma.$queryRaw`
       SELECT 
-        "dueId", 
-        SUM("amount")::float as "total"
+        ra."dueId", 
+        SUM(ra."amount")::float as "total"
       FROM "ReceiptAllocation" ra
       JOIN "Receipt" r ON ra."receiptId" = r.id
       WHERE ra."dueId" IN (${Prisma.join(dueIds)})
@@ -76,7 +76,7 @@ export async function GET(
           r."date" < ${item.date}::timestamp 
           OR (r."date" = ${item.date}::timestamp AND r."receiptNumber" < ${item.receiptNumber})
         )
-      GROUP BY "dueId"
+      GROUP BY ra."dueId"
     `;
     console.timeEnd(`[RECEIPT_DETAIL] DB Sums ${id}`);
 
