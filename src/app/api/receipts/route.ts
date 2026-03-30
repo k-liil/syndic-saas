@@ -1,7 +1,7 @@
 import { NextResponse } from "next/server";
 import { prisma } from "@/lib/prisma";
 import { requireAuth, requireManager } from "@/lib/authz";
-import { DueStatus, PaymentMethod, ReceiptType } from "@prisma/client";
+import { DueStatus, PaymentMethod, ReceiptType, Prisma } from "@prisma/client";
 import { getOrgIdFromRequest } from "@/lib/org-utils";
 import { getMonthlyContributionAmount } from "@/lib/contribution-amounts";
 import { buildContributionStartPeriod } from "@/lib/contribution-start";
@@ -182,42 +182,25 @@ if (method) where.method = method;
 
   console.time(`[RECEIPTS_LIST] Hydrate Items ${orgId}`);
   const pItems = receiptIds.length > 0 
-    ? prisma.receipt.findMany({
-        where: { id: { in: receiptIds } },
-        orderBy: [{ date: sortDir }, { receiptNumber: "desc" }],
-        select: {
-          id: true,
-          receiptNumber: true,
-          date: true,
-          amount: true,
-          method: true,
-          note: true,
-          bankName: true,
-          bankRef: true,
-          unallocatedAmount: true,
-          owner: { select: { id: true, name: true, firstName: true, cin: true } },
-          building: { select: { id: true, name: true } },
-          unit: {
-            select: { id: true, lotNumber: true, reference: true, type: true },
-          },
-          allocations: {
-            select: {
-              amount: true,
-              due: {
-                select: {
-                  period: true,
-                  status: true,
-                },
-              },
-            },
-            orderBy: {
-              due: {
-                period: "asc",
-              },
-            },
-          },
-        },
-      }).then(res => { console.timeEnd(`[RECEIPTS_LIST] Hydrate Items ${orgId}`); return res; })
+    ? prisma.$queryRaw<any[]>`
+        SELECT 
+          r.id, r."receiptNumber", r.date, r.amount, r.method, r.note, r."bankName", r."bankRef", r."unallocatedAmount",
+          o.id as "o_id", o.name as "o_name", o."firstName" as "o_firstName", o.cin as "o_cin",
+          b.id as "b_id", b.name as "b_name",
+          u.id as "u_id", u."lotNumber" as "u_lotNumber", u.reference as "u_reference", u.type as "u_type",
+          MIN(d.period) as "firstPeriod_sql",
+          MAX(d.period) as "lastPeriod_sql",
+          BOOL_OR(d.status = 'PARTIAL') as "isPartial_sql"
+        FROM "Receipt" r
+        LEFT JOIN "Owner" o ON r."ownerId" = o.id
+        LEFT JOIN "Building" b ON r."buildingId" = b.id
+        LEFT JOIN "Unit" u ON r."unitId" = u.id
+        LEFT JOIN "ReceiptAllocation" ra ON r.id = ra."receiptId"
+        LEFT JOIN "MonthlyDue" d ON ra."dueId" = d.id
+        WHERE r.id IN (${Prisma.join(receiptIds)})
+        GROUP BY r.id, o.id, b.id, u.id
+        ORDER BY r.date ${Prisma.raw(sortDir.toUpperCase())}, r."receiptNumber" DESC
+      `.then(res => { console.timeEnd(`[RECEIPTS_LIST] Hydrate Items ${orgId}`); return res; })
     : Promise.resolve([]).then(res => { console.timeEnd(`[RECEIPTS_LIST] Hydrate Items ${orgId}`); return res; });
 
   console.time(`[RECEIPTS_LIST] Count Total ${orgId}`);
@@ -251,17 +234,36 @@ if (method) where.method = method;
   }
 
   return NextResponse.json({
-    items: items.map((item) => {
-      const periods = item.allocations.map((a) => a.due.period);
-      const isPartial = item.allocations.some((a) => a.due.status === "PARTIAL");
-
+    items: items.map((row: any) => {
       return {
-        ...item,
-        amount: Number(item.amount ?? 0),
-        unallocatedAmount: Number(item.unallocatedAmount ?? 0),
-        firstPeriod: periods[0] ?? null,
-        lastPeriod: periods[periods.length - 1] ?? null,
-        isPartial,
+        id: row.id,
+        receiptNumber: Number(row.receiptNumber),
+        date: row.date,
+        amount: Number(row.amount),
+        method: row.method,
+        note: row.note,
+        bankName: row.bankName,
+        bankRef: row.bankRef,
+        unallocatedAmount: Number(row.unallocatedAmount),
+        owner: row.o_id ? {
+          id: row.o_id,
+          name: row.o_name,
+          firstName: row.o_firstName,
+          cin: row.o_cin
+        } : null,
+        building: row.b_id ? {
+          id: row.b_id,
+          name: row.b_name
+        } : null,
+        unit: row.u_id ? {
+          id: row.u_id,
+          lotNumber: row.u_lotNumber,
+          reference: row.u_reference,
+          type: row.u_type
+        } : null,
+        firstPeriod: row.firstPeriod_sql,
+        lastPeriod: row.lastPeriod_sql,
+        isPartial: row.isPartial_sql || false
       };
     }),
     pagination: {
