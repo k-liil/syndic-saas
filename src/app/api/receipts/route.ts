@@ -171,45 +171,54 @@ if (method) where.method = method;
 
   console.time(`[RECEIPTS_LIST] Parallel Queries ${orgId}`);
 
-  console.time(`[RECEIPTS_LIST] Fetch Items ${orgId}`);
-  const pItems = prisma.receipt.findMany({
+  console.time(`[RECEIPTS_LIST] IDs Fetch ${orgId}`);
+  const receiptIds = await prisma.receipt.findMany({
     where,
     skip,
     take: pageSize,
     orderBy: [{ date: sortDir }, { receiptNumber: "desc" }],
-    select: {
-      id: true,
-      receiptNumber: true,
-      date: true,
-      amount: true,
-      method: true,
-      note: true,
-      bankName: true,
-      bankRef: true,
-      unallocatedAmount: true,
-      owner: { select: { id: true, name: true, firstName: true, cin: true } },
-      building: { select: { id: true, name: true } },
-      unit: {
-        select: { id: true, lotNumber: true, reference: true, type: true },
-      },
-      allocations: {
+    select: { id: true }
+  }).then(res => { console.timeEnd(`[RECEIPTS_LIST] IDs Fetch ${orgId}`); return res.map(r => r.id); });
+
+  console.time(`[RECEIPTS_LIST] Hydrate Items ${orgId}`);
+  const pItems = receiptIds.length > 0 
+    ? prisma.receipt.findMany({
+        where: { id: { in: receiptIds } },
+        orderBy: [{ date: sortDir }, { receiptNumber: "desc" }],
         select: {
+          id: true,
+          receiptNumber: true,
+          date: true,
           amount: true,
-          due: {
+          method: true,
+          note: true,
+          bankName: true,
+          bankRef: true,
+          unallocatedAmount: true,
+          owner: { select: { id: true, name: true, firstName: true, cin: true } },
+          building: { select: { id: true, name: true } },
+          unit: {
+            select: { id: true, lotNumber: true, reference: true, type: true },
+          },
+          allocations: {
             select: {
-              period: true,
-              status: true,
+              amount: true,
+              due: {
+                select: {
+                  period: true,
+                  status: true,
+                },
+              },
+            },
+            orderBy: {
+              due: {
+                period: "asc",
+              },
             },
           },
         },
-        orderBy: {
-          due: {
-            period: "asc",
-          },
-        },
-      },
-    },
-  }).then(res => { console.timeEnd(`[RECEIPTS_LIST] Fetch Items ${orgId}`); return res; });
+      }).then(res => { console.timeEnd(`[RECEIPTS_LIST] Hydrate Items ${orgId}`); return res; })
+    : Promise.resolve([]).then(res => { console.timeEnd(`[RECEIPTS_LIST] Hydrate Items ${orgId}`); return res; });
 
   console.time(`[RECEIPTS_LIST] Count Total ${orgId}`);
   const pCount = prisma.receipt.count({ where }).then(res => { console.timeEnd(`[RECEIPTS_LIST] Count Total ${orgId}`); return res; });

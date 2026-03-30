@@ -120,11 +120,11 @@ export async function GET(
       }
     }
 
-    console.timeEnd(`[RECEIPT_DETAIL] ZeroLat Load ${id}`);
+    console.timeEnd(`[RECEIPT_DETAIL] ZeroLat Total ${id}`);
     return NextResponse.json(receipt);
   } catch (error: any) {
     console.error(`[RECEIPT_DETAIL] Error:`, error);
-    console.timeEnd(`[RECEIPT_DETAIL] ZeroLat Load ${id}`);
+    console.timeEnd(`[RECEIPT_DETAIL] ZeroLat Total ${id}`);
     return NextResponse.json({ error: "Internal Server Error", details: error.message }, { status: 500 });
   }
 }
