@@ -264,6 +264,7 @@ model MonthlyDue {
 
   @@unique([organizationId, unitId, period])
   @@index([organizationId])
+  @@index([unitId, organizationId, period])
   @@index([period])
   @@index([status])
 }
@@ -337,12 +338,13 @@ model Receipt {
   @@index([buildingId])
   @@index([ownerId])
   @@index([unitId])
+  @@index([unitId, type, date])
   @@index([date])
   @@index([receiptNumber])
   @@index([type, date, receiptNumber])
-@@index([buildingId, type, date])
-@@index([ownerId, type, date])
-@@index([method, type, date])
+  @@index([buildingId, type, date])
+  @@index([ownerId, type, date])
+  @@index([method, type, date])
 }
 
 model ReceiptAllocation {

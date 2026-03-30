@@ -13,7 +13,7 @@ export async function GET(
     return NextResponse.json({ error: gate.error }, { status: gate.status });
   }
 
-  const { id } = await params;
+  console.time(`[RECEIPT_DETAIL] API Load ${id}`);
 
   const item = await prisma.receipt.findFirst({
     where: { id, organizationId: gate.organizationId ?? undefined },
@@ -88,38 +88,49 @@ export async function GET(
   });
 
   if (!item) {
+    console.timeEnd(`[RECEIPT_DETAIL] API Load ${id}`);
     return NextResponse.json({ error: "Receipt not found" }, { status: 404 });
   }
 
   const json = item as any;
 
-  if (json.allocations) {
-    for (const alloc of json.allocations) {
-      const others = await prisma.receiptAllocation.findMany({
-        where: {
-          dueId: alloc.due.id,
-          receipt: {
-            OR: [
-              { date: { lt: item.date } },
-              {
-                date: item.date,
-                receiptNumber: { lt: item.receiptNumber },
-              },
-            ],
-          },
+  if (json.allocations && json.allocations.length > 0) {
+    const dueIds = json.allocations.map((a: any) => a.due.id);
+    
+    // Optimisation N+1: Fetch all past allocations for all participating months in ONE call
+    const otherAllocs = await prisma.receiptAllocation.findMany({
+      where: {
+        dueId: { in: dueIds },
+        receiptId: { not: id }, // Don't include ourselves
+        receipt: {
+          OR: [
+            { date: { lt: item.date } },
+            {
+              date: item.date,
+              receiptNumber: { lt: item.receiptNumber },
+            },
+          ],
         },
-        select: { amount: true },
-      });
+      },
+      select: { dueId: true, amount: true },
+    });
 
-      const previousTotal = others.reduce(
-        (sum, a) => sum + Number(a.amount),
-        0
-      );
+    // Map the sums per dueId
+    const sumsMap = new Map<string, number>();
+    otherAllocs.forEach(oa => {
+      const current = sumsMap.get(oa.dueId) || 0;
+      sumsMap.set(oa.dueId, current + Number(oa.amount));
+    });
+
+    // Apply the pre-calculated sums
+    for (const alloc of json.allocations) {
+      const previousTotal = sumsMap.get(alloc.due.id) || 0;
       alloc.previousTotal = previousTotal;
       alloc.afterTotal = previousTotal + Number(alloc.amount);
     }
   }
 
+  console.timeEnd(`[RECEIPT_DETAIL] API Load ${id}`);
   return NextResponse.json(json);
 }
 
