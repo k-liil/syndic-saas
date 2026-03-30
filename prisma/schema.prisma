@@ -345,6 +345,7 @@ model Receipt {
   @@index([buildingId, type, date])
   @@index([ownerId, type, date])
   @@index([method, type, date])
+  @@index([organizationId, type, date])
 }
 
 model ReceiptAllocation {

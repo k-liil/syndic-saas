@@ -18,10 +18,30 @@ export async function GET(
   const orgId = await getOrgIdFromRequest(req, gate);
   const isSuperAdmin = gate.isSuperAdmin === true;
 
-  console.time(`[RECEIPT_DETAIL] ZeroLat Load ${id}`);
+  console.time(`[RECEIPT_DETAIL] ZeroLat Total ${id}`);
 
   try {
     const rows: any[] = await prisma.$queryRaw`
+      WITH TargetReceipt AS (
+        SELECT id, date, "receiptNumber"
+        FROM "Receipt"
+        WHERE id = ${id}
+      ),
+      PrevSums AS (
+        SELECT 
+          ra2."dueId",
+          SUM(ra2.amount)::float as "total"
+        FROM "ReceiptAllocation" ra2
+        JOIN "Receipt" r2 ON ra2."receiptId" = r2.id
+        JOIN TargetReceipt tr ON (
+          r2.date < tr.date 
+          OR (r2.date = tr.date AND r2."receiptNumber" < tr."receiptNumber")
+        )
+        WHERE ra2."dueId" IN (
+          SELECT "dueId" FROM "ReceiptAllocation" WHERE "receiptId" = ${id}
+        )
+        GROUP BY ra2."dueId"
+      )
       SELECT 
         r.id as "r_id", r."receiptNumber" as "r_number", r.date as "r_date", r.amount as "r_amount", 
         r.method as "r_method", r.note as "r_note", r."bankName" as "r_bankName", r."bankRef" as "r_bankRef", 
@@ -31,19 +51,14 @@ export async function GET(
         u.id as "u_id", u."lotNumber" as "u_lotNumber", u.reference as "u_reference", u.type as "u_type",
         ra.id as "ra_id", ra.amount as "ra_amount",
         d.id as "d_id", d.period as "d_period", d."amountDue" as "d_amountDue", d."paidAmount" as "d_paidAmount", d.status as "d_status",
-        (SELECT COALESCE(SUM(ra2.amount), 0)::float
-         FROM "ReceiptAllocation" ra2 
-         JOIN "Receipt" r2 ON ra2."receiptId" = r2.id 
-         WHERE ra2."dueId" = ra."dueId" 
-           AND ra2.id != ra.id
-           AND (r2.date < r.date OR (r2.date = r.date AND r2."receiptNumber" < r."receiptNumber"))
-        ) as "prevTotal"
+        COALESCE(ps."total", 0) as "prevTotal"
       FROM "Receipt" r
       LEFT JOIN "Owner" o ON r."ownerId" = o.id
       LEFT JOIN "Building" b ON r."buildingId" = b.id
       LEFT JOIN "Unit" u ON r."unitId" = u.id
       LEFT JOIN "ReceiptAllocation" ra ON r.id = ra."receiptId"
       LEFT JOIN "MonthlyDue" d ON ra."dueId" = d.id
+      LEFT JOIN PrevSums ps ON ra."dueId" = ps."dueId"
       WHERE r.id = ${id} 
         AND (${isSuperAdmin} OR r."organizationId" = ${orgId ?? ''})
       ORDER BY d.period ASC NULLS LAST

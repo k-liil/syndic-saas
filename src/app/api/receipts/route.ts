@@ -171,6 +171,7 @@ if (method) where.method = method;
 
   console.time(`[RECEIPTS_LIST] Parallel Queries ${orgId}`);
 
+  console.time(`[RECEIPTS_LIST] Fetch Items ${orgId}`);
   const pItems = prisma.receipt.findMany({
     where,
     skip,
@@ -208,15 +209,18 @@ if (method) where.method = method;
         },
       },
     },
-  });
+  }).then(res => { console.timeEnd(`[RECEIPTS_LIST] Fetch Items ${orgId}`); return res; });
 
-  const pCount = prisma.receipt.count({ where });
+  console.time(`[RECEIPTS_LIST] Count Total ${orgId}`);
+  const pCount = prisma.receipt.count({ where }).then(res => { console.timeEnd(`[RECEIPTS_LIST] Count Total ${orgId}`); return res; });
+
+  console.time(`[RECEIPTS_LIST] GroupBy Method ${orgId}`);
   const pTotals = prisma.receipt.groupBy({
     where,
     by: ["method"],
     _sum: { amount: true },
     orderBy: { method: "asc" },
-  });
+  }).then(res => { console.timeEnd(`[RECEIPTS_LIST] GroupBy Method ${orgId}`); return res; });
 
   const [items, total, methodAgg] = await Promise.all([pItems, pCount, pTotals]);
 
