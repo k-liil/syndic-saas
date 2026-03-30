@@ -169,18 +169,14 @@ if (method) where.method = method;
      });
   }
 
-  console.time(`[RECEIPTS_LIST] Parallel Queries ${orgId}`);
-
-  console.time(`[RECEIPTS_LIST] IDs Fetch ${orgId}`);
   const receiptIds = await prisma.receipt.findMany({
     where,
     skip,
     take: pageSize,
     orderBy: [{ date: sortDir }, { receiptNumber: "desc" }],
     select: { id: true }
-  }).then(res => { console.timeEnd(`[RECEIPTS_LIST] IDs Fetch ${orgId}`); return res.map(r => r.id); });
+  }).then(res => res.map(r => r.id));
 
-  console.time(`[RECEIPTS_LIST] Hydrate Items ${orgId}`);
   const pItems = receiptIds.length > 0 
     ? prisma.$queryRaw<any[]>`
         SELECT 
@@ -200,23 +196,20 @@ if (method) where.method = method;
         WHERE r.id IN (${Prisma.join(receiptIds)})
         GROUP BY r.id, o.id, b.id, u.id
         ORDER BY r.date ${Prisma.raw(sortDir.toUpperCase())}, r."receiptNumber" DESC
-      `.then(res => { console.timeEnd(`[RECEIPTS_LIST] Hydrate Items ${orgId}`); return res; })
-    : Promise.resolve([]).then(res => { console.timeEnd(`[RECEIPTS_LIST] Hydrate Items ${orgId}`); return res; });
+      `
+    : Promise.resolve([]);
 
-  console.time(`[RECEIPTS_LIST] Count Total ${orgId}`);
-  const pCount = prisma.receipt.count({ where }).then(res => { console.timeEnd(`[RECEIPTS_LIST] Count Total ${orgId}`); return res; });
+  const pCount = prisma.receipt.count({ where });
 
-  console.time(`[RECEIPTS_LIST] GroupBy Method ${orgId}`);
   const pTotals = prisma.receipt.groupBy({
     where,
     by: ["method"],
     _sum: { amount: true },
     orderBy: { method: "asc" },
-  }).then(res => { console.timeEnd(`[RECEIPTS_LIST] GroupBy Method ${orgId}`); return res; });
+  });
 
   const [items, total, methodAgg] = await Promise.all([pItems, pCount, pTotals]);
 
-  console.timeEnd(`[RECEIPTS_LIST] Parallel Queries ${orgId}`);
 
   const totals = {
     all: 0,

@@ -18,8 +18,6 @@ export async function GET(
   const orgId = await getOrgIdFromRequest(req, gate);
   const isSuperAdmin = gate.isSuperAdmin === true;
 
-  console.time(`[RECEIPT_DETAIL] ZeroLat Total ${id}`);
-
   try {
     const rows: any[] = await prisma.$queryRaw`
       WITH TargetReceipt AS (
@@ -120,11 +118,9 @@ export async function GET(
       }
     }
 
-    console.timeEnd(`[RECEIPT_DETAIL] ZeroLat Total ${id}`);
     return NextResponse.json(receipt);
   } catch (error: any) {
     console.error(`[RECEIPT_DETAIL] Error:`, error);
-    console.timeEnd(`[RECEIPT_DETAIL] ZeroLat Total ${id}`);
     return NextResponse.json({ error: "Internal Server Error", details: error.message }, { status: 500 });
   }
 }
