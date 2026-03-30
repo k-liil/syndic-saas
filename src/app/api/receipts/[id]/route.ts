@@ -14,88 +14,99 @@ export async function GET(
   }
 
   const { id } = await params;
-  console.time(`[RECEIPT_DETAIL] HighPerf Load ${id}`);
+  console.time(`[RECEIPT_DETAIL] ZeroLat Load ${id}`);
 
-  // Fetch only the core receipt data first (very fast)
-  const item = await prisma.receipt.findFirst({
-    where: { id, organizationId: gate.organizationId ?? undefined },
-    select: {
-      id: true,
-      receiptNumber: true,
-      date: true,
-      amount: true,
-      method: true,
-      note: true,
-      bankName: true,
-      bankRef: true,
-      unallocatedAmount: true,
-      owner: { select: { id: true, name: true, cin: true, email: true, phone: true } },
-      building: { select: { id: true, name: true } },
-      unit: { select: { id: true, lotNumber: true, reference: true, type: true } },
-      allocations: {
-        orderBy: { due: { period: "asc" } },
-        select: {
-          id: true,
-          amount: true,
-          due: {
-            select: {
-              id: true,
-              period: true,
-              amountDue: true,
-              paidAmount: true,
-              status: true,
-            },
-          },
-        },
-      },
-    },
-  });
-
-  if (!item) {
-    console.timeEnd(`[RECEIPT_DETAIL] HighPerf Load ${id}`);
-    return NextResponse.json({ error: "Receipt not found" }, { status: 404 });
-  }
-
-  const json = item as any;
-
-  if (json.allocations && json.allocations.length > 0) {
-    const dueIds = json.allocations.map((a: any) => a.due.id);
-    
-    console.time(`[RECEIPT_DETAIL] DB Sums ${id}`);
-    // Ultra-optimized SQL query to get all previous sums for these dues in one go
-    // This uses a subquery to sum up all allocations that happen before our receipt
-    const otherAllocs: any[] = await prisma.$queryRaw`
+  try {
+    const rows: any[] = await prisma.$queryRaw`
       SELECT 
-        ra."dueId", 
-        SUM(ra."amount")::float as "total"
-      FROM "ReceiptAllocation" ra
-      JOIN "Receipt" r ON ra."receiptId" = r.id
-      WHERE ra."dueId" IN (${Prisma.join(dueIds)})
-        AND ra."receiptId" != ${id}
-        AND (
-          r."date" < ${item.date}::timestamp 
-          OR (r."date" = ${item.date}::timestamp AND r."receiptNumber" < ${item.receiptNumber})
-        )
-      GROUP BY ra."dueId"
+        r.id as "r_id", r."receiptNumber" as "r_number", r.date as "r_date", r.amount as "r_amount", 
+        r.method as "r_method", r.note as "r_note", r."bankName" as "r_bankName", r."bankRef" as "r_bankRef", 
+        r."unallocatedAmount" as "r_unallocated",
+        o.id as "o_id", o.name as "o_name", o."firstName" as "o_firstName", o.cin as "o_cin", o.email as "o_email", o.phone as "o_phone",
+        b.id as "b_id", b.name as "b_name",
+        u.id as "u_id", u."lotNumber" as "u_lotNumber", u.reference as "u_reference", u.type as "u_type",
+        ra.id as "ra_id", ra.amount as "ra_amount",
+        d.id as "d_id", d.period as "d_period", d."amountDue" as "d_amountDue", d."paidAmount" as "d_paidAmount", d.status as "d_status",
+        (SELECT COALESCE(SUM(ra2.amount), 0)::float
+         FROM "ReceiptAllocation" ra2 
+         JOIN "Receipt" r2 ON ra2."receiptId" = r2.id 
+         WHERE ra2."dueId" = ra."dueId" 
+           AND ra2.id != ra.id
+           AND (r2.date < r.date OR (r2.date = r.date AND r2."receiptNumber" < r."receiptNumber"))
+        ) as "prevTotal"
+      FROM "Receipt" r
+      LEFT JOIN "Owner" o ON r."ownerId" = o.id
+      LEFT JOIN "Building" b ON r."buildingId" = b.id
+      LEFT JOIN "Unit" u ON r."unitId" = u.id
+      LEFT JOIN "ReceiptAllocation" ra ON r.id = ra."receiptId"
+      LEFT JOIN "MonthlyDue" d ON ra."dueId" = d.id
+      WHERE r.id = ${id} AND r."organizationId" = ${gate.organizationId ?? ''}
+      ORDER BY d.period ASC NULLS LAST
     `;
-    console.timeEnd(`[RECEIPT_DETAIL] DB Sums ${id}`);
 
-    // Map the sums per dueId
-    const sumsMap = new Map<string, number>();
-    otherAllocs.forEach(row => {
-      sumsMap.set(row.dueId, row.total || 0);
-    });
-
-    // Apply the pre-calculated sums
-    for (const alloc of json.allocations) {
-      const previousTotal = sumsMap.get(alloc.due.id) || 0;
-      alloc.previousTotal = previousTotal;
-      alloc.afterTotal = previousTotal + Number(alloc.amount);
+    if (!rows.length) {
+      console.timeEnd(`[RECEIPT_DETAIL] ZeroLat Load ${id}`);
+      return NextResponse.json({ error: "Receipt not found" }, { status: 404 });
     }
-  }
 
-  console.timeEnd(`[RECEIPT_DETAIL] HighPerf Load ${id}`);
-  return NextResponse.json(json);
+    // Reconstruct the JSON object from flat rows
+    const first = rows[0];
+    const receipt: any = {
+      id: first.r_id,
+      receiptNumber: Number(first.r_number),
+      date: first.r_date,
+      amount: Number(first.r_amount),
+      method: first.r_method,
+      note: first.r_note,
+      bankName: first.r_bankName,
+      bankRef: first.r_bankRef,
+      unallocatedAmount: Number(first.r_unallocated),
+      owner: first.o_id ? {
+        id: first.o_id,
+        name: first.o_name,
+        cin: first.o_cin,
+        email: first.o_email,
+        phone: first.o_phone,
+      } : null,
+      building: first.b_id ? {
+        id: first.b_id,
+        name: first.b_name,
+      } : null,
+      unit: first.u_id ? {
+        id: first.u_id,
+        lotNumber: first.u_lotNumber,
+        reference: first.u_reference,
+        type: first.u_type,
+      } : null,
+      allocations: []
+    };
+
+    // Process all allocations including their previous balances
+    for (const row of rows) {
+      if (row.ra_id) {
+        receipt.allocations.push({
+          id: row.ra_id,
+          amount: Number(row.ra_amount),
+          previousTotal: Number(row.prevTotal || 0),
+          afterTotal: Number(row.prevTotal || 0) + Number(row.ra_amount),
+          due: {
+            id: row.d_id,
+            period: row.d_period,
+            amountDue: Number(row.d_amountDue),
+            paidAmount: Number(row.d_paidAmount),
+            status: row.d_status,
+          }
+        });
+      }
+    }
+
+    console.timeEnd(`[RECEIPT_DETAIL] ZeroLat Load ${id}`);
+    return NextResponse.json(receipt);
+  } catch (error: any) {
+    console.error(`[RECEIPT_DETAIL] Error:`, error);
+    console.timeEnd(`[RECEIPT_DETAIL] ZeroLat Load ${id}`);
+    return NextResponse.json({ error: "Internal Server Error", details: error.message }, { status: 500 });
+  }
 }
 
 export async function PUT(
