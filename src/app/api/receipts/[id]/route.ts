@@ -13,6 +13,7 @@ export async function GET(
     return NextResponse.json({ error: gate.error }, { status: gate.status });
   }
 
+  const { id } = await params;
   console.time(`[RECEIPT_DETAIL] API Load ${id}`);
 
   const item = await prisma.receipt.findFirst({
