@@ -3,9 +3,10 @@ import { prisma } from "@/lib/prisma";
 import { requireAuth, requireManager } from "@/lib/authz";
 import { DueStatus, Prisma } from "@prisma/client";
 import { reallocateUnitContributions } from "@/lib/allocation";
+import { getOrgIdFromRequest } from "@/lib/org-utils";
 
 export async function GET(
-  _req: Request,
+  req: Request,
   { params }: { params: Promise<{ id: string }> }
 ) {
   const gate = await requireAuth();
@@ -14,6 +15,9 @@ export async function GET(
   }
 
   const { id } = await params;
+  const orgId = await getOrgIdFromRequest(req, gate);
+  const isSuperAdmin = gate.isSuperAdmin === true;
+
   console.time(`[RECEIPT_DETAIL] ZeroLat Load ${id}`);
 
   try {
@@ -40,7 +44,8 @@ export async function GET(
       LEFT JOIN "Unit" u ON r."unitId" = u.id
       LEFT JOIN "ReceiptAllocation" ra ON r.id = ra."receiptId"
       LEFT JOIN "MonthlyDue" d ON ra."dueId" = d.id
-      WHERE r.id = ${id} AND r."organizationId" = ${gate.organizationId ?? ''}
+      WHERE r.id = ${id} 
+        AND (${isSuperAdmin} OR r."organizationId" = ${orgId ?? ''})
       ORDER BY d.period ASC NULLS LAST
     `;
 
