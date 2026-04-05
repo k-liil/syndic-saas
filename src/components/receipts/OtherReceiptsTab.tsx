@@ -8,6 +8,7 @@ import { OtherReceiptModal } from "./OtherReceiptModal";
 import { Modal } from "@/components/ui/Modal";
 import { canManage } from "@/lib/roles";
 import { useApiUrl } from "@/lib/org-context";
+import { Upload, PlusCircle, Trash2 } from "lucide-react";
 
 type Method = "CASH" | "TRANSFER" | "CHECK";
 type OtherReceiptType = "RENT" | "OTHER";
@@ -221,28 +222,14 @@ export function OtherReceiptsTab({
       {canEdit ? (
       <div className="flex justify-end gap-3">
         <button
-          onClick={() => {
-            setImportOpen(true);
-            setImportFile(null);
-            setImportResult(null);
-            setImportProgress(0);
-            setImportTotal(0);
-            setImportPercent(0);
-          }}
-          className="rounded-xl border border-zinc-200 bg-white px-4 py-2 text-sm font-medium text-zinc-700"
-        >
-          Importer
-        </button>
+          onClick={() =>{ setImportOpen(true); setImportFile(null); setImportResult(null); setImportProgress(0); setImportTotal(0); setImportPercent(0); }} 
+          className="flex items-center gap-2 rounded-md border border-zinc-200 bg-white px-4 py-2 text-sm font-semibold text-zinc-700 hover:bg-zinc-50 transition-all active:scale-95 shadow-sm" 
+        > <Upload className="h-4 w-4" /> Importer</button>
 
         <button
-          onClick={() => {
-            setEditing(null);
-            setOpen(true);
-          }}
-          className="btn-brand rounded-xl px-4 py-2"
-        >
-          + Ajouter
-        </button>
+          onClick={() =>{ setEditing(null); setOpen(true); }} 
+          className="btn-brand flex items-center gap-2 rounded-md px-5 py-2.5 text-sm font-bold shadow-[0_10px_24px_rgba(14,165,233,0.22)]" 
+        > <PlusCircle className="h-4 w-4" /> Ajouter</button>
       </div>
       ) : null}
 
@@ -352,9 +339,9 @@ export function OtherReceiptsTab({
                 </span>
               </div>
 
-              <div className="h-3 w-full overflow-hidden rounded-full bg-zinc-200">
+              <div className="h-3 w-full overflow-hidden rounded-md bg-zinc-200">
                 <div
-                  className="h-3 bg-blue-600 transition-all"
+                  className="h-3 bg-gradient-to-r from-cyan-500 to-blue-600 transition-all duration-300"
                   style={{ width: `${importPercent}%` }}
                 />
               </div>
@@ -368,7 +355,7 @@ export function OtherReceiptsTab({
             </div>
           )}
 
-          <div className="rounded-2xl bg-zinc-50 p-3 text-xs text-zinc-600">
+          <div className="rounded-md bg-zinc-50 p-3 text-xs text-zinc-600">
             type,description,amount,method,date,bankName,bankRef,note
             <br />
             OTHER,Location salle commune,900,CASH,2026-03-01,,,&quot;Paiement comptant&quot;
@@ -376,23 +363,22 @@ export function OtherReceiptsTab({
             RENT,Loyer local,2500,TRANSFER,2026-03-02,BMCE,VIR-123,Loyer mars
           </div>
 
-          <button
-            onClick={importOtherReceipts}
+          <button onClick={importOtherReceipts}
             disabled={!importFile || importBusy}
-            className="h-12 w-full rounded-2xl bg-zinc-900 text-sm font-medium text-white disabled:opacity-50"
+            className="flex items-center justify-center gap-2 h-12 w-full rounded-md bg-gradient-to-r from-cyan-500 to-blue-600 text-sm font-bold text-white shadow-[0_10px_24px_rgba(14,165,233,0.22)] transition-all hover:scale-[1.01] active:scale-[0.98] disabled:opacity-40"
           >
-            {importBusy ? "Import en cours..." : "Importer"}
+            {importBusy ? "Import en cours..." : "Lancer l'importation"}
           </button>
 
           {importResult ? (
             <div className="grid gap-2">
               <div className="flex items-center gap-3">
-                <span className="inline-flex items-center gap-1 rounded-full bg-emerald-100 px-3 py-1 text-sm font-medium text-emerald-700">
+                <span className="inline-flex gap-3 items-center gap-1 rounded-md bg-emerald-100 px-3 py-1 text-sm font-medium text-emerald-700">
                   {importResult.imported} importe{importResult.imported > 1 ? "s" : ""}
                 </span>
 
                 <span
-                  className={`inline-flex items-center gap-1 rounded-full px-3 py-1 text-sm font-medium ${
+                  className={`inline-flex gap-3 items-center gap-1 rounded-md px-3 py-1 text-sm font-medium ${
                     importResult.errors.length > 0
                       ? "bg-red-100 text-red-700"
                       : "bg-zinc-200 text-zinc-600"
@@ -401,13 +387,13 @@ export function OtherReceiptsTab({
                   {importResult.errors.length} erreur{importResult.errors.length > 1 ? "s" : ""}
                 </span>
 
-                <span className="inline-flex items-center gap-1 rounded-full bg-blue-100 px-3 py-1 text-sm font-medium text-blue-700">
+                <span className="inline-flex gap-3 items-center gap-1 rounded-md bg-blue-100 px-3 py-1 text-sm font-medium text-blue-700">
                   Temps : {fmtElapsed(importResult.durationMs)}
                 </span>
               </div>
 
               {importResult.errors.length > 0 ? (
-                <div className="rounded-xl border border-zinc-200 bg-white p-3">
+                <div className="rounded-md border border-zinc-200 bg-white p-3">
                   <div className="mb-2 text-sm font-medium text-zinc-900">
                     Detail des erreurs
                   </div>

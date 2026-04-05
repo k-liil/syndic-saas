@@ -7,6 +7,7 @@ import { useSearchParams } from "next/navigation";
 import { Modal } from "@/components/ui/Modal";
 import { Table, THead, TR, TH, TD } from "@/components/ui/Table";
 import { canManage } from "@/lib/roles";
+import { Upload, PlusCircle } from "lucide-react";
 
 type Method = "CASH" | "TRANSFER" | "CHECK";
 
@@ -790,7 +791,7 @@ useEffect(() => {
       {toast ? (
         <div className="fixed right-4 top-4 z-[100]">
           <div
-            className={`min-w-[260px] rounded-2xl border px-4 py-3 shadow-lg transition-all ${
+            className={`min-w-[260px] rounded-md border px-4 py-3 shadow-lg transition-all ${
               toast.type === "success"
                 ? "border-emerald-200 bg-emerald-50 text-emerald-800"
                 : "border-red-200 bg-red-50 text-red-800"
@@ -808,8 +809,10 @@ useEffect(() => {
               setPage(1);
               setMethodFilter("ALL");
             }}
-            className={`rounded-xl px-3 py-1.5 text-sm border ${
-              methodFilter === "ALL" ? "bg-zinc-900 text-white" : "bg-white"
+            className={`rounded-md px-3 py-1.5 text-sm border font-medium transition-all ${
+              methodFilter === "ALL" 
+                ? "bg-gradient-to-r from-cyan-500 to-blue-600 text-white border-transparent shadow-sm" 
+                : "bg-white text-zinc-600 border-zinc-200 hover:bg-zinc-50"
             }`}
           >
             Tous
@@ -820,8 +823,10 @@ useEffect(() => {
               setPage(1);
               setMethodFilter("CASH");
             }}
-            className={`rounded-xl px-3 py-1.5 text-sm border ${
-              methodFilter === "CASH" ? "bg-zinc-900 text-white" : "bg-white"
+            className={`rounded-md px-3 py-1.5 text-sm border font-medium transition-all ${
+              methodFilter === "CASH" 
+                ? "bg-gradient-to-r from-cyan-500 to-blue-600 text-white border-transparent shadow-sm" 
+                : "bg-white text-zinc-600 border-zinc-200 hover:bg-zinc-50"
             }`}
           >
             Espèces
@@ -832,8 +837,10 @@ useEffect(() => {
               setPage(1);
               setMethodFilter("TRANSFER");
             }}
-            className={`rounded-xl px-3 py-1.5 text-sm border ${
-              methodFilter === "TRANSFER" ? "bg-zinc-900 text-white" : "bg-white"
+            className={`rounded-md px-3 py-1.5 text-sm border font-medium transition-all ${
+              methodFilter === "TRANSFER" 
+                ? "bg-gradient-to-r from-cyan-500 to-blue-600 text-white border-transparent shadow-sm" 
+                : "bg-white text-zinc-600 border-zinc-200 hover:bg-zinc-50"
             }`}
           >
             Virement
@@ -844,8 +851,10 @@ useEffect(() => {
               setPage(1);
               setMethodFilter("CHECK");
             }}
-            className={`rounded-xl px-3 py-1.5 text-sm border ${
-              methodFilter === "CHECK" ? "bg-zinc-900 text-white" : "bg-white"
+            className={`rounded-md px-3 py-1.5 text-sm border font-medium transition-all ${
+              methodFilter === "CHECK" 
+                ? "bg-gradient-to-r from-cyan-500 to-blue-600 text-white border-transparent shadow-sm" 
+                : "bg-white text-zinc-600 border-zinc-200 hover:bg-zinc-50"
             }`}
           >
             Chèque
@@ -862,7 +871,7 @@ useEffect(() => {
               setLotFilter(e.target.value);
             }}
             placeholder="Ex: E12"
-            className="h-9 w-28 rounded-xl border border-zinc-200 bg-white px-3 text-sm text-zinc-700 shadow-sm outline-none transition focus:border-zinc-900"
+            className="h-9 w-28 rounded-md border border-zinc-200 bg-white px-3 text-sm text-zinc-700 shadow-sm outline-none transition focus:border-zinc-900"
           />
           {lotFilter.trim() ? (
             <button
@@ -870,7 +879,7 @@ useEffect(() => {
                 setPage(1);
                 setLotFilter("");
               }}
-              className="rounded-xl border border-zinc-200 bg-white px-2 py-1 text-xs text-zinc-500 hover:bg-zinc-50"
+              className="rounded-md border border-zinc-200 bg-white px-2 py-1 text-xs text-zinc-500 hover:bg-zinc-50"
             >
               ×
             </button>
@@ -886,7 +895,7 @@ useEffect(() => {
               setPage(1);
               onMonthFilterChange(Number(e.target.value));
             }}
-            className="h-9 rounded-xl border border-zinc-200 bg-white px-3 text-sm text-zinc-700 shadow-sm"
+            className="h-9 rounded-md border border-zinc-200 bg-white px-3 text-sm text-zinc-700 shadow-sm"
           >
             <option value={0}>Tous les mois</option>
             <option value={1}>Janvier</option>
@@ -908,7 +917,7 @@ useEffect(() => {
                 setPage(1);
                 onMonthFilterChange(0);
               }}
-              className="rounded-xl border border-zinc-200 bg-white px-2 py-1 text-xs text-zinc-500 hover:bg-zinc-50"
+              className="rounded-md border border-zinc-200 bg-white px-2 py-1 text-xs text-zinc-500 hover:bg-zinc-50"
             >
               ✕
             </button>
@@ -946,26 +955,18 @@ useEffect(() => {
         </div>
 
         {canEdit ? (
-          <div className="inline-flex rounded-2xl border border-zinc-200 bg-white p-1 shadow-sm">
+          <div className="flex items-center gap-3">
             <button
-              onClick={() => {
-                setImportOpen(true);
-                setImportFile(null);
-                setImportResult(null);
-                setImportProgress(0);
-                setImportTotal(0);
-                setImportPercent(0);
-              }}
-              className="rounded-2xl border border-zinc-200 bg-white px-4 py-2.5 text-sm font-medium text-zinc-700 shadow-sm transition hover:bg-zinc-50"
+              onClick={() =>{ setImportOpen(true); setImportFile(null); setImportResult(null); setImportProgress(0); setImportTotal(0); setImportPercent(0); }}
+              className="flex items-center gap-2 rounded-md border border-zinc-200 bg-white px-5 py-2.5 text-sm font-semibold text-zinc-700 shadow-sm transition-all hover:bg-zinc-50 active:scale-95"
             >
-              Importer
+              <Upload className="h-4 w-4" /> Importer
             </button>
 
-            <button
-              onClick={openCreate}
-              className="btn-brand rounded-2xl px-5 py-2.5 text-sm font-medium"
+            <button onClick={openCreate}
+              className="flex items-center gap-2 rounded-md bg-gradient-to-r from-cyan-500 to-blue-600 px-6 py-2.5 text-sm font-bold text-white shadow-[0_10px_24px_rgba(14,165,233,0.22)] transition-all hover:scale-[1.02] active:scale-[0.98]"
             >
-              + Encaisser
+              <PlusCircle className="h-4 w-4" /> Encaisser
             </button>
           </div>
         ) : null}
@@ -973,7 +974,7 @@ useEffect(() => {
 
       {canEdit && (selectedReceipts.length > 0 || selectAllAcrossResults) && (
 
-        <div className="flex items-center justify-between rounded-2xl border border-zinc-200 bg-white p-3 shadow-sm">
+        <div className="flex items-center justify-between rounded-md border border-zinc-200 bg-white p-3 shadow-sm">
 
           <div className="text-sm text-zinc-600">
             {selectAllAcrossResults
@@ -985,7 +986,7 @@ useEffect(() => {
             <button
               type="button"
               onClick={() => setSelectAllAcrossResults(true)}
-              className="rounded-xl border border-zinc-200 bg-zinc-50 px-3 py-2 text-xs font-medium text-zinc-700 transition hover:bg-zinc-100"
+              className="rounded-md border border-zinc-200 bg-zinc-50 px-3 py-2 text-xs font-medium text-zinc-700 transition hover:bg-zinc-100"
             >
               Selectionner toute la base ({totalReceipts})
             </button>
@@ -995,18 +996,17 @@ useEffect(() => {
             <button
               type="button"
               onClick={() => setSelectAllAcrossResults(false)}
-              className="rounded-xl border border-red-200 bg-red-50 px-3 py-2 text-xs font-medium text-red-800 transition hover:bg-red-100"
+              className="rounded-md border border-red-200 bg-red-50 px-3 py-2 text-xs font-medium text-red-800 transition hover:bg-red-100"
             >
               Revenir a la page courante
             </button>
           ) : null}
 
-          <button
-            onClick={deleteSelected}
+          <button onClick={deleteSelected}
             disabled={bulkDeleting}
-            className="rounded-xl bg-red-600 px-4 py-2 text-sm font-medium text-white shadow-sm transition hover:bg-red-700 disabled:cursor-not-allowed disabled:opacity-60"
+            className="flex items-center gap-2 rounded-md bg-gradient-to-br from-rose-500 to-red-600 px-5 py-2.5 text-sm font-bold text-white shadow-[0_10px_20px_rgba(244,63,94,0.2)] transition-all hover:scale-[1.02] active:scale-[0.98] disabled:cursor-not-allowed disabled:opacity-40"
           >
-            {bulkDeleting ? "Suppression..." : "Supprimer"}
+            {bulkDeleting ? "Suppression..." : "Supprimer la sélection"}
           </button>
 
         </div>
@@ -1014,14 +1014,14 @@ useEffect(() => {
       )}
 
       {bulkDeleting ? (
-        <div className="flex items-center gap-3 rounded-2xl border border-amber-200 bg-amber-50 px-4 py-3 text-sm text-amber-900 shadow-sm">
-          <span className="h-4 w-4 animate-spin rounded-full border-2 border-amber-300 border-t-amber-700" />
+        <div className="flex items-center gap-3 rounded-md border border-amber-200 bg-amber-50 px-4 py-3 text-sm text-amber-900 shadow-sm">
+          <span className="h-4 w-4 animate-spin rounded-md border-2 border-amber-300 border-t-amber-700" />
           <span>Suppression en cours, merci de patienter...</span>
         </div>
       ) : null}
 
 {false && selectedReceipts.length > 0 && !selectAllAcrossResults && totalReceipts > selectedReceipts.length ? (
-  <div className="flex items-center justify-between rounded-2xl border border-zinc-200 bg-amber-50 px-4 py-3 text-sm text-amber-900 shadow-sm">
+  <div className="flex items-center justify-between rounded-md border border-zinc-200 bg-amber-50 px-4 py-3 text-sm text-amber-900 shadow-sm">
     <span>
       {selectedReceipts.length} ligne(s) selectionnee(s) sur cette page.
     </span>
@@ -1029,7 +1029,7 @@ useEffect(() => {
     <button
       type="button"
       onClick={() => setSelectAllAcrossResults(true)}
-      className="rounded-xl border border-amber-200 bg-white px-3 py-2 text-xs font-medium text-amber-900 transition hover:bg-amber-100"
+      className="rounded-md border border-amber-200 bg-white px-3 py-2 text-xs font-medium text-amber-900 transition hover:bg-amber-100"
     >
       Selectionner toute la base ({totalReceipts})
     </button>
@@ -1037,13 +1037,13 @@ useEffect(() => {
 ) : null}
 
 {false && selectAllAcrossResults ? (
-  <div className="flex items-center justify-between rounded-2xl border border-red-200 bg-red-50 px-4 py-3 text-sm text-red-900 shadow-sm">
+  <div className="flex items-center justify-between rounded-md border border-red-200 bg-red-50 px-4 py-3 text-sm text-red-900 shadow-sm">
     <span>{totalReceipts} ligne(s) selectionnee(s) dans toute la base filtree.</span>
 
     <button
       type="button"
       onClick={() => setSelectAllAcrossResults(false)}
-      className="rounded-xl border border-red-200 bg-white px-3 py-2 text-xs font-medium text-red-800 transition hover:bg-red-100"
+      className="rounded-md border border-red-200 bg-white px-3 py-2 text-xs font-medium text-red-800 transition hover:bg-red-100"
     >
       Revenir a la page courante
     </button>
@@ -1116,17 +1116,17 @@ useEffect(() => {
                 </TD>
                 <TD>
                   {r.method === "CASH" && (
-                    <span className="inline-flex items-center rounded-full bg-emerald-100 px-2.5 py-1 text-xs font-medium text-emerald-700">
+                    <span className="inline-flex gap-3 items-center rounded-md bg-emerald-100 px-2.5 py-1 text-xs font-medium text-emerald-700">
                       💵 Espèces
                     </span>
                   )}
                   {r.method === "TRANSFER" && (
-                    <span className="inline-flex items-center rounded-full bg-blue-100 px-2.5 py-1 text-xs font-medium text-blue-700">
+                    <span className="inline-flex gap-3 items-center rounded-md bg-blue-100 px-2.5 py-1 text-xs font-medium text-blue-700">
                       🏦 Virement
                     </span>
                   )}
                   {r.method === "CHECK" && (
-                    <span className="inline-flex items-center rounded-full bg-amber-100 px-2.5 py-1 text-xs font-medium text-amber-700">
+                    <span className="inline-flex gap-3 items-center rounded-md bg-amber-100 px-2.5 py-1 text-xs font-medium text-amber-700">
                       🧾 Chèque
                     </span>
                   )}
@@ -1221,7 +1221,7 @@ useEffect(() => {
     <button
       disabled={page === 1}
       onClick={() => setPage(page - 1)}
-      className="rounded-xl border border-zinc-200 bg-white px-4 py-2 text-sm font-medium text-zinc-700 shadow-sm transition hover:bg-zinc-50 disabled:cursor-not-allowed disabled:opacity-50"
+      className="rounded-md border border-zinc-200 bg-white px-4 py-2 text-sm font-medium text-zinc-700 shadow-sm transition hover:bg-zinc-50 disabled:cursor-not-allowed disabled:opacity-50"
     >
       Précédent
     </button>
@@ -1229,7 +1229,7 @@ useEffect(() => {
     <button
       disabled={page === totalPages}
       onClick={() => setPage(page + 1)}
-      className="rounded-xl border border-zinc-200 bg-white px-4 py-2 text-sm font-medium text-zinc-700 shadow-sm transition hover:bg-zinc-50 disabled:cursor-not-allowed disabled:opacity-50"
+      className="rounded-md border border-zinc-200 bg-white px-4 py-2 text-sm font-medium text-zinc-700 shadow-sm transition hover:bg-zinc-50 disabled:cursor-not-allowed disabled:opacity-50"
     >
       Suivant
     </button>
@@ -1246,7 +1246,7 @@ useEffect(() => {
       >
         <div className="grid gap-4">
           {success ? (
-            <div className="rounded-2xl border border-emerald-200 bg-emerald-50 p-4 text-sm text-emerald-900">
+            <div className="rounded-md border border-emerald-200 bg-emerald-50 p-4 text-sm text-emerald-900">
               <div className="font-semibold">Encaissement enregistré</div>
               <div className="mt-2 space-y-1">
                 <div>
@@ -1275,7 +1275,7 @@ useEffect(() => {
             <label className="text-sm font-medium">Mode</label>
 
             <select
-              className="h-10 w-full rounded-xl border px-3"
+              className="h-10 w-full rounded-md border px-3"
               value={mode}
               disabled={Boolean(editingReceiptId)}
               onChange={(e) => {
@@ -1296,7 +1296,7 @@ useEffect(() => {
             </label>
 
             <input
-              className="h-12 w-full rounded-2xl border border-zinc-200 bg-white px-4 text-sm text-zinc-900 shadow-sm outline-none transition placeholder:text-zinc-400 focus:border-zinc-900 disabled:bg-zinc-100 disabled:text-zinc-500"
+              className="h-12 w-full rounded-md border border-zinc-200 bg-white px-4 text-sm text-zinc-900 shadow-sm outline-none transition placeholder:text-zinc-400 focus:border-zinc-900 disabled:bg-zinc-100 disabled:text-zinc-500"
               placeholder={
                 mode === "UNIT"
                   ? "Rechercher un lot (ex: INM2A12)..."
@@ -1308,7 +1308,7 @@ useEffect(() => {
             />
 
             {units.length > 0 && (
-              <div className="mt-3 max-h-64 overflow-auto rounded-2xl border border-zinc-200 bg-white p-2 shadow-sm">
+              <div className="mt-3 max-h-64 overflow-auto rounded-md border border-zinc-200 bg-white p-2 shadow-sm">
                 <div className="mb-2 px-2 text-xs font-medium uppercase tracking-wide text-zinc-500">
                   Résultats
                 </div>
@@ -1323,17 +1323,17 @@ useEffect(() => {
                         setQuery(`${u.lotNumber} • ${u.ownerName ?? ""}`);
                         setUnits([]);
                       }}
-                      className="group block w-full rounded-xl border border-zinc-200 bg-white px-3 py-3 text-left transition hover:border-zinc-300 hover:bg-zinc-50"
+                      className="group block w-full rounded-md border border-zinc-200 bg-white px-3 py-3 text-left transition hover:border-zinc-300 hover:bg-zinc-50"
                     >
                       <div className="flex items-start justify-between gap-3">
                         <div className="min-w-0">
                           <div className="flex items-center gap-2">
-                            <span className="inline-flex rounded-full bg-blue-600 px-2.5 py-1 text-[11px] font-semibold text-white">
+                            <span className="inline-flex gap-3 rounded-md bg-blue-600 px-2.5 py-1 text-[11px] font-semibold text-white">
                               {u.lotNumber}
                             </span>
 
                             <span
-                              className={`inline-flex rounded-full px-2.5 py-1 text-[11px] font-medium ${
+                              className={`inline-flex gap-3 rounded-md px-2.5 py-1 text-[11px] font-medium ${
                                 u.type === "APARTMENT"
                                   ? "bg-blue-100 text-blue-700"
                                   : u.type === "GARAGE"
@@ -1373,7 +1373,7 @@ useEffect(() => {
           <div>
             <label className="text-sm font-medium">Montant</label>
             <input
-              className="h-12 w-full rounded-2xl border border-zinc-200 bg-white px-4 text-sm shadow-sm outline-none transition focus:border-zinc-900 disabled:bg-zinc-100 disabled:text-zinc-500"
+              className="h-12 w-full rounded-md border border-zinc-200 bg-white px-4 text-sm shadow-sm outline-none transition focus:border-zinc-900 disabled:bg-zinc-100 disabled:text-zinc-500"
               value={amount}
               disabled={Boolean(editingReceiptId)}
               onChange={(e) => setAmount(e.target.value)}
@@ -1393,7 +1393,7 @@ useEffect(() => {
                   setBankName("");
                   setCheckNumber("");
                 }}
-                className={`rounded-2xl border px-4 py-4 text-left shadow-sm transition ${
+                className={`rounded-md border px-4 py-4 text-left shadow-sm transition ${
                   method === "CASH"
                     ? "border-emerald-500 bg-emerald-50 ring-2 ring-emerald-100"
                     : "border-zinc-200 bg-white hover:border-zinc-300 hover:bg-zinc-50"
@@ -1410,7 +1410,7 @@ useEffect(() => {
                   setMethod("TRANSFER");
                   setCheckNumber("");
                 }}
-                className={`rounded-2xl border px-4 py-4 text-left shadow-sm transition ${
+                className={`rounded-md border px-4 py-4 text-left shadow-sm transition ${
                   method === "TRANSFER"
                     ? "border-blue-500 bg-blue-50 ring-2 ring-blue-100"
                     : "border-zinc-200 bg-white hover:border-zinc-300 hover:bg-zinc-50"
@@ -1426,7 +1426,7 @@ useEffect(() => {
                 onClick={() => {
                   setMethod("CHECK");
                 }}
-                className={`rounded-2xl border px-4 py-4 text-left shadow-sm transition ${
+                className={`rounded-md border px-4 py-4 text-left shadow-sm transition ${
                   method === "CHECK"
                     ? "border-amber-500 bg-amber-50 ring-2 ring-amber-100"
                     : "border-zinc-200 bg-white hover:border-zinc-300 hover:bg-zinc-50"
@@ -1444,7 +1444,7 @@ useEffect(() => {
               <label className="text-sm font-medium">Banque</label>
 
               <select
-                className="h-12 w-full rounded-2xl border border-zinc-200 bg-white px-4 text-sm shadow-sm outline-none"
+                className="h-12 w-full rounded-md border border-zinc-200 bg-white px-4 text-sm shadow-sm outline-none"
                 value={bankName}
                 onChange={(e) => setBankName(e.target.value)}
               >
@@ -1464,7 +1464,7 @@ useEffect(() => {
               <label className="text-sm font-medium">N° de chèque</label>
 
               <input
-                className="h-10 rounded-xl border border-zinc-200 px-3"
+                className="h-10 rounded-md border border-zinc-200 px-3"
                 value={checkNumber}
                 onChange={(e) => setCheckNumber(e.target.value)}
                 placeholder="Numéro du chèque"
@@ -1477,7 +1477,7 @@ useEffect(() => {
 
             <input
               type="date"
-              className="h-12 w-full rounded-2xl border border-zinc-200 bg-white px-4 text-sm shadow-sm outline-none transition focus:border-zinc-900"
+              className="h-12 w-full rounded-md border border-zinc-200 bg-white px-4 text-sm shadow-sm outline-none transition focus:border-zinc-900"
               value={date}
               onChange={(e) => setDate(e.target.value)}
             />
@@ -1487,15 +1487,14 @@ useEffect(() => {
             <label className="text-sm font-medium">Note</label>
 
             <textarea
-              className="min-h-[110px] w-full rounded-2xl border border-zinc-200 bg-white px-4 py-3 text-sm shadow-sm outline-none transition focus:border-zinc-900"
+              className="min-h-[110px] w-full rounded-md border border-zinc-200 bg-white px-4 py-3 text-sm shadow-sm outline-none transition focus:border-zinc-900"
               value={note}
               onChange={(e) => setNote(e.target.value)}
               placeholder="Ajouter une note..."
             />
           </div>
 
-          <button
-            onClick={submit}
+          <button onClick={submit}
             disabled={
               busy ||
               !unitId ||
@@ -1503,7 +1502,7 @@ useEffect(() => {
               ((method === "TRANSFER" || method === "CHECK") && !bankName.trim()) ||
               (method === "CHECK" && !checkNumber.trim())
             }
-            className="btn-brand h-12 rounded-2xl text-sm font-medium disabled:opacity-50"
+            className="flex items-center gap-2 btn-brand h-12 rounded-md text-sm font-medium disabled:opacity-50"
           >
             {busy ? "Enregistrement..." : editingReceiptId ? "Mettre à jour" : "Encaisser"}
           </button>
@@ -1530,7 +1529,7 @@ useEffect(() => {
             <div className="rounded-3xl border border-zinc-200 bg-gradient-to-br from-white to-zinc-50 p-5 shadow-sm">
               <div className="flex items-start justify-between gap-4">
                 <div>
-                  <div className="inline-flex items-center rounded-full bg-emerald-100 px-3 py-1 text-xs font-semibold text-emerald-700">
+                  <div className="inline-flex gap-3 items-center rounded-md bg-emerald-100 px-3 py-1 text-xs font-semibold text-emerald-700">
                     Encaissement validé
                   </div>
 
@@ -1543,21 +1542,21 @@ useEffect(() => {
                       type="date"
                       value={editDate}
                       onChange={(e) => setEditDate(e.target.value)}
-                      className="mt-1 h-10 rounded-xl border px-3"
+                      className="mt-1 h-10 rounded-md border px-3"
                     />
                   ) : (
                     <div className="mt-1 text-sm text-zinc-500">{fmtDate(detail.date)}</div>
                   )}
                 </div>
 
-                <div className="rounded-2xl bg-blue-600 px-4 py-3 text-right text-white shadow-sm">
+                <div className="rounded-md bg-blue-600 px-4 py-3 text-right text-white shadow-sm">
                   <div className="text-xs uppercase tracking-wide text-zinc-300">Montant</div>
                   <div className="mt-1 text-2xl font-semibold">{detail.amount}</div>
                 </div>
               </div>
 
               <div className="mt-5 grid gap-3 md:grid-cols-3">
-                <div className="rounded-2xl border border-zinc-200 bg-white p-4">
+                <div className="rounded-md border border-zinc-200 bg-white p-4">
                   <div className="text-xs font-medium uppercase tracking-wide text-zinc-400">
                     Copropriétaire
                   </div>
@@ -1569,7 +1568,7 @@ useEffect(() => {
                   </div>
                 </div>
 
-                <div className="rounded-2xl border border-zinc-200 bg-white p-4">
+                <div className="rounded-md border border-zinc-200 bg-white p-4">
                   <div className="text-xs font-medium uppercase tracking-wide text-zinc-400">
                     Immeuble
                   </div>
@@ -1581,7 +1580,7 @@ useEffect(() => {
                   </div>
                 </div>
 
-                <div className="rounded-2xl border border-zinc-200 bg-white p-4">
+                <div className="rounded-md border border-zinc-200 bg-white p-4">
                   <div className="text-xs font-medium uppercase tracking-wide text-zinc-400">
                     Paiement
                   </div>
@@ -1590,7 +1589,7 @@ useEffect(() => {
                     <select
                       value={editMethod}
                       onChange={(e) => setEditMethod(e.target.value as Method)}
-                      className="mt-1 h-10 rounded-xl border px-3"
+                      className="mt-1 h-10 rounded-md border px-3"
                     >
                       <option value="CASH">Espèces</option>
                       <option value="TRANSFER">Virement</option>
@@ -1626,7 +1625,7 @@ useEffect(() => {
                   </div>
                 </div>
 
-                <div className="inline-flex items-center rounded-full bg-blue-50 px-3 py-1 text-xs font-medium text-blue-700">
+                <div className="inline-flex gap-3 items-center rounded-md bg-blue-50 px-3 py-1 text-xs font-medium text-blue-700">
                   {detail.allocations?.length ?? 0} ligne(s)
                 </div>
               </div>
@@ -1635,7 +1634,7 @@ useEffect(() => {
                 const allocations = detail.allocations ?? [];
                 if (allocations.length === 0) {
                   return (
-                    <div className="mt-4 rounded-2xl border border-dashed border-zinc-200 bg-zinc-50 p-4 text-sm text-zinc-500">
+                    <div className="mt-4 rounded-md border border-dashed border-zinc-200 bg-zinc-50 p-4 text-sm text-zinc-500">
                       Aucune allocation.
                     </div>
                   );
@@ -1693,7 +1692,7 @@ useEffect(() => {
                         const first = group.items[0];
                         const last = group.items[group.items.length - 1];
                         return (
-                          <div key={idx} className="flex items-center justify-between rounded-2xl border border-emerald-100 bg-emerald-50/50 px-5 py-4 shadow-sm">
+                          <div key={idx} className="flex items-center justify-between rounded-md border border-emerald-100 bg-emerald-50/50 px-5 py-4 shadow-sm">
                             <div className="min-w-0">
                               <div className="text-xs font-semibold uppercase tracking-wider text-emerald-600/80">Période réglée</div>
                               <div className="mt-1 text-base font-semibold text-zinc-900">
@@ -1703,7 +1702,7 @@ useEffect(() => {
                                 {group.items.length} mois couvert(s)
                               </div>
                             </div>
-                            <div className="ml-4 rounded-xl bg-emerald-600 px-4 py-2 text-right text-white shadow-sm">
+                            <div className="ml-4 rounded-md bg-emerald-600 px-4 py-2 text-right text-white shadow-sm">
                               <div className="text-[10px] font-medium uppercase tracking-tight text-emerald-100">Total</div>
                               <div className="text-lg font-bold">{group.total.toLocaleString("fr-FR")} <span className="text-xs font-normal">MAD</span></div>
                             </div>
@@ -1713,7 +1712,7 @@ useEffect(() => {
 
                       if (group.type === "COMPLEMENT") {
                         return (
-                          <div key={idx} className="flex items-center justify-between rounded-2xl border border-emerald-100 bg-emerald-50/50 px-5 py-4 shadow-sm">
+                          <div key={idx} className="flex items-center justify-between rounded-md border border-emerald-100 bg-emerald-50/50 px-5 py-4 shadow-sm">
                             <div className="min-w-0">
                               <div className="text-xs font-semibold uppercase tracking-wider text-emerald-600/80">Règlement complémentaire</div>
                               <div className="mt-1 text-base font-semibold text-zinc-900">
@@ -1723,7 +1722,7 @@ useEffect(() => {
                                 Mois complété
                               </div>
                             </div>
-                            <div className="ml-4 rounded-xl bg-emerald-600 px-4 py-2 text-right text-white shadow-sm">
+                            <div className="ml-4 rounded-md bg-emerald-600 px-4 py-2 text-right text-white shadow-sm">
                               <div className="text-[10px] font-medium uppercase tracking-tight text-emerald-100">Plus</div>
                               <div className="text-lg font-bold">{group.total.toLocaleString("fr-FR")} <span className="text-xs font-normal">MAD</span></div>
                             </div>
@@ -1733,7 +1732,7 @@ useEffect(() => {
 
                       // PARTIAL
                       return (
-                        <div key={idx} className="flex items-center justify-between rounded-2xl border border-amber-100 bg-amber-50/50 px-5 py-4 shadow-sm">
+                        <div key={idx} className="flex items-center justify-between rounded-md border border-amber-100 bg-amber-50/50 px-5 py-4 shadow-sm">
                           <div className="min-w-0">
                             <div className="text-xs font-semibold uppercase tracking-wider text-amber-600/80">Paiement partiel</div>
                             <div className="mt-1 text-base font-semibold text-zinc-900">
@@ -1743,7 +1742,7 @@ useEffect(() => {
                               Reliquat alloué
                             </div>
                           </div>
-                          <div className="ml-4 rounded-xl bg-amber-500 px-4 py-2 text-right text-white shadow-sm">
+                          <div className="ml-4 rounded-md bg-amber-500 px-4 py-2 text-right text-white shadow-sm">
                             <div className="text-[10px] font-medium uppercase tracking-tight text-amber-100">Total</div>
                             <div className="text-lg font-bold">{group.total.toLocaleString("fr-FR")} <span className="text-xs font-normal">MAD</span></div>
                           </div>
@@ -1756,7 +1755,7 @@ useEffect(() => {
             </div>
 
             {detail.unallocatedAmount > 0 ? (
-              <div className="rounded-2xl border border-amber-200 bg-amber-50 p-4 text-sm text-amber-800 shadow-sm">
+              <div className="rounded-md border border-amber-200 bg-amber-50 p-4 text-sm text-amber-800 shadow-sm">
                 <span className="font-semibold">Crédit restant :</span> {detail.unallocatedAmount}
               </div>
             ) : null}
@@ -1765,9 +1764,8 @@ useEffect(() => {
 
         {editMode && (
           <div className="flex justify-end">
-            <button
-              onClick={updateReceipt}
-              className="btn-brand rounded-2xl px-4 py-2 text-sm"
+            <button onClick={updateReceipt}
+              className="flex items-center gap-2 btn-brand rounded-md px-4 py-2 text-sm"
             >
               Enregistrer
             </button>
@@ -1801,16 +1799,15 @@ useEffect(() => {
                 setReceiptToDelete(null);
                 setReceiptToDeleteNumber(null);
               }}
-              className="rounded-2xl border border-zinc-200 bg-white px-4 py-2 text-sm font-medium text-zinc-700 shadow-sm transition hover:bg-zinc-50"
+              className="rounded-md border border-zinc-200 bg-white px-4 py-2 text-sm font-medium text-zinc-700 shadow-sm transition hover:bg-zinc-50"
             >
               Annuler
             </button>
 
-            <button
-              type="button"
+            <button type="button"
               onClick={confirmDelete}
               disabled={deleting}
-              className="rounded-2xl bg-red-600 px-4 py-2 text-sm font-medium text-white shadow-sm transition hover:bg-red-700 disabled:opacity-50"
+              className="flex items-center gap-2 rounded-md bg-red-600 px-4 py-2 text-sm font-medium text-white shadow-sm transition hover:bg-red-700 disabled:opacity-50"
             >
               {deleting ? "Suppression..." : "Supprimer"}
             </button>
@@ -1871,7 +1868,7 @@ useEffect(() => {
       </span>
     </div>
 
-    <div className="h-3 w-full rounded-full bg-zinc-200 overflow-hidden">
+    <div className="h-3 w-full rounded-md bg-zinc-200 overflow-hidden">
       <div
         className="h-3 bg-blue-600 transition-all"
         style={{ width: `${importPercent}%` }}
@@ -1886,14 +1883,14 @@ useEffect(() => {
     </div>
 
     {importProgress === 0 ? (
-      <div className="rounded-xl border border-amber-200 bg-amber-50 px-3 py-2 text-xs text-amber-700">
+      <div className="rounded-md border border-amber-200 bg-amber-50 px-3 py-2 text-xs text-amber-700">
         Preparation du premier lot...
       </div>
     ) : null}
   </div>
 )}         
 
-          <div className="rounded-2xl bg-zinc-50 p-3 text-xs text-zinc-600">
+          <div className="rounded-md bg-zinc-50 p-3 text-xs text-zinc-600">
             lotNumber,amount,method,date,note
             <br />
             INM1A1,350,CASH,2026-03-01,Paiement mars
@@ -1901,10 +1898,9 @@ useEffect(() => {
             INM1A2,350,TRANSFER,2026-03-02,Virement
           </div>
 
-          <button
-  onClick={importReceipts}
+          <button onClick={importReceipts}
   disabled={!importFile || importBusy}
-  className="h-12 w-full rounded-2xl bg-zinc-900 text-sm font-medium text-white disabled:opacity-50"
+  className="flex items-center gap-2 h-12 w-full rounded-md bg-blue-600 hover:bg-blue-700 text-sm font-medium text-white disabled:opacity-50"
 >
   {importBusy ? "Import en cours..." : "Importer"}
 </button>
@@ -1912,12 +1908,12 @@ useEffect(() => {
 {importResult ? (
   <div className="grid gap-2">
     <div className="flex items-center gap-3">
-      <span className="inline-flex items-center gap-1 rounded-full bg-emerald-100 px-3 py-1 text-sm font-medium text-emerald-700">
+      <span className="inline-flex gap-3 items-center gap-1 rounded-md bg-emerald-100 px-3 py-1 text-sm font-medium text-emerald-700">
         ✓ {importResult.imported} importé{importResult.imported > 1 ? "s" : ""}
       </span>
 
       <span
-        className={`inline-flex items-center gap-1 rounded-full px-3 py-1 text-sm font-medium ${
+        className={`inline-flex gap-3 items-center gap-1 rounded-md px-3 py-1 text-sm font-medium ${
           importResult.errors.length > 0
             ? "bg-red-100 text-red-700"
             : "bg-zinc-200 text-zinc-600"
@@ -1927,13 +1923,13 @@ useEffect(() => {
         {importResult.errors.length > 1 ? "s" : ""}
       </span>
 
-      <span className="inline-flex items-center gap-1 rounded-full bg-blue-100 px-3 py-1 text-sm font-medium text-blue-700">
+      <span className="inline-flex gap-3 items-center gap-1 rounded-md bg-blue-100 px-3 py-1 text-sm font-medium text-blue-700">
         Temps : {fmtElapsed(importResult.durationMs)}
       </span>
     </div>
 
     {importResult.errors.length > 0 ? (
-      <div className="rounded-xl border border-zinc-200 bg-white p-3">
+      <div className="rounded-md border border-zinc-200 bg-white p-3">
         <div className="mb-2 text-sm font-medium text-zinc-900">Détail des erreurs</div>
         <ul className="max-h-48 space-y-1 overflow-auto text-sm text-zinc-700">
           {importResult.errors.map((e, idx) => (

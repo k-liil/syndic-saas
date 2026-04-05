@@ -19,7 +19,7 @@ export default function ReceiptsPage() {
           <select
             value={monthFilter}
             onChange={(e) => setMonthFilter(Number(e.target.value))}
-            className="h-10 rounded-xl border border-zinc-200 bg-white px-3 text-sm text-zinc-700 shadow-sm"
+            className="h-10 rounded-md border border-zinc-200 bg-white px-3 text-sm text-zinc-700 shadow-sm"
           >
             <option value={0}>Tous les mois</option>
             <option value={1}>Janvier</option>
@@ -39,7 +39,7 @@ export default function ReceiptsPage() {
             <button
               type="button"
               onClick={() => setMonthFilter(0)}
-              className="rounded-xl border border-zinc-200 bg-white px-2 py-1 text-xs text-zinc-500 hover:bg-zinc-50"
+              className="rounded-md border border-zinc-200 bg-white px-2 py-1 text-xs text-zinc-500 hover:bg-zinc-50"
             >
               x
             </button>
@@ -51,7 +51,7 @@ export default function ReceiptsPage() {
 
       <Suspense
         fallback={
-          <div className="rounded-2xl border border-zinc-200 bg-white p-8 text-center text-sm text-zinc-500 shadow-sm">
+          <div className="rounded-md border border-zinc-200 bg-white p-8 text-center text-sm text-zinc-500 shadow-sm">
             Chargement des recettes...
           </div>
         }

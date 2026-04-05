@@ -60,12 +60,12 @@ export function ReceiptsDetailModal({
       <div className="space-y-4">
         {loading ? (
           <div className="flex flex-col items-center justify-center py-12 text-sm text-zinc-500">
-            <div className="h-6 w-6 animate-spin rounded-full border-2 border-zinc-200 border-t-sky-500" />
+            <div className="h-6 w-6 animate-spin rounded-md border-2 border-zinc-200 border-t-sky-500" />
             <span className="mt-4">Chargement des reçus...</span>
           </div>
         ) : receipts.length === 0 ? (
           <div className="flex flex-col items-center justify-center py-12 text-center">
-            <div className="rounded-full bg-zinc-50 p-4">
+            <div className="rounded-md bg-zinc-50 p-4">
               <ReceiptIcon className="h-8 w-8 text-zinc-300" />
             </div>
             <div className="mt-4 text-sm font-medium text-zinc-900">Aucun reçu trouvé</div>
@@ -74,7 +74,7 @@ export function ReceiptsDetailModal({
             </p>
           </div>
         ) : (
-          <div className="overflow-hidden rounded-xl border border-zinc-200 bg-white shadow-sm">
+          <div className="overflow-hidden rounded-md border border-zinc-200 bg-white shadow-sm">
             <table className="w-full text-left text-sm">
               <thead className="bg-zinc-50 border-b border-zinc-200">
                 <tr>
@@ -131,9 +131,8 @@ export function ReceiptsDetailModal({
         )}
 
         <div className="flex justify-end gap-3 pt-2">
-          <button
-            onClick={onClose}
-            className="rounded-lg border border-zinc-200 px-4 py-2 text-sm font-medium hover:bg-zinc-50 transition-colors"
+          <button onClick={onClose}
+            className="flex items-center gap-2 rounded-lg border border-zinc-200 px-4 py-2 text-sm font-medium hover:bg-zinc-50 transition-colors"
           >
             Fermer
           </button>

@@ -35,12 +35,12 @@ function ActivationSwitch({
       aria-checked={checked}
       disabled={disabled}
       onClick={onToggle}
-      className={`relative inline-flex h-6 w-11 items-center rounded-full transition ${
-        checked ? "bg-emerald-500" : "bg-zinc-300"
-      } ${disabled ? "cursor-not-allowed opacity-60" : ""}`}
+      className={`relative inline-flex h-6 w-11 items-center rounded-full transition-all duration-300 ${
+        checked ? "bg-gradient-to-r from-emerald-400 to-emerald-600 shadow-[0_2px_10px_rgba(16,185,129,0.2)]" : "bg-zinc-300"
+      } ${disabled ? "cursor-not-allowed opacity-60" : "hover:scale-105 active:scale-95"}`}
     >
       <span
-        className={`inline-block h-4 w-4 transform rounded-full bg-white transition ${
+        className={`inline-block h-4 w-4 transform rounded-full bg-white shadow-sm transition-all duration-300 ${
           checked ? "translate-x-6" : "translate-x-1"
         }`}
       />
@@ -75,7 +75,7 @@ function PostsSection({
         <h2 className="text-lg font-semibold text-zinc-900">
           {title} ({posts.length})
         </h2>
-        <span className={`rounded-full px-3 py-1 text-xs font-medium ${badgeClassName}`}>
+        <span className={`rounded-md px-3 py-1 text-xs font-medium ${badgeClassName}`}>
           {badgeLabel}
         </span>
       </div>
@@ -90,7 +90,7 @@ function PostsSection({
             return (
               <div
                 key={post.id}
-                className={`flex items-center justify-between gap-4 rounded-2xl border px-4 py-3 transition ${
+                className={`flex items-center justify-between gap-4 rounded-md border px-4 py-3 transition ${
                   post.isActive
                     ? "border-zinc-200 bg-white"
                     : "border-zinc-100 bg-zinc-50"
@@ -112,8 +112,8 @@ function PostsSection({
                   <span
                     className={
                       post.isActive
-                        ? "inline-flex rounded-full bg-emerald-100 px-2.5 py-1 text-xs font-medium text-emerald-700"
-                        : "inline-flex rounded-full bg-zinc-200 px-2.5 py-1 text-xs font-medium text-zinc-600"
+                        ? "inline-flex gap-3 rounded-md bg-emerald-100 px-2.5 py-1 text-xs font-medium text-emerald-700"
+                        : "inline-flex gap-3 rounded-md bg-zinc-200 px-2.5 py-1 text-xs font-medium text-zinc-600"
                     }
                   >
                     {post.isActive ? "Actif" : "Inactif"}
@@ -129,7 +129,7 @@ function PostsSection({
                       <button
                         type="button"
                         onClick={() => onEdit(post)}
-                        className="inline-flex h-10 w-10 items-center justify-center rounded-xl border border-zinc-200 bg-white text-zinc-600 transition hover:bg-zinc-100"
+                        className="inline-flex gap-3 h-10 w-10 items-center justify-center rounded-md border border-zinc-200 bg-white text-zinc-600 transition hover:bg-zinc-100"
                         aria-label={`Modifier ${post.code}`}
                       >
                         <Pencil className="h-4 w-4" />
@@ -337,7 +337,7 @@ export default function AccountingPostsPage() {
     <div className="space-y-6">
       {toast ? (
         <div
-          className={`fixed right-6 top-6 z-[100] rounded-2xl px-4 py-3 text-sm font-semibold text-white shadow-lg ${
+          className={`fixed right-6 top-6 z-[100] rounded-md px-4 py-3 text-sm font-semibold text-white shadow-lg ${
             isDangerToast ? "bg-red-500" : "bg-emerald-500"
           }`}
         >
@@ -362,7 +362,7 @@ export default function AccountingPostsPage() {
                 type="button"
                 onClick={() => void setAllPostsActive(true)}
                 disabled={bulkBusy}
-                className="inline-flex h-10 items-center gap-2 rounded-2xl border border-emerald-200 bg-emerald-50 px-4 text-sm font-semibold text-emerald-700 disabled:opacity-50"
+                className="inline-flex h-10 items-center gap-2 rounded-md border border-emerald-200 bg-emerald-50 px-4 text-sm font-bold text-emerald-700 transition-all hover:bg-emerald-100 hover:shadow-sm active:scale-95 disabled:opacity-50"
               >
                 <Power className="h-4 w-4" />
                 Tout activer
@@ -371,19 +371,15 @@ export default function AccountingPostsPage() {
                 type="button"
                 onClick={() => void setAllPostsActive(false)}
                 disabled={bulkBusy}
-                className="inline-flex h-10 items-center gap-2 rounded-2xl border border-zinc-200 bg-white px-4 text-sm font-semibold text-zinc-700 disabled:opacity-50"
+                className="inline-flex h-10 items-center gap-2 rounded-md border border-zinc-200 bg-white px-4 text-sm font-bold text-zinc-700 transition-all hover:bg-zinc-50 hover:shadow-sm active:scale-95 disabled:opacity-50"
               >
                 <PowerOff className="h-4 w-4" />
-                Tout desactiver
+                Tout désactiver
               </button>
-              <button
-                type="button"
+              <button type="button"
                 onClick={openCreate}
-                className="btn-brand inline-flex h-10 items-center gap-2 rounded-2xl px-5 text-sm font-semibold"
-              >
-                <Plus className="h-4 w-4" />
-                Nouveau poste
-              </button>
+                className="btn-brand inline-flex gap-3 h-10 items-center gap-2 rounded-md px-5 text-sm font-semibold"
+              ><Plus className="h-4 w-4" /> Nouveau poste</button>
             </div>
           ) : null}
         </div>
@@ -427,7 +423,7 @@ export default function AccountingPostsPage() {
               <h2 className="text-xl font-semibold text-zinc-900">
                 {editPost ? "Modifier le poste" : "Nouveau poste comptable"}
               </h2>
-              <button onClick={closeModal} className="text-2xl text-zinc-400">
+              <button onClick={closeModal} className="flex items-center gap-2 text-2xl text-zinc-400">
                 &times;
               </button>
             </div>
@@ -441,7 +437,7 @@ export default function AccountingPostsPage() {
                   <button
                     type="button"
                     onClick={() => setPostType("CHARGE")}
-                    className={`flex-1 rounded-2xl border py-3 text-sm font-medium transition ${
+                    className={`flex-1 rounded-md border py-3 text-sm font-medium transition ${
                       postType === "CHARGE"
                         ? "border-red-300 bg-red-50 text-red-700"
                         : "border-zinc-200 text-zinc-600 hover:bg-zinc-50"
@@ -452,7 +448,7 @@ export default function AccountingPostsPage() {
                   <button
                     type="button"
                     onClick={() => setPostType("PRODUCT")}
-                    className={`flex-1 rounded-2xl border py-3 text-sm font-medium transition ${
+                    className={`flex-1 rounded-md border py-3 text-sm font-medium transition ${
                       postType === "PRODUCT"
                         ? "border-green-300 bg-green-50 text-green-700"
                         : "border-zinc-200 text-zinc-600 hover:bg-zinc-50"
@@ -468,7 +464,7 @@ export default function AccountingPostsPage() {
                   Code
                 </label>
                 <input
-                  className="h-12 w-full rounded-2xl border border-zinc-200 px-4 text-sm outline-none"
+                  className="h-12 w-full rounded-md border border-zinc-200 px-4 text-sm outline-none"
                   value={code}
                   onChange={(e) => setCode(e.target.value.toUpperCase())}
                   placeholder="6111"
@@ -481,7 +477,7 @@ export default function AccountingPostsPage() {
                   Nom
                 </label>
                 <input
-                  className="h-12 w-full rounded-2xl border border-zinc-200 px-4 text-sm outline-none"
+                  className="h-12 w-full rounded-md border border-zinc-200 px-4 text-sm outline-none"
                   value={name}
                   onChange={(e) => setName(e.target.value)}
                   placeholder="Eau"
@@ -493,7 +489,7 @@ export default function AccountingPostsPage() {
                   Note (optionnel)
                 </label>
                 <input
-                  className="h-12 w-full rounded-2xl border border-zinc-200 px-4 text-sm outline-none"
+                  className="h-12 w-full rounded-md border border-zinc-200 px-4 text-sm outline-none"
                   value={note}
                   onChange={(e) => setNote(e.target.value)}
                   placeholder="Consommation mensuelle"
@@ -501,7 +497,7 @@ export default function AccountingPostsPage() {
               </div>
 
               {!editPost ? (
-                <div className="rounded-2xl border border-zinc-200 bg-zinc-50 px-4 py-3 text-sm text-zinc-600">
+                <div className="rounded-md border border-zinc-200 bg-zinc-50 px-4 py-3 text-sm text-zinc-600">
                   Le poste sera cree comme inactif par defaut.
                 </div>
               ) : null}
@@ -509,7 +505,7 @@ export default function AccountingPostsPage() {
               <button
                 onClick={() => void savePost()}
                 disabled={submitting}
-                className="btn-brand h-12 w-full rounded-2xl text-sm font-semibold disabled:opacity-50"
+                className="btn-brand h-12 w-full rounded-md text-sm font-semibold disabled:opacity-50"
               >
                 {submitting ? "Enregistrement..." : editPost ? "Enregistrer" : "Creer le poste"}
               </button>

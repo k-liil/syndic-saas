@@ -24,10 +24,10 @@ export async function GET(req: Request) {
   const owners = await prisma.owner.findMany({
     where: {
       organizationId: orgId,
-      name: {
-        contains: q,
-        mode: "insensitive",
-      },
+      OR: [
+        { name: { contains: q, mode: "insensitive" } },
+        { firstName: { contains: q, mode: "insensitive" } },
+      ],
     },
     include: {
       ownerships: {

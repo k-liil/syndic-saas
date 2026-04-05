@@ -5,7 +5,7 @@ import { useSession } from "next-auth/react";
 import { canManageUsers, getRoleLabel } from "@/lib/roles";
 import { Table, THead, TR, TH, TD, TableBody } from "@/components/ui/Table";
 import { Modal } from "@/components/ui/Modal";
-import { Plus, Settings, X, Shield, User, Mail, Calendar, Key, Building2 } from "lucide-react";
+import { Plus, Settings, X, Shield, User, Mail, Calendar, Key, Building2, PlusCircle } from "lucide-react";
 
 type UserOrg = {
   organizationId: string;
@@ -224,16 +224,13 @@ export default function UsersPage() {
           <p className="text-zinc-500 mt-1.5 font-medium">Gestion des accès et des rôles de l&apos;organisation.</p>
         </div>
         <button
-          onClick={() => setOpenAddModal(true)}
-          className="h-11 px-6 rounded-2xl bg-zinc-900 text-white text-sm font-semibold hover:bg-zinc-800 transition-all active:scale-95 shadow-lg shadow-zinc-200 flex items-center gap-2"
-        >
-          <Plus size={18} />
-          Ajouter un utilisateur
-        </button>
+          onClick={() =>setOpenAddModal(true)} 
+          className="h-11 px-6 rounded-md bg-gradient-to-r from-cyan-500 to-blue-600 text-white text-sm font-semibold shadow-[0_10px_24px_rgba(14,165,233,0.22)] transition-all hover:scale-[1.02] active:scale-[0.98] flex items-center gap-2" 
+        > <Plus size={18} /> Ajouter un utilisateur</button>
       </div>
 
       {toast && (
-        <div className="fixed top-6 right-6 z-[100] rounded-2xl border border-zinc-200 bg-white px-5 py-3 text-sm font-medium text-zinc-900 shadow-xl animate-in fade-in slide-in-from-top-4">
+        <div className="fixed top-6 right-6 z-[100] rounded-md border border-zinc-200 bg-white px-5 py-3 text-sm font-medium text-zinc-900 shadow-xl animate-in fade-in slide-in-from-top-4">
           {toast}
         </div>
       )}
@@ -243,7 +240,7 @@ export default function UsersPage() {
         <div className="relative flex-1 group">
           <input
             type="text"
-            className="h-11 w-full rounded-2xl border border-zinc-200 bg-white pl-10 pr-4 text-sm outline-none focus:ring-2 focus:ring-indigo-500 transition-all font-medium placeholder:text-zinc-400"
+            className="h-11 w-full rounded-md border border-zinc-200 bg-white pl-10 pr-4 text-sm outline-none focus:ring-2 focus:ring-indigo-500 transition-all font-medium placeholder:text-zinc-400"
             placeholder="Rechercher par nom ou email..."
             value={searchQuery}
             onChange={(e) => setSearchQuery(e.target.value)}
@@ -251,7 +248,7 @@ export default function UsersPage() {
           <User className="absolute left-3.5 top-1/2 -translate-y-1/2 text-zinc-400 group-focus-within:text-indigo-500 transition-colors" size={16} />
         </div>
         <select
-          className="h-11 min-w-[180px] rounded-2xl border border-zinc-200 bg-white px-4 text-sm outline-none focus:ring-2 focus:ring-indigo-500 transition-all font-semibold text-zinc-700"
+          className="h-11 min-w-[180px] rounded-md border border-zinc-200 bg-white px-4 text-sm outline-none focus:ring-2 focus:ring-indigo-500 transition-all font-semibold text-zinc-700"
           value={roleFilter}
           onChange={(e) => setRoleFilter(e.target.value)}
         >
@@ -288,21 +285,21 @@ export default function UsersPage() {
               >
                 <TD className="font-semibold text-zinc-900">{user.name || "-"}</TD>
                 <TD>
-                  <span className={`inline-flex items-center rounded-full px-2.5 py-0.5 text-xs font-medium ${
+                  <span className={`inline-flex gap-3 items-center rounded-md px-2.5 py-0.5 text-xs font-medium ${
                     user.isActive ? "bg-emerald-100 text-emerald-700" : "bg-zinc-100 text-zinc-500"
                   }`}>
                     {user.isActive ? "Actif" : "Inactif"}
                   </span>
                 </TD>
                 <TD>
-                  <span className="inline-flex items-center gap-1.5 rounded-full bg-indigo-50 px-2.5 py-0.5 text-xs font-medium text-indigo-700">
+                  <span className="inline-flex gap-3 items-center gap-1.5 rounded-md bg-indigo-50 px-2.5 py-0.5 text-xs font-medium text-indigo-700">
                     <Shield size={10} /> {getRoleLabel(user.role)}
                   </span>
                 </TD>
                 <TD className="text-zinc-600 font-medium">{user.email}</TD>
                 <TD className="text-zinc-500">{new Date(user.createdAt).toLocaleDateString("fr-FR")}</TD>
                 <TD className="text-right">
-                  <button className="p-2 text-zinc-400 group-hover:text-indigo-600 transition">
+                  <button className="flex items-center gap-2 p-2 text-zinc-400 group-hover:text-indigo-600 transition">
                     <Settings size={18} />
                   </button>
                 </TD>
@@ -323,7 +320,7 @@ export default function UsersPage() {
           <div className="space-y-1.5">
             <label className="text-xs font-bold text-zinc-500 uppercase tracking-wider ml-1">Nom complet</label>
             <input
-              className="h-11 w-full rounded-2xl border border-zinc-200 bg-zinc-50/50 px-4 text-sm outline-none focus:ring-2 focus:ring-indigo-500 transition"
+              className="h-11 w-full rounded-md border border-zinc-200 bg-zinc-50/50 px-4 text-sm outline-none focus:ring-2 focus:ring-indigo-500 transition"
               value={name}
               onChange={(e) => setName(e.target.value)}
               placeholder="Prénom et Nom"
@@ -333,7 +330,7 @@ export default function UsersPage() {
           <div className="space-y-1.5">
             <label className="text-xs font-bold text-zinc-500 uppercase tracking-wider ml-1">Email</label>
             <input
-              className="h-11 w-full rounded-2xl border border-zinc-200 bg-zinc-50/50 px-4 text-sm outline-none focus:ring-2 focus:ring-indigo-500 transition"
+              className="h-11 w-full rounded-md border border-zinc-200 bg-zinc-50/50 px-4 text-sm outline-none focus:ring-2 focus:ring-indigo-500 transition"
               value={email}
               onChange={(e) => setEmail(e.target.value)}
               placeholder="email@example.com"
@@ -344,7 +341,7 @@ export default function UsersPage() {
           <div className="space-y-1.5">
             <label className="text-xs font-bold text-zinc-500 uppercase tracking-wider ml-1">Mot de passe</label>
             <input
-              className="h-11 w-full rounded-2xl border border-zinc-200 bg-zinc-50/50 px-4 text-sm outline-none focus:ring-2 focus:ring-indigo-500 transition"
+              className="h-11 w-full rounded-md border border-zinc-200 bg-zinc-50/50 px-4 text-sm outline-none focus:ring-2 focus:ring-indigo-500 transition"
               value={password}
               onChange={(e) => setPassword(e.target.value)}
               placeholder="Minimum 6 caractères"
@@ -355,7 +352,7 @@ export default function UsersPage() {
           <div className="space-y-1.5">
             <label className="text-xs font-bold text-zinc-500 uppercase tracking-wider ml-1">Première Organisation</label>
             <select
-              className="h-11 w-full rounded-2xl border border-zinc-200 bg-zinc-50/50 px-4 text-sm outline-none focus:ring-2 focus:ring-indigo-500 transition"
+              className="h-11 w-full rounded-md border border-zinc-200 bg-zinc-50/50 px-4 text-sm outline-none focus:ring-2 focus:ring-indigo-500 transition"
               value={newOrgId}
               onChange={(e) => setNewOrgId(e.target.value)}
             >
@@ -383,7 +380,7 @@ export default function UsersPage() {
                 if (!toast.includes("impossible")) setOpenAddModal(false);
               }}
               disabled={creating}
-              className="h-11 px-6 rounded-2xl bg-indigo-600 text-white text-sm font-semibold hover:bg-indigo-700 transition-all shadow-lg shadow-indigo-100 disabled:opacity-50"
+              className="h-11 px-6 rounded-md bg-indigo-600 text-white text-sm font-semibold hover:bg-indigo-700 transition-all shadow-lg shadow-indigo-100 disabled:opacity-50"
             >
               {creating ? "Création..." : "Créer le compte"}
             </button>
@@ -401,7 +398,7 @@ export default function UsersPage() {
         {selectedUser && (
           <div className="space-y-8">
             {/* Infos de base */}
-            <div className="grid grid-cols-2 gap-6 bg-zinc-50/50 p-4 rounded-2xl border border-zinc-100">
+            <div className="grid grid-cols-2 gap-6 bg-zinc-50/50 p-4 rounded-md border border-zinc-100">
               <div className="flex flex-col gap-1">
                 <span className="text-[10px] font-bold text-zinc-400 uppercase tracking-widest">Nom complet</span>
                 <input
@@ -458,7 +455,7 @@ export default function UsersPage() {
                   <label className="text-[10px] font-bold text-zinc-500 uppercase tracking-wider ml-1">Changer le mot de passe</label>
                   <input
                     type="password"
-                    className="h-10 w-full rounded-xl border border-zinc-200 px-3 text-sm outline-none focus:ring-2 focus:ring-indigo-500"
+                    className="h-10 w-full rounded-md border border-zinc-200 px-3 text-sm outline-none focus:ring-2 focus:ring-indigo-500"
                     placeholder="Laisser vide pour ne pas changer"
                     value={newPassword}
                     onChange={(e) => setNewPassword(e.target.value)}
@@ -475,7 +472,7 @@ export default function UsersPage() {
               
               <div className="space-y-2">
                 {selectedUser.organizations.map((uo) => (
-                  <div key={uo.organizationId} className="flex items-center justify-between p-3 rounded-xl bg-zinc-50 border border-zinc-100">
+                  <div key={uo.organizationId} className="flex items-center justify-between p-3 rounded-md bg-zinc-50 border border-zinc-100">
                     <span className="text-sm font-medium text-zinc-700">{uo.organizationName || uo.organizationId}</span>
                     {selectedUser.role !== "SUPER_ADMIN" && (
                       <button 
@@ -488,7 +485,7 @@ export default function UsersPage() {
                   </div>
                 ))}
                 {selectedUser.organizations.length === 0 && (
-                  <div className="text-center py-4 text-zinc-400 italic text-xs border border-dashed border-zinc-200 rounded-xl">
+                  <div className="text-center py-4 text-zinc-400 italic text-xs border border-dashed border-zinc-200 rounded-md">
                     Aucune organisation affectée
                   </div>
                 )}
@@ -498,7 +495,7 @@ export default function UsersPage() {
                 <div className="pt-2">
                   <div className="flex items-center gap-2">
                     <select
-                      className="h-10 flex-1 rounded-xl border border-zinc-200 px-3 text-sm outline-none"
+                      className="h-10 flex-1 rounded-md border border-zinc-200 px-3 text-sm outline-none"
                       id="modal-add-org"
                     >
                       <option value="" disabled selected>Ajouter un accès...</option>
@@ -506,8 +503,7 @@ export default function UsersPage() {
                         <option key={org.id} value={org.id}>{org.name}</option>
                       ))}
                     </select>
-                    <button
-                      className="h-10 rounded-xl bg-indigo-600 px-4 text-xs font-bold text-white hover:bg-indigo-700 transition shadow-sm"
+                    <button className="flex items-center gap-2 h-10 rounded-md bg-indigo-600 px-4 text-xs font-bold text-white hover:bg-indigo-700 transition shadow-sm"
                       onClick={() => {
                         const select = document.getElementById("modal-add-org") as HTMLSelectElement;
                         if (select.value) {
@@ -525,10 +521,9 @@ export default function UsersPage() {
 
             {/* Bouton de sauvegarde global */}
             <div className="pt-6 border-t border-zinc-100 flex justify-end">
-              <button
-                onClick={updateUserInfo}
+              <button onClick={updateUserInfo}
                 disabled={isUpdating}
-                className="h-11 px-8 rounded-2xl bg-zinc-900 text-white text-sm font-bold hover:bg-zinc-800 transition shadow-lg shadow-zinc-100 disabled:opacity-50"
+                className="flex items-center gap-2 h-11 px-8 rounded-md bg-gradient-to-r from-cyan-500 to-blue-600 text-white text-sm font-bold shadow-[0_10px_24px_rgba(14,165,233,0.22)] transition-all hover:scale-[1.02] active:scale-[0.98] disabled:opacity-50"
               >
                 {isUpdating ? "Enregistrement..." : "Enregistrer les modifications"}
               </button>

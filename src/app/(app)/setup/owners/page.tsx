@@ -4,7 +4,7 @@ import { useEffect, useMemo, useState } from "react";
 import { useSession } from "next-auth/react";
 import { Modal } from "@/components/ui/Modal";
 import { Table, THead, TR, TH, TD } from "@/components/ui/Table";
-import { Pencil, Trash2 } from "lucide-react";
+import { Pencil, Trash2, Upload, PlusCircle } from "lucide-react";
 import { canManage } from "@/lib/roles";
 import { useApiUrl } from "@/lib/org-context";
 
@@ -276,33 +276,23 @@ export default function OwnersPage() {
           {canEdit ? (
             <div className="flex gap-2">
               <button
-                onClick={() => {
-                  setOpenImport(true);
-                  setImportResult(null);
-                  setImportError("");
-                  setImportFile(null);
-                  setImportProgress(0);
-                  setImportTotal(0);
-                  setImportPercent(0);
-                }}
-                className="rounded-xl border border-slate-200 bg-white px-4 py-2 text-sm font-medium text-slate-700 hover:bg-slate-50"
+                onClick={() =>{ setOpenImport(true); setImportResult(null); setImportError(""); setImportFile(null); setImportProgress(0); setImportTotal(0); setImportPercent(0); }}
+                className="flex items-center gap-2 rounded-md border border-slate-200 bg-white px-4 py-2 text-sm font-medium text-slate-700 hover:bg-slate-50 transition-colors"
               >
-                Importer
+                <Upload className="h-4 w-4" /> Importer
               </button>
 
-              <button
-                onClick={removeSelected}
+              <button onClick={removeSelected}
                 disabled={selectedIds.length === 0 || busy}
-                className="rounded-xl border border-slate-200 bg-white px-4 py-2 text-sm font-medium text-slate-700 hover:bg-slate-50 disabled:opacity-40"
+                className="flex items-center gap-2 rounded-md border border-slate-200 bg-white px-4 py-2 text-sm font-medium text-slate-700 hover:bg-red-50 hover:text-red-700 hover:border-red-200 disabled:opacity-40 transition-colors"
               >
-                Supprimer ({selectedIds.length})
+                <Trash2 className="h-4 w-4" /> Supprimer ({selectedIds.length})
               </button>
 
-              <button
-                onClick={openCreate}
-                className="inline-flex items-center gap-2 rounded-xl bg-sky-500 px-4 py-2 text-sm font-medium text-white shadow-sm transition hover:bg-sky-600"
+              <button onClick={openCreate}
+                className="flex items-center gap-2 rounded-md bg-gradient-to-r from-cyan-500 to-blue-600 px-4 py-2.5 text-sm font-semibold text-white shadow-[0_10px_24px_rgba(14,165,233,0.22)] transition-all hover:scale-[1.02] active:scale-[0.98]"
               >
-                + Ajouter
+                <PlusCircle className="h-4 w-4" /> Ajouter
               </button>
             </div>
           ) : null}
@@ -311,7 +301,7 @@ export default function OwnersPage() {
 
       <div className="flex-1 overflow-auto">
 
-      <div className="overflow-hidden rounded-2xl border border-slate-200 bg-white shadow-sm">
+      <div className="overflow-hidden rounded-md border border-slate-200 bg-white shadow-sm">
         <Table>
           <THead className="bg-slate-50">
             <TR>
@@ -326,7 +316,7 @@ export default function OwnersPage() {
                 <button
                   type="button"
                   onClick={() => setBuildingMenuOpen((v) => !v)}
-                  className="inline-flex items-center gap-2"
+                  className="inline-flex gap-3 items-center gap-2"
                   title="Filtrer par bâtiment"
                 >
                   Bâtiment
@@ -334,7 +324,7 @@ export default function OwnersPage() {
                 </button>
 
                 {buildingMenuOpen ? (
-                  <div className="absolute left-0 top-full z-50 mt-2 w-56 rounded-xl border border-slate-200 bg-white p-2 shadow-lg">
+                  <div className="absolute left-0 top-full z-50 mt-2 w-56 rounded-md border border-slate-200 bg-white p-2 shadow-lg">
                     <div className="px-2 py-1 text-xs font-medium text-slate-500">Filtrer</div>
 
                     <button
@@ -421,7 +411,7 @@ export default function OwnersPage() {
                         {o.units.slice(0, 2).map((u) => (
                           <span
                             key={u.id}
-                            className="inline-flex items-center rounded-lg border border-zinc-200 bg-white px-2 py-1 text-xs"
+                            className="inline-flex gap-3 items-center rounded-lg border border-zinc-200 bg-white px-2 py-1 text-xs"
                             title={`${u.type} • Ref: ${u.reference}`}
                           >
                             {u.lotNumber}
@@ -441,7 +431,7 @@ export default function OwnersPage() {
                         ))}
 
                         {o.units.length > 2 ? (
-                          <span className="inline-flex items-center rounded-lg border border-zinc-200 bg-zinc-50 px-2 py-1 text-xs text-zinc-700">
+                          <span className="inline-flex gap-3 items-center rounded-lg border border-zinc-200 bg-zinc-50 px-2 py-1 text-xs text-zinc-700">
                             +{o.units.length - 2}
                           </span>
                         ) : null}
@@ -467,7 +457,7 @@ export default function OwnersPage() {
                           target="_blank"
                           rel="noopener noreferrer"
                           title="Rappel WhatsApp"
-                          className="inline-flex h-9 w-9 items-center justify-center rounded-lg border border-emerald-200 bg-emerald-50 hover:bg-emerald-100 transition-colors"
+                          className="inline-flex gap-3 h-9 w-9 items-center justify-center rounded-lg border border-emerald-200 bg-emerald-50 hover:bg-emerald-100 transition-colors"
                         >
                           <svg className="h-4 w-4 text-emerald-600" viewBox="0 0 24 24" fill="currentColor">
                             <path d="M17.472 14.382c-.297-.149-1.758-.867-2.03-.967-.273-.099-.471-.148-.67.15-.197.297-.767.966-.94 1.164-.173.199-.347.223-.644.075-.297-.15-1.255-.463-2.39-1.475-.883-.788-1.48-1.761-1.653-2.059-.173-.297-.018-.458.13-.606.134-.133.298-.347.446-.52.149-.174.198-.298.298-.497.099-.198.05-.371-.025-.52-.075-.149-.669-1.612-.916-2.207-.242-.579-.487-.5-.669-.51-.173-.008-.371-.01-.57-.01-.198 0-.52.074-.792.372-.272.297-1.04 1.016-1.04 2.479 0 1.462 1.065 2.875 1.213 3.074.149.198 2.096 3.2 5.077 4.487.709.306 1.262.489 1.694.625.712.227 1.36.195 1.871.118.571-.085 1.758-.719 2.006-1.413.248-.694.248-1.289.173-1.413-.074-.124-.272-.198-.57-.347m-5.421 7.403h-.004a9.87 9.87 0 01-5.031-1.378l-.361-.214-3.741.982.998-3.648-.235-.374a9.86 9.86 0 01-1.51-5.26c.001-5.45 4.436-9.884 9.888-9.884 2.64 0 5.122 1.03 6.988 2.898a9.825 9.825 0 012.893 6.994c-.003 5.45-4.437 9.884-9.885 9.884m8.413-18.297A11.815 11.815 0 0012.05 0C5.414 0 .018 5.396 0 12.032c0 2.12.556 4.188 1.61 6.01l-1.71 6.242 6.384-1.674c1.766.962 3.758 1.47 5.766 1.47h.005c6.626 0 12.022-5.397 12.025-12.034a11.82 11.82 0 00-3.522-8.508z"/>
@@ -478,18 +468,13 @@ export default function OwnersPage() {
                         type="button"
                         onClick={() => openEdit(o)}
                         title="Éditer"
-                        className="inline-flex h-9 w-9 items-center justify-center rounded-lg border border-zinc-200 bg-white hover:bg-zinc-50"
+                        className="inline-flex gap-3 h-9 w-9 items-center justify-center rounded-lg border border-zinc-200 bg-white hover:bg-zinc-50"
                       >
                         <Pencil className="h-4 w-4 text-blue-600" />
                       </button>
                       <button
                         type="button"
-                        onClick={() => remove(o.id)}
-                        title="Supprimer"
-                        className="inline-flex h-9 w-9 items-center justify-center rounded-lg border border-zinc-200 bg-white hover:bg-zinc-50"
-                      >
-                        <Trash2 className="h-4 w-4 text-red-600" />
-                      </button>
+                        onClick={() =>remove(o.id)} title="Supprimer" className="inline-flex gap-3 h-9 w-9 items-center justify-center rounded-lg border border-zinc-200 bg-white hover:bg-zinc-50" > <Trash2 className="h-4 w-4 text-red-600" /></button>
                     </div> : <div className="text-right text-xs text-zinc-500">Lecture seule</div>}
                   </TD>
                 </TR>
@@ -517,7 +502,7 @@ export default function OwnersPage() {
             className="block w-full text-sm"
           />
 
-          <pre className="rounded-xl bg-zinc-50 p-3 text-xs overflow-auto">
+          <pre className="rounded-md bg-zinc-50 p-3 text-xs overflow-auto">
             cin,name,lotNumber,email,phone
             {"\n"}AA123,John Doe,A1,john@x.com,0600000000
             {"\n"}BB456,Jane Doe,B10,,
@@ -606,7 +591,7 @@ export default function OwnersPage() {
                 setImportStartedAt(null);
               }
             }}
-            className="h-11 w-full rounded-xl bg-zinc-900 text-sm font-medium text-white hover:bg-zinc-800 disabled:opacity-40"
+            className="h-11 w-full rounded-md bg-blue-600 hover:bg-blue-700 text-sm font-medium text-white hover:bg-zinc-800 disabled:opacity-40"
           >
             {importBusy ? "Import..." : "Importer"}
           </button>
@@ -619,9 +604,9 @@ export default function OwnersPage() {
                 </span>
               </div>
 
-              <div className="h-3 w-full overflow-hidden rounded-full bg-zinc-200">
+              <div className="h-3 w-full overflow-hidden rounded-md bg-zinc-200">
                 <div
-                  className="h-3 rounded-full bg-zinc-900 transition-all duration-300"
+                  className="h-3 rounded-md bg-blue-600 hover:bg-blue-700 transition-all duration-300"
                   style={{ width: `${importPercent}%` }}
                 />
               </div>
@@ -635,18 +620,18 @@ export default function OwnersPage() {
             </div>
           ) : null}
           {importError ? (
-            <div className="rounded-xl border border-red-200 bg-red-50 p-3 text-sm text-red-800">{importError}</div>
+            <div className="rounded-md border border-red-200 bg-red-50 p-3 text-sm text-red-800">{importError}</div>
           ) : null}
 
           {importResult ? (
             <div className="grid gap-2">
               <div className="flex items-center gap-3">
-                <span className="inline-flex items-center gap-1 rounded-full bg-emerald-100 px-3 py-1 text-sm font-medium text-emerald-700">
+                <span className="inline-flex gap-3 items-center gap-1 rounded-md bg-emerald-100 px-3 py-1 text-sm font-medium text-emerald-700">
                   ✓ {importResult.imported} importé{importResult.imported > 1 ? "s" : ""}
                 </span>
 
                 <span
-                  className={`inline-flex items-center gap-1 rounded-full px-3 py-1 text-sm font-medium ${
+                  className={`inline-flex gap-3 items-center gap-1 rounded-md px-3 py-1 text-sm font-medium ${
                     importResult.errors.length > 0 ? "bg-red-100 text-red-700" : "bg-zinc-200 text-zinc-600"
                   }`}
                 >
@@ -654,13 +639,13 @@ export default function OwnersPage() {
                   {importResult.errors.length > 1 ? "s" : ""}
                 </span>
 
-                <span className="inline-flex items-center gap-1 rounded-full bg-blue-100 px-3 py-1 text-sm font-medium text-blue-700">
+                <span className="inline-flex gap-3 items-center gap-1 rounded-md bg-blue-100 px-3 py-1 text-sm font-medium text-blue-700">
                   Temps : {fmtElapsed(importResult.durationMs)}
                 </span>
               </div>
 
               {importResult.errors.length > 0 ? (
-                <div className="rounded-xl border border-zinc-200 bg-white p-3">
+                <div className="rounded-md border border-zinc-200 bg-white p-3">
                   <div className="mb-2 text-sm font-medium text-zinc-900">Détail des erreurs</div>
                   <ul className="max-h-48 space-y-1 overflow-auto text-sm text-zinc-700">
                     {importResult.errors.map((e, idx) => (
@@ -689,13 +674,13 @@ export default function OwnersPage() {
       >
         <div className="grid gap-4">
           {errorMsg ? (
-            <div className="rounded-xl border border-red-200 bg-red-50 p-3 text-sm text-red-800">{errorMsg}</div>
+            <div className="rounded-md border border-red-200 bg-red-50 p-3 text-sm text-red-800">{errorMsg}</div>
           ) : null}
 
           <div className="grid gap-2">
             <label className="text-sm font-medium">Lot *</label>
             <select
-              className="h-10 rounded-xl border border-zinc-200 px-3 bg-white"
+              className="h-10 rounded-md border border-zinc-200 px-3 bg-white"
               value={unitId}
               onChange={(e) => setUnitId(e.target.value)}
             >
@@ -713,7 +698,7 @@ export default function OwnersPage() {
             <div className="grid gap-2">
               <label className="text-sm font-medium">Prénom</label>
               <input
-                className="h-10 rounded-xl border border-zinc-200 px-3"
+                className="h-10 rounded-md border border-zinc-200 px-3"
                 placeholder="Prénom"
                 value={firstName}
                 onChange={(e) => setFirstName(e.target.value)}
@@ -722,7 +707,7 @@ export default function OwnersPage() {
             <div className="grid gap-2">
               <label className="text-sm font-medium">Nom *</label>
               <input
-                className="h-10 rounded-xl border border-zinc-200 px-3"
+                className="h-10 rounded-md border border-zinc-200 px-3"
                 placeholder="Nom"
                 value={name}
                 onChange={(e) => setName(e.target.value)}
@@ -733,7 +718,7 @@ export default function OwnersPage() {
           <div className="grid gap-2">
             <label className="text-sm font-medium">CIN (Optionnel)</label>
             <input
-              className="h-10 rounded-xl border border-zinc-200 px-3"
+              className="h-10 rounded-md border border-zinc-200 px-3"
               placeholder="CIN"
               value={cin}
               onChange={(e) => setCin(e.target.value)}
@@ -743,7 +728,7 @@ export default function OwnersPage() {
           <div className="grid gap-2">
             <label className="text-sm font-medium">Email</label>
             <input
-              className="h-10 rounded-xl border border-zinc-200 px-3"
+              className="h-10 rounded-md border border-zinc-200 px-3"
               placeholder="Email"
               value={email}
               onChange={(e) => setEmail(e.target.value)}
@@ -753,7 +738,7 @@ export default function OwnersPage() {
           <div className="grid gap-2">
             <label className="text-sm font-medium">Téléphone</label>
             <input
-              className="h-10 rounded-xl border border-zinc-200 px-3"
+              className="h-10 rounded-md border border-zinc-200 px-3"
               placeholder="Téléphone"
               value={phone}
               onChange={(e) => setPhone(e.target.value)}
@@ -763,17 +748,16 @@ export default function OwnersPage() {
           <div className="grid gap-2">
             <label className="text-sm font-medium">Note / Infos complémentaires</label>
             <textarea
-              className="min-h-[80px] rounded-xl border border-zinc-200 p-3"
+              className="min-h-[80px] rounded-md border border-zinc-200 p-3"
               placeholder="Notes, Tel 2, etc..."
               value={notes}
               onChange={(e) => setNotes(e.target.value)}
             />
           </div>
 
-          <button
-            onClick={submit}
+          <button onClick={submit}
             disabled={!canSubmit || busy}
-            className="mt-2 h-11 w-full rounded-xl bg-zinc-900 text-sm font-medium text-white hover:bg-zinc-800 disabled:opacity-40"
+            className="flex items-center gap-2 mt-2 h-11 w-full rounded-md bg-blue-600 hover:bg-blue-700 text-sm font-medium text-white hover:bg-zinc-800 disabled:opacity-40"
           >
             {busy ? "Enregistrement..." : editingId ? "Enregistrer" : "Créer le copropriétaire"}
           </button>

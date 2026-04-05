@@ -296,6 +296,22 @@ export async function POST(req: Request) {
     rowsByUnit.set(item.unit.id, current);
   }
 
+  // Pre-generate all distinct fiscal years for the entire batch sequentially
+  // This avoids unique constraint errors during parallel transactions
+  const requiredYears = Array.from(new Set(validRows.map(item => item.receiptDate.getUTCFullYear())));
+  for (const year of requiredYears) {
+    await prisma.fiscalYear.upsert({
+      where: { organizationId_year: { organizationId: orgId, year } },
+      update: {},
+      create: {
+        organizationId: orgId,
+        year,
+        startsAt: new Date(Date.UTC(year, 0, 1)),
+        endsAt: new Date(Date.UTC(year, 11, 31)),
+      },
+    });
+  }
+
   const groups = Array.from(rowsByUnit.values());
   console.log("[IMPORT] Processing", groups.length, "groups in parallel...");
 
@@ -307,26 +323,8 @@ export async function POST(req: Request) {
         console.log("[IMPORT] Starting transaction for lot:", groupLot);
         await prisma.$transaction(
           async (tx) => {
-            const fiscalYearsUpserted = new Set<number>();
             const unit = group[0].unit;
 
-            // 1. Pre-generate fiscal years for the whole group
-            for (const item of group) {
-              const fiscalYear = item.receiptDate.getUTCFullYear();
-              if (!fiscalYearsUpserted.has(fiscalYear)) {
-                await tx.fiscalYear.upsert({
-                  where: { organizationId_year: { organizationId: orgId, year: fiscalYear } },
-                  update: {},
-                  create: {
-                    organizationId: orgId,
-                    year: fiscalYear,
-                    startsAt: new Date(Date.UTC(fiscalYear, 0, 1)),
-                    endsAt: new Date(Date.UTC(fiscalYear, 11, 31)),
-                  },
-                });
-                fiscalYearsUpserted.add(fiscalYear);
-              }
-            }
 
             // 2. Determine necessary period reach for the whole group
             let earliestPeriod = firstDayOfMonth(group[0].receiptDate);

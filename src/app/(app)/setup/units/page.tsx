@@ -11,7 +11,7 @@ import {
 } from "@/lib/imports/units-csv";
 import { canManage } from "@/lib/roles";
 import { useApiUrl, useOrgId } from "@/lib/org-context";
-import { Plus, Upload, MoreHorizontal, Pencil, Trash2 } from "lucide-react";
+import { Plus, Upload, MoreHorizontal, Pencil, Trash2, PlusCircle } from "lucide-react";
 
 type Building = { id: string; name: string };
 
@@ -63,7 +63,7 @@ function TypeBadge({ type }: { type: Unit["type"] }) {
 
   return (
     <span
-      className={`inline-flex items-center rounded-md px-2 py-1 text-xs font-medium ${cls}`}
+      className={`inline-flex gap-3 items-center rounded-md px-2 py-1 text-xs font-medium ${cls}`}
     >
       {label}
     </span>
@@ -425,10 +425,9 @@ export default function LotsPage() {
 
           {canEdit ? (
             <div className="flex gap-2">
-              <button
-                onClick={removeSelected}
+              <button onClick={removeSelected}
                 disabled={selectedIds.length === 0 || bulkBusy}
-                className="rounded-xl border border-zinc-200 bg-white px-4 py-2 text-sm font-medium hover:bg-zinc-50 disabled:opacity-40"
+                className="flex items-center gap-2 rounded-md border border-zinc-200 bg-white px-4 py-2 text-sm font-medium hover:bg-zinc-50 disabled:opacity-40"
               >
                 Supprimer ({selectedIds.length})
               </button>
@@ -443,17 +442,14 @@ export default function LotsPage() {
                   setImportTotal(0);
                   setImportPercent(0);
                 }}
-                className="rounded-xl border border-zinc-200 bg-white px-4 py-2 text-sm font-medium hover:bg-zinc-50"
+                className="rounded-md border border-zinc-200 bg-white px-4 py-2 text-sm font-medium hover:bg-zinc-50"
               >
                 Charger
               </button>
 
-              <button
-                onClick={openCreateModal}
-                className="rounded-xl bg-zinc-900 px-4 py-2 text-sm font-medium text-white hover:bg-zinc-800"
-              >
-                + Ajouter un Lot
-              </button>
+              <button onClick={openCreateModal}
+                className="flex items-center gap-2 rounded-md bg-gradient-to-r from-cyan-500 to-blue-600 px-4 py-2.5 text-sm font-semibold text-white shadow-[0_10px_24px_rgba(14,165,233,0.22)] transition-all hover:scale-[1.02] active:scale-[0.98]"
+              ><PlusCircle className="h-4 w-4" /> Ajouter un Lot</button>
             </div>
           ) : null}
         </div>
@@ -543,12 +539,7 @@ export default function LotsPage() {
                           <Pencil size={14} />
                         </button>
                         <button
-                          onClick={() => deleteLot(l.id, l.lotNumber)}
-                          className="flex h-8 w-8 items-center justify-center rounded-lg border border-zinc-200 text-zinc-500 hover:bg-red-50 hover:text-red-600 transition-colors"
-                          title="Supprimer"
-                        >
-                          <Trash2 size={14} />
-                        </button>
+                          onClick={() =>deleteLot(l.id, l.lotNumber)} className="flex h-8 w-8 items-center justify-center rounded-lg border border-zinc-200 text-zinc-500 hover:bg-red-50 hover:text-red-600 transition-colors" title="Supprimer" > <Trash2 size={14} /></button>
                       </div>
                     ) : (
                       <div className="text-right text-xs text-zinc-500">
@@ -582,7 +573,7 @@ export default function LotsPage() {
                     N° lot {editMode ? "" : "*"}
                   </label>
                   <input
-                    className="h-10 rounded-xl border border-zinc-200 px-3"
+                    className="h-10 rounded-md border border-zinc-200 px-3"
                     value={lotNumber}
                     onChange={(e) => setLotNumber(e.target.value)}
                     inputMode="numeric"
@@ -603,7 +594,7 @@ export default function LotsPage() {
                 <div className="grid gap-2">
                   <label className="text-sm font-medium">Libellé</label>
                   <input
-                    className="h-10 rounded-xl border border-zinc-200 px-3"
+                    className="h-10 rounded-md border border-zinc-200 px-3"
                     value={reference}
                     onChange={(e) => setReference(e.target.value)}
                     placeholder="Ex: Appartement 12"
@@ -617,7 +608,7 @@ export default function LotsPage() {
               <div className="grid gap-2">
                 <label className="text-sm font-medium">Surface (m²)</label>
                 <input
-                  className="h-10 rounded-xl border border-zinc-200 px-3"
+                  className="h-10 rounded-md border border-zinc-200 px-3"
                   placeholder="Ex: 85"
                   value={surface}
                   onChange={(e) => setSurface(e.target.value)}
@@ -631,7 +622,7 @@ export default function LotsPage() {
               <div className="grid gap-2">
                 <label className="text-sm font-medium">Type</label>
                 <select
-                  className="h-10 rounded-xl border border-zinc-200 bg-white px-3"
+                  className="h-10 rounded-md border border-zinc-200 bg-white px-3"
                   value={type}
                   onChange={(e) => {
                     const next = e.target.value as LotType;
@@ -655,7 +646,7 @@ export default function LotsPage() {
                 <div className="grid gap-2">
                   <label className="text-sm font-medium">Bâtiment *</label>
                   <select
-                    className="h-10 rounded-xl border border-zinc-200 bg-white px-3"
+                    className="h-10 rounded-md border border-zinc-200 bg-white px-3"
                     value={buildingId}
                     onChange={(e) => setBuildingId(e.target.value)}
                   >
@@ -667,7 +658,7 @@ export default function LotsPage() {
                   </select>
                 </div>
               ) : (
-                <div className="rounded-xl border border-zinc-200 bg-zinc-50 p-3 text-sm text-zinc-600">
+                <div className="rounded-md border border-zinc-200 bg-zinc-50 p-3 text-sm text-zinc-600">
                   Pour un <b>{type === "GARAGE" ? "garage" : "autre lot"}</b>,
                   aucun bâtiment n&apos;est requis.
                 </div>
@@ -676,7 +667,7 @@ export default function LotsPage() {
               <div className="grid gap-2">
                 <label className="text-sm font-medium">Propriétaire</label>
                 <select
-                  className="h-10 rounded-xl border border-zinc-200 bg-white px-3"
+                  className="h-10 rounded-md border border-zinc-200 bg-white px-3"
                   value={ownerId}
                   onChange={(e) => setOwnerId(e.target.value)}
                   disabled
@@ -695,7 +686,7 @@ export default function LotsPage() {
                 </div>
               </div>
 
-              <div className="rounded-2xl border border-zinc-200 bg-zinc-50/70 p-4 space-y-3">
+              <div className="rounded-md border border-zinc-200 bg-zinc-50/70 p-4 space-y-3">
                 <div className="flex items-start justify-between gap-4">
                   <div>
                     <label className="text-sm font-medium">Début des cotisations spécifique</label>
@@ -703,7 +694,7 @@ export default function LotsPage() {
                       Cochez pour définir une date de début différente de celle du système.
                     </div>
                   </div>
-                  <label className="inline-flex items-center gap-2 cursor-pointer">
+                  <label className="inline-flex gap-3 items-center gap-2 cursor-pointer">
                     <input
                       type="checkbox"
                       checked={overrideStart}
@@ -719,7 +710,7 @@ export default function LotsPage() {
                       <label className="text-xs font-medium text-zinc-600 outline-none border-none">Année</label>
                       <input
                         type="number"
-                        className="h-10 rounded-xl border border-zinc-200 bg-white px-3 text-sm focus:ring-zinc-900"
+                        className="h-10 rounded-md border border-zinc-200 bg-white px-3 text-sm focus:ring-zinc-900"
                         placeholder="Ex: 2026"
                         value={startYear}
                         onChange={(e) => setStartYear(e.target.value)}
@@ -728,7 +719,7 @@ export default function LotsPage() {
                     <div className="grid gap-1.5">
                       <label className="text-xs font-medium text-zinc-600 outline-none border-none">Mois</label>
                       <select
-                        className="h-10 rounded-xl border border-zinc-200 bg-white px-3 text-sm focus:ring-zinc-900"
+                        className="h-10 rounded-md border border-zinc-200 bg-white px-3 text-sm focus:ring-zinc-900"
                         value={startMonth}
                         onChange={(e) => setStartMonth(e.target.value)}
                       >
@@ -744,12 +735,11 @@ export default function LotsPage() {
                 )}
               </div>
 
-              <button
-                onClick={saveLot}
+              <button onClick={saveLot}
                 disabled={
                   !canCreate || loading || (lotNumberInvalid && !editMode)
                 }
-                className="mt-2 h-11 w-full rounded-xl bg-zinc-900 text-sm font-medium text-white hover:bg-zinc-800 disabled:opacity-40"
+                className="flex items-center justify-center gap-2 mt-2 h-11 w-full rounded-md bg-gradient-to-r from-cyan-500 to-blue-600 text-sm font-semibold text-white shadow-[0_10px_24px_rgba(14,165,233,0.22)] transition-all hover:scale-[1.01] active:scale-[0.98] disabled:opacity-40"
               >
                 {loading
                   ? "Enregistrement..."
@@ -788,7 +778,7 @@ export default function LotsPage() {
               className="block w-full text-sm"
             />
 
-            <pre className="overflow-auto rounded-xl bg-zinc-50 p-3 text-xs">
+            <pre className="overflow-auto rounded-md bg-zinc-50 p-3 text-xs">
               {`lotNumber,reference,type,building,surface
 12,Appartement 12,APARTMENT,Bâtiment 1,85
 101,Garage 101,GARAGE,,
@@ -841,7 +831,7 @@ export default function LotsPage() {
                   setImportBusy(false);
                 }
               }}
-              className="h-11 w-full rounded-xl bg-zinc-900 text-sm font-medium text-white hover:bg-zinc-800 disabled:opacity-40"
+              className="h-11 w-full rounded-md bg-gradient-to-r from-cyan-500 to-blue-600 text-sm font-semibold text-white shadow-[0_10px_24px_rgba(14,165,233,0.22)] transition-all hover:scale-[1.01] active:scale-[0.98] disabled:opacity-40"
             >
               {importBusy ? "Import en cours..." : "Charger"}
             </button>
@@ -855,9 +845,9 @@ export default function LotsPage() {
                   </span>
                 </div>
 
-                <div className="h-3 w-full overflow-hidden rounded-full bg-zinc-200">
+                <div className="h-3 w-full overflow-hidden rounded-md bg-zinc-200">
                   <div
-                    className="h-3 rounded-full bg-zinc-900 transition-all duration-300"
+                    className="h-3 rounded-md bg-gradient-to-r from-cyan-500 to-blue-600 transition-all duration-300"
                     style={{ width: `${importPercent}%` }}
                   />
                 </div>
@@ -867,7 +857,7 @@ export default function LotsPage() {
             ) : null}
 
             {importError ? (
-              <div className="rounded-xl border border-red-200 bg-red-50 p-3 text-sm text-red-800">
+              <div className="rounded-md border border-red-200 bg-red-50 p-3 text-sm text-red-800">
                 {importError}
               </div>
             ) : null}
@@ -875,12 +865,12 @@ export default function LotsPage() {
             {importResult ? (
               <div className="grid gap-2">
                 <div className="flex gap-2">
-                  <span className="inline-flex items-center rounded-full bg-emerald-100 px-3 py-1 text-xs font-medium text-emerald-700">
+                  <span className="inline-flex gap-3 items-center rounded-md bg-emerald-100 px-3 py-1 text-xs font-medium text-emerald-700">
                     Importés : {importResult.imported}
                   </span>
 
                   <span
-                    className={`inline-flex items-center rounded-full px-3 py-1 text-xs font-medium ${
+                    className={`inline-flex gap-3 items-center rounded-md px-3 py-1 text-xs font-medium ${
                       importResult.errors.length > 0
                         ? "bg-red-100 text-red-700"
                         : "bg-zinc-100 text-zinc-600"
@@ -891,7 +881,7 @@ export default function LotsPage() {
                 </div>
 
                 {importResult.errors.length > 0 ? (
-                  <div className="rounded-xl border border-zinc-200 bg-white p-3">
+                  <div className="rounded-md border border-zinc-200 bg-white p-3">
                     <div className="mb-2 text-sm font-medium text-zinc-900">
                       Détail des erreurs
                     </div>

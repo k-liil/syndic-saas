@@ -111,7 +111,7 @@ export function PropertyYearSwitcher({
 
   if (!org) {
     return (
-      <span className="inline-flex h-11 items-center rounded-full border border-slate-200 bg-white px-4 text-sm font-medium text-slate-500 shadow-sm">
+      <span className="inline-flex gap-3 h-11 items-center rounded-md border border-slate-200 bg-white px-4 text-sm font-medium text-slate-500 shadow-sm">
         Chargement...
       </span>
     );
@@ -122,7 +122,7 @@ export function PropertyYearSwitcher({
       <button
         type="button"
         onClick={() => setOpen((v) => !v)}
-        className="flex min-w-0 cursor-pointer items-center gap-3 rounded-xl px-3 py-1.5 text-left transition hover:bg-sky-50"
+        className="flex min-w-0 cursor-pointer items-center gap-3 rounded-md px-3 py-1.5 text-left transition hover:bg-sky-50"
       >
         {org.logoUrl ? (
           <img src={org.logoUrl} alt={org.name} className="h-9 w-9 shrink-0 rounded-md object-contain shadow-sm bg-white" />
@@ -138,9 +138,9 @@ export function PropertyYearSwitcher({
       </button>
 
       {open ? (
-        <div className="absolute left-0 top-14 z-50 w-64 rounded-2xl border border-slate-200 bg-white p-3 shadow-[0_20px_60px_rgba(15,23,42,0.12)]">
+        <div className="absolute left-0 top-14 z-50 w-64 rounded-md border border-slate-200 bg-white p-3 shadow-[0_20px_60px_rgba(15,23,42,0.12)]">
           {orgs.length > 0 && (
-            <div className="rounded-xl bg-slate-50 p-3">
+            <div className="rounded-md bg-slate-50 p-3">
               <div className="mb-2 text-[10px] font-semibold uppercase tracking-[0.15em] text-slate-400">
                 Copropriete
               </div>
@@ -162,15 +162,7 @@ export function PropertyYearSwitcher({
                     {isSuperAdmin && (
                       <button
                         type="button"
-                        onClick={(e) => {
-                          e.stopPropagation();
-                          handleDeleteOrg(o);
-                        }}
-                        className="p-1.5 text-slate-400 hover:text-red-500 opacity-0 group-hover/item:opacity-100 transition"
-                        title="Supprimer l'organisation"
-                      >
-                        <Trash2 size={14} />
-                      </button>
+                        onClick={(e) =>{ e.stopPropagation(); handleDeleteOrg(o); }} className="p-1.5 text-slate-400 hover:text-red-500 opacity-0 group-hover/item:opacity-100 transition" title="Supprimer l'organisation" > <Trash2 size={14} /></button>
                     )}
                   </div>
                 ))}

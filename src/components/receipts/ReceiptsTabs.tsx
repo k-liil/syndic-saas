@@ -12,10 +12,10 @@ export function ReceiptsTabs({
 
       <button
         onClick={() => setTab("CONTRIBUTION")}
-        className={`rounded-xl border px-4 py-2 text-sm ${
+        className={`rounded-md border px-5 py-2 text-sm font-semibold transition-all ${
           tab === "CONTRIBUTION"
-            ? "bg-zinc-900 text-white"
-            : "bg-white"
+            ? "bg-gradient-to-r from-cyan-500 to-blue-600 text-white border-transparent shadow-sm scale-[1.02]"
+            : "bg-white text-zinc-600 border-zinc-200 hover:bg-zinc-50"
         }`}
       >
         Cotisations
@@ -23,10 +23,10 @@ export function ReceiptsTabs({
 
       <button
         onClick={() => setTab("OTHER")}
-        className={`rounded-xl border px-4 py-2 text-sm ${
+        className={`rounded-md border px-5 py-2 text-sm font-semibold transition-all ${
           tab === "OTHER"
-            ? "bg-zinc-900 text-white"
-            : "bg-white"
+            ? "bg-gradient-to-r from-cyan-500 to-blue-600 text-white border-transparent shadow-sm scale-[1.02]"
+            : "bg-white text-zinc-600 border-zinc-200 hover:bg-zinc-50"
         }`}
       >
         Autres recettes

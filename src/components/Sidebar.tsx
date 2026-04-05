@@ -141,7 +141,7 @@ export function Sidebar() {
       <aside className="flex h-full flex-col">
         <div className="space-y-2 px-3 py-2">
           {Array.from({ length: 10 }).map((_, index) => (
-            <div key={index} className="h-10 rounded-xl bg-slate-100/80 animate-pulse" />
+            <div key={index} className="h-10 rounded-md bg-slate-100/80 animate-pulse" />
           ))}
         </div>
       </aside>

@@ -2,21 +2,7 @@
 
 import type { DragEvent } from "react";
 import { useCallback, useEffect, useMemo, useState } from "react";
-import {
-  Eye,
-  FileSpreadsheet,
-  FileText,
-  Folder,
-  Grid2X2,
-  ImageIcon,
-  List,
-  Paperclip,
-  Plus,
-  Search,
-  Trash2,
-  UploadCloud,
-  Vault,
-} from "lucide-react";
+import { Eye, FileSpreadsheet, FileText, Folder, Grid2X2, ImageIcon, List, Paperclip, Plus, Search, Trash2, UploadCloud, Vault, Upload, PlusCircle } from "lucide-react";
 import { useSession } from "next-auth/react";
 import { useApiUrl, useOrganization } from "@/lib/org-context";
 import { canManage } from "@/lib/roles";
@@ -335,7 +321,7 @@ export default function DigitalVaultPage() {
   return (
     <div className="mx-auto flex h-[calc(100vh-9.5rem)] min-h-0 w-full min-w-0 flex-col gap-4 max-lg:max-w-[90%] xl:max-w-[80%] 2xl:max-w-[65%]">
       {toast ? (
-        <div className="fixed right-6 top-6 z-[100] rounded-2xl bg-slate-900 px-4 py-3 text-sm font-semibold text-white shadow-lg">
+        <div className="fixed right-6 top-6 z-[100] rounded-md bg-slate-900 px-4 py-3 text-sm font-semibold text-white shadow-lg">
           {toast}
         </div>
       ) : null}
@@ -343,7 +329,7 @@ export default function DigitalVaultPage() {
       <div className="shrink-0 rounded-[28px] border border-slate-200 bg-white px-6 py-5 shadow-sm">
         <div className="flex flex-col gap-4 lg:flex-row lg:items-start lg:justify-between">
           <div className="flex items-start gap-3">
-            <div className="flex h-10 w-10 items-center justify-center rounded-2xl bg-gradient-to-br from-cyan-500 to-blue-600 text-white shadow-md shadow-cyan-500/20">
+            <div className="flex h-10 w-10 items-center justify-center rounded-md bg-gradient-to-br from-cyan-500 to-blue-600 text-white shadow-md shadow-cyan-500/20">
               <Vault className="h-4 w-4" />
             </div>
             <div>
@@ -359,15 +345,7 @@ export default function DigitalVaultPage() {
           {canEdit ? (
             <button
               type="button"
-              onClick={() => {
-                resetCreateModal();
-                setOpenCreate(true);
-              }}
-              className="btn-brand inline-flex h-10 items-center justify-center gap-2 rounded-2xl px-4 text-xs font-semibold"
-            >
-              <Plus className="h-4 w-4" />
-              Ajouter
-            </button>
+              onClick={() =>{ resetCreateModal(); setOpenCreate(true); }} className="btn-brand inline-flex gap-3 h-10 items-center justify-center gap-2 rounded-md px-4 text-xs font-semibold" > <Plus className="h-4 w-4" /> Ajouter</button>
           ) : null}
         </div>
 
@@ -378,9 +356,9 @@ export default function DigitalVaultPage() {
               {formatBytes(storageUsedBytes)} / {formatBytes(storageLimitBytes)}
             </span>
           </div>
-          <div className="h-2 rounded-full bg-slate-100">
+          <div className="h-2 rounded-md bg-slate-100">
             <div
-              className="h-2 rounded-full bg-gradient-to-r from-cyan-500 to-blue-600 transition-all"
+              className="h-2 rounded-md bg-gradient-to-r from-cyan-500 to-blue-600 transition-all"
               style={{ width: `${progress}%` }}
             />
           </div>
@@ -403,7 +381,7 @@ export default function DigitalVaultPage() {
                     type="button"
                     onClick={() => setCategory(item)}
                     className={[
-                      "flex w-full items-center justify-between rounded-2xl px-3 py-2 text-left text-xs transition",
+                      "flex w-full items-center justify-between rounded-md px-3 py-2 text-left text-xs transition",
                       active
                         ? "bg-sky-50 text-sky-700"
                         : "text-slate-600 hover:bg-slate-50 hover:text-slate-900",
@@ -429,13 +407,13 @@ export default function DigitalVaultPage() {
                 <input
                   type="text"
                   placeholder="Rechercher un document..."
-                  className="h-10 w-full rounded-2xl border border-slate-200 bg-white pl-10 pr-4 text-xs outline-none transition focus:border-slate-900"
+                  className="h-10 w-full rounded-md border border-slate-200 bg-white pl-10 pr-4 text-xs outline-none transition focus:border-slate-900"
                   value={search}
                   onChange={(e) => setSearch(e.target.value)}
                 />
               </div>
 
-              <label className="inline-flex h-10 items-center gap-2.5 rounded-2xl border border-slate-200 bg-white px-4 text-xs text-slate-700">
+              <label className="inline-flex gap-3 h-10 items-center gap-2.5 rounded-md border border-slate-200 bg-white px-4 text-xs text-slate-700">
                 <input
                   type="checkbox"
                   checked={visibleOnly}
@@ -444,12 +422,12 @@ export default function DigitalVaultPage() {
                 Visibles copro.
               </label>
 
-              <div className="inline-flex h-10 items-center rounded-2xl border border-slate-200 bg-white p-1">
+              <div className="inline-flex gap-3 h-10 items-center rounded-md border border-slate-200 bg-white p-1">
                 <button
                   type="button"
                   onClick={() => setViewMode("grid")}
                   className={[
-                    "inline-flex h-8 w-8 items-center justify-center rounded-xl transition",
+                    "inline-flex gap-3 h-8 w-8 items-center justify-center rounded-md transition",
                     viewMode === "grid" ? "bg-slate-100 text-slate-900" : "text-slate-500 hover:bg-slate-50",
                   ].join(" ")}
                 >
@@ -459,7 +437,7 @@ export default function DigitalVaultPage() {
                   type="button"
                   onClick={() => setViewMode("list")}
                   className={[
-                    "inline-flex h-8 w-8 items-center justify-center rounded-xl transition",
+                    "inline-flex gap-3 h-8 w-8 items-center justify-center rounded-md transition",
                     viewMode === "list" ? "bg-slate-100 text-slate-900" : "text-slate-500 hover:bg-slate-50",
                   ].join(" ")}
                 >
@@ -475,7 +453,7 @@ export default function DigitalVaultPage() {
                 </div>
               ) : filteredDocuments.length === 0 ? (
                 <div className="flex h-56 flex-col items-center justify-center rounded-[28px] border border-dashed border-slate-200 bg-white p-8 text-center">
-                  <div className="mb-4 flex h-14 w-14 items-center justify-center rounded-full bg-slate-50 text-slate-400">
+                  <div className="mb-4 flex h-14 w-14 items-center justify-center rounded-md bg-slate-50 text-slate-400">
                     <Paperclip className="h-6 w-6" />
                   </div>
                   <h3 className="text-base font-semibold text-slate-900">Aucun document</h3>
@@ -496,7 +474,7 @@ export default function DigitalVaultPage() {
                       >
                         <div className="flex items-start justify-between gap-3">
                           <div className="flex items-start gap-3">
-                            <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-2xl bg-slate-50 text-rose-500">
+                            <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-md bg-slate-50 text-rose-500">
                               <Icon className="h-4 w-4" />
                             </div>
                             <div className="min-w-0">
@@ -514,7 +492,7 @@ export default function DigitalVaultPage() {
                             <button
                               type="button"
                               onClick={() => void openDocumentInNewTab(document.fileUrl)}
-                              className="inline-flex h-8 w-8 items-center justify-center rounded-xl border border-slate-200 bg-white text-slate-600 hover:bg-slate-50"
+                              className="inline-flex gap-3 h-8 w-8 items-center justify-center rounded-md border border-slate-200 bg-white text-slate-600 hover:bg-slate-50"
                               title="Visualiser"
                             >
                               <Eye className="h-3.5 w-3.5" />
@@ -522,37 +500,32 @@ export default function DigitalVaultPage() {
                             {canEdit ? (
                               <button
                                 type="button"
-                                onClick={() => void handleDeleteDocument(document.id)}
-                                className="inline-flex h-8 w-8 items-center justify-center rounded-xl border border-red-200 bg-red-50 text-red-700 hover:bg-red-100"
-                                title="Supprimer"
-                              >
-                                <Trash2 className="h-3.5 w-3.5" />
-                              </button>
+                                onClick={() =>void handleDeleteDocument(document.id)} className="inline-flex gap-3 h-8 w-8 items-center justify-center rounded-md border border-red-200 bg-red-50 text-red-700 hover:bg-red-100" title="Supprimer" > <Trash2 className="h-3.5 w-3.5" /></button>
                             ) : null}
                           </div>
                         </div>
 
                         <div className="mt-3 flex flex-wrap gap-1.5">
-                          <span className="inline-flex rounded-full bg-rose-50 px-2.5 py-1 text-[11px] font-semibold text-rose-700">
+                          <span className="inline-flex gap-3 rounded-md bg-rose-50 px-2.5 py-1 text-[11px] font-semibold text-rose-700">
                             {typeLabel}
                           </span>
-                          <span className="inline-flex rounded-full bg-emerald-50 px-2.5 py-1 text-[11px] font-semibold text-emerald-700">
+                          <span className="inline-flex gap-3 rounded-md bg-emerald-50 px-2.5 py-1 text-[11px] font-semibold text-emerald-700">
                             {document.category}
                           </span>
                           {org ? (
-                            <span className="inline-flex rounded-full bg-slate-100 px-2.5 py-1 text-[11px] font-medium text-slate-600">
+                            <span className="inline-flex gap-3 rounded-md bg-slate-100 px-2.5 py-1 text-[11px] font-medium text-slate-600">
                               {org.name}
                             </span>
                           ) : null}
                           {document.isVisibleToOwners ? (
-                            <span className="inline-flex rounded-full bg-emerald-50 px-2.5 py-1 text-[11px] font-semibold text-emerald-700">
+                            <span className="inline-flex gap-3 rounded-md bg-emerald-50 px-2.5 py-1 text-[11px] font-semibold text-emerald-700">
                               Visible par les coproprietaires
                             </span>
                           ) : null}
                         </div>
 
                         {canEdit ? (
-                          <div className="mt-3 flex items-center justify-between rounded-2xl bg-slate-50 px-3 py-2">
+                          <div className="mt-3 flex items-center justify-between rounded-md bg-slate-50 px-3 py-2">
                             <span className="text-[11px] font-medium text-slate-600">
                               Visible copro.
                             </span>
@@ -562,14 +535,14 @@ export default function DigitalVaultPage() {
                               aria-checked={document.isVisibleToOwners}
                               onClick={() => void handleToggleVisibility(document.id, !document.isVisibleToOwners)}
                               className={[
-                                "relative inline-flex h-6 w-11 items-center rounded-full transition",
+                                "relative inline-flex gap-3 h-6 w-11 items-center rounded-md transition",
                                 document.isVisibleToOwners ? "bg-emerald-500" : "bg-slate-300",
                               ].join(" ")}
                               title={document.isVisibleToOwners ? "Rendre non visible" : "Rendre visible"}
                             >
                               <span
                                 className={[
-                                  "inline-block h-4 w-4 rounded-full bg-white transition",
+                                  "inline-block h-4 w-4 rounded-md bg-white transition",
                                   document.isVisibleToOwners ? "translate-x-6" : "translate-x-1",
                                 ].join(" ")}
                               />
@@ -582,7 +555,7 @@ export default function DigitalVaultPage() {
                             {document.tags.map((tag) => (
                               <span
                                 key={tag}
-                                className="inline-flex rounded-full bg-sky-50 px-2 py-1 text-[10px] font-medium text-sky-700"
+                                className="inline-flex gap-3 rounded-md bg-sky-50 px-2 py-1 text-[10px] font-medium text-sky-700"
                               >
                                 {tag}
                               </span>
@@ -615,7 +588,7 @@ export default function DigitalVaultPage() {
                         <div className="mt-0.5 truncate text-[11px] text-slate-400">{document.fileName}</div>
                       </div>
                       <div className="text-slate-600">
-                        <span className="inline-flex rounded-full bg-rose-50 px-2 py-1 text-[10px] font-semibold text-rose-700">
+                        <span className="inline-flex gap-3 rounded-md bg-rose-50 px-2 py-1 text-[10px] font-semibold text-rose-700">
                           {getDocumentTypeLabel(document.fileName, document.mimeType)}
                         </span>
                       </div>
@@ -632,14 +605,14 @@ export default function DigitalVaultPage() {
                             aria-checked={document.isVisibleToOwners}
                             onClick={() => void handleToggleVisibility(document.id, !document.isVisibleToOwners)}
                             className={[
-                              "relative inline-flex h-6 w-11 items-center rounded-full transition",
+                              "relative inline-flex gap-3 h-6 w-11 items-center rounded-md transition",
                               document.isVisibleToOwners ? "bg-emerald-500" : "bg-slate-300",
                             ].join(" ")}
                             title={document.isVisibleToOwners ? "Rendre non visible" : "Rendre visible"}
                           >
                             <span
                               className={[
-                                "inline-block h-4 w-4 rounded-full bg-white transition",
+                                "inline-block h-4 w-4 rounded-md bg-white transition",
                                 document.isVisibleToOwners ? "translate-x-6" : "translate-x-1",
                               ].join(" ")}
                             />
@@ -654,18 +627,14 @@ export default function DigitalVaultPage() {
                         <button
                           type="button"
                           onClick={() => void openDocumentInNewTab(document.fileUrl)}
-                          className="inline-flex h-8 w-8 items-center justify-center rounded-xl border border-slate-200 bg-white text-slate-600 hover:bg-slate-50"
+                          className="inline-flex gap-3 h-8 w-8 items-center justify-center rounded-md border border-slate-200 bg-white text-slate-600 hover:bg-slate-50"
                         >
                           <Eye className="h-3.5 w-3.5" />
                         </button>
                         {canEdit ? (
                           <button
                             type="button"
-                            onClick={() => void handleDeleteDocument(document.id)}
-                            className="inline-flex h-8 w-8 items-center justify-center rounded-xl border border-red-200 bg-red-50 text-red-700 hover:bg-red-100"
-                          >
-                            <Trash2 className="h-3.5 w-3.5" />
-                          </button>
+                            onClick={() =>void handleDeleteDocument(document.id)} className="inline-flex gap-3 h-8 w-8 items-center justify-center rounded-md border border-red-200 bg-red-50 text-red-700 hover:bg-red-100" > <Trash2 className="h-3.5 w-3.5" /></button>
                         ) : null}
                       </div>
                     </div>
@@ -709,9 +678,9 @@ export default function DigitalVaultPage() {
                     {formatBytes(storageUsedBytes)} / {formatBytes(storageLimitBytes)}
                   </span>
                 </div>
-                <div className="h-2 rounded-full bg-slate-100">
+                <div className="h-2 rounded-md bg-slate-100">
                   <div
-                    className="h-2 rounded-full bg-gradient-to-r from-cyan-500 to-blue-600"
+                    className="h-2 rounded-md bg-gradient-to-r from-cyan-500 to-blue-600"
                     style={{ width: `${progress}%` }}
                   />
                 </div>
@@ -726,14 +695,14 @@ export default function DigitalVaultPage() {
                 onDragLeave={handleDragLeave}
                 onDrop={handleDrop}
               >
-                <div className="mx-auto flex h-12 w-12 items-center justify-center rounded-full bg-slate-50 text-slate-400">
+                <div className="mx-auto flex h-12 w-12 items-center justify-center rounded-md bg-slate-50 text-slate-400">
                   <UploadCloud className="h-5 w-5" />
                 </div>
                 <div className="mt-3 text-lg font-medium text-slate-700">
                   Glissez-deposez un fichier ici
                 </div>
                 <div className="mt-1.5 text-sm text-slate-400">ou</div>
-                <label className="mt-3 inline-flex cursor-pointer items-center justify-center rounded-2xl bg-slate-100 px-4 py-2.5 text-xs font-semibold text-slate-700 hover:bg-slate-200">
+                <label className="mt-3 inline-flex gap-3 cursor-pointer items-center justify-center rounded-md bg-slate-100 px-4 py-2.5 text-xs font-semibold text-slate-700 hover:bg-slate-200">
                   Parcourir
                   <input
                     type="file"
@@ -759,7 +728,7 @@ export default function DigitalVaultPage() {
                   value={documentName}
                   onChange={(e) => setDocumentName(e.target.value)}
                   placeholder="Ex: Reglement de copropriete 2024"
-                  className="h-11 w-full rounded-2xl border border-slate-200 px-4 text-xs outline-none focus:border-slate-900"
+                  className="h-11 w-full rounded-md border border-slate-200 px-4 text-xs outline-none focus:border-slate-900"
                 />
               </div>
 
@@ -768,7 +737,7 @@ export default function DigitalVaultPage() {
                 <select
                   value={documentCategory}
                   onChange={(e) => setDocumentCategory(e.target.value)}
-                  className="h-11 w-full rounded-2xl border border-slate-200 px-4 text-xs outline-none focus:border-slate-900"
+                  className="h-11 w-full rounded-md border border-slate-200 px-4 text-xs outline-none focus:border-slate-900"
                 >
                   {DIGITAL_VAULT_CATEGORIES.map((item) => (
                     <option key={item} value={item}>
@@ -782,7 +751,7 @@ export default function DigitalVaultPage() {
                 <label className="mb-1.5 block text-xs font-medium text-slate-700">
                   Copropriete (optionnel)
                 </label>
-                <div className="flex h-11 items-center rounded-2xl border border-slate-200 bg-slate-50 px-4 text-xs text-slate-600">
+                <div className="flex h-11 items-center rounded-md border border-slate-200 bg-slate-50 px-4 text-xs text-slate-600">
                   {org?.name ?? "Organisation actuelle"}
                 </div>
               </div>
@@ -797,7 +766,7 @@ export default function DigitalVaultPage() {
                   placeholder="dd/mm/yyyy"
                   value={documentDate}
                   onChange={(e) => setDocumentDate(e.target.value)}
-                  className="h-11 w-full rounded-2xl border border-slate-200 px-4 text-xs outline-none focus:border-slate-900"
+                  className="h-11 w-full rounded-md border border-slate-200 px-4 text-xs outline-none focus:border-slate-900"
                 />
               </div>
 
@@ -808,12 +777,12 @@ export default function DigitalVaultPage() {
                   value={tagInput}
                   onChange={(e) => setTagInput(e.target.value)}
                   placeholder="Ex: urgent, 2024, residence A"
-                  className="h-11 w-full rounded-2xl border border-slate-200 px-4 text-xs outline-none focus:border-slate-900"
+                  className="h-11 w-full rounded-md border border-slate-200 px-4 text-xs outline-none focus:border-slate-900"
                 />
                 <div className="mt-1.5 text-[11px] text-slate-400">Separez les tags par des virgules</div>
               </div>
 
-              <label className="flex items-start gap-3 rounded-2xl bg-slate-50 px-4 py-3.5">
+              <label className="flex items-start gap-3 rounded-md bg-slate-50 px-4 py-3.5">
                 <input
                   type="checkbox"
                   checked={visibleToOwners}
@@ -835,7 +804,7 @@ export default function DigitalVaultPage() {
                   type="button"
                   onClick={() => void handleCreateDocument()}
                   disabled={submitting}
-                  className="btn-brand h-11 w-full rounded-2xl text-xs font-semibold disabled:opacity-50"
+                  className="btn-brand h-11 w-full rounded-md text-xs font-semibold disabled:opacity-50"
                 >
                   {submitting ? "Televersement..." : "Televerser"}
                 </button>

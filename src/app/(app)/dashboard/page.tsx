@@ -82,7 +82,7 @@ function Card({
 }) {
   return (
     <section
-      className={`overflow-hidden rounded-2xl border border-slate-200 bg-white shadow-[0_10px_24px_rgba(15,23,42,0.05)] ${className}`}
+      className={`overflow-hidden rounded-md border border-slate-200 bg-white shadow-[0_10px_24px_rgba(15,23,42,0.05)] ${className}`}
     >
       <div className="border-b border-slate-100 px-5 py-4">
         <h2 className="text-[18px] font-semibold tracking-tight text-slate-900">
@@ -115,7 +115,7 @@ function KpiCard({
   };
 
   return (
-    <div className="rounded-2xl border border-slate-200 bg-white p-4 shadow-[0_8px_20px_rgba(15,23,42,0.04)]">
+    <div className="rounded-md border border-slate-200 bg-white p-4 shadow-[0_8px_20px_rgba(15,23,42,0.04)]">
       <div className="flex items-start justify-between gap-4">
         <div className="min-w-0">
           <div className="text-[11px] font-semibold uppercase tracking-[0.16em] text-slate-400">
@@ -128,7 +128,7 @@ function KpiCard({
         </div>
 
         <div
-          className={`flex h-10 w-10 shrink-0 items-center justify-center rounded-xl ${tones[tone]}`}
+          className={`flex h-10 w-10 shrink-0 items-center justify-center rounded-md ${tones[tone]}`}
         >
           <Icon size={18} />
         </div>
@@ -245,7 +245,7 @@ function DashboardPageContent() {
 
   return (
     <div className="space-y-6">
-      <section className="rounded-2xl border border-slate-200 bg-[linear-gradient(135deg,_rgba(248,250,252,0.98)_0%,_rgba(239,244,250,0.96)_100%)] p-6 text-slate-900 shadow-[0_12px_28px_rgba(15,23,42,0.05)] sm:p-7">
+      <section className="rounded-md border border-slate-200 bg-[linear-gradient(135deg,_rgba(248,250,252,0.98)_0%,_rgba(239,244,250,0.96)_100%)] p-6 text-slate-900 shadow-[0_12px_28px_rgba(15,23,42,0.05)] sm:p-7">
         <div className="flex flex-col gap-6 xl:flex-row xl:items-end xl:justify-between">
           <div className="max-w-2xl">
             <div className="eyebrow text-sky-700">
@@ -261,7 +261,7 @@ function DashboardPageContent() {
           </div>
 
           <div className="grid gap-3 sm:grid-cols-3">
-            <div className="rounded-xl border border-slate-200 bg-white px-4 py-3">
+            <div className="rounded-md border border-slate-200 bg-white px-4 py-3">
               <div className="text-xs uppercase tracking-[0.16em] text-slate-500">
                 Taux d'encaissement
               </div>
@@ -269,7 +269,7 @@ function DashboardPageContent() {
                 {Number(data.collectionRate ?? 0).toLocaleString("fr-FR", { minimumFractionDigits: 2, maximumFractionDigits: 2 })}%
               </div>
             </div>
-            <div className="rounded-xl border border-slate-200 bg-white px-4 py-3">
+            <div className="rounded-md border border-slate-200 bg-white px-4 py-3">
               <div className="text-xs uppercase tracking-[0.16em] text-slate-500">
                 Copropriétaires payés
               </div>
@@ -277,7 +277,7 @@ function DashboardPageContent() {
                 {paidOwners}/{data.ownersCount}
               </div>
             </div>
-            <div className="rounded-xl border border-slate-200 bg-white px-4 py-3">
+            <div className="rounded-md border border-slate-200 bg-white px-4 py-3">
               <div className="text-xs uppercase tracking-[0.16em] text-slate-500">
                 Trésorerie totale
               </div>
@@ -322,7 +322,7 @@ function DashboardPageContent() {
 
       <div className="grid gap-5 xl:grid-cols-[1.45fr_1fr]">
         <Card title={`Flux de trésorerie (${year})`}>
-          <div className="rounded-xl border border-slate-200 bg-gradient-to-b from-slate-50 to-white p-4">
+          <div className="rounded-md border border-slate-200 bg-gradient-to-b from-slate-50 to-white p-4">
             <ResponsiveContainer width="100%" height={320}>
               <ComposedChart
                 data={chartData}
@@ -479,11 +479,11 @@ function DashboardPageContent() {
 
               <div className="mt-4 flex justify-center gap-6 text-sm text-slate-500">
                 <div className="flex items-center gap-2">
-                  <span className="h-3 w-3 rounded-full bg-green-500" />
+                  <span className="h-3 w-3 rounded-md bg-green-500" />
                   Payé ({paidOwners})
                 </div>
                 <div className="flex items-center gap-2">
-                  <span className="h-3 w-3 rounded-full bg-slate-300" />
+                  <span className="h-3 w-3 rounded-md bg-slate-300" />
                   Non payé ({unpaidOwners})
                 </div>
               </div>
@@ -549,7 +549,7 @@ function DashboardPageContent() {
                   return (
                     <div key={`${label}-${index}`} className="flex items-center gap-2">
                       <span
-                        className="h-3 w-3 rounded-full"
+                        className="h-3 w-3 rounded-md"
                         style={{ backgroundColor: expensesColors[index % expensesColors.length] }}
                       />
                       {label} ({percent}%)
@@ -565,28 +565,28 @@ function DashboardPageContent() {
       <section className="border border-slate-200 bg-white p-4 shadow-[0_8px_20px_rgba(15,23,42,0.04)]">
         <div className="flex flex-col gap-4 sm:flex-row sm:flex-wrap">
           <Link
-            className="inline-flex items-center justify-center gap-2 border border-slate-200 bg-white px-4 py-2.5 text-sm font-medium text-slate-700 transition hover:-translate-y-px hover:border-slate-300 hover:bg-slate-50"
+            className="inline-flex gap-3 items-center justify-center gap-2 border border-slate-200 bg-white px-4 py-2.5 text-sm font-medium text-slate-700 transition hover:-translate-y-px hover:border-slate-300 hover:bg-slate-50"
             href="/ops/payments"
           >
             Voir les paiements
             <ArrowRight size={14} />
           </Link>
           <Link
-            className="inline-flex items-center justify-center gap-2 border border-slate-200 bg-white px-4 py-2.5 text-sm font-medium text-slate-700 transition hover:-translate-y-px hover:border-slate-300 hover:bg-slate-50"
+            className="inline-flex gap-3 items-center justify-center gap-2 border border-slate-200 bg-white px-4 py-2.5 text-sm font-medium text-slate-700 transition hover:-translate-y-px hover:border-slate-300 hover:bg-slate-50"
             href="/ops/contributions/year"
           >
             Ouvrir la vue annuelle
             <ArrowRight size={14} />
           </Link>
           <Link
-            className="inline-flex items-center justify-center gap-2 border border-slate-200 bg-white px-4 py-2.5 text-sm font-medium text-slate-700 transition hover:-translate-y-px hover:border-slate-300 hover:bg-slate-50"
+            className="inline-flex gap-3 items-center justify-center gap-2 border border-slate-200 bg-white px-4 py-2.5 text-sm font-medium text-slate-700 transition hover:-translate-y-px hover:border-slate-300 hover:bg-slate-50"
             href="/ops/dues_generate"
           >
             Générer les cotisations
             <ArrowRight size={14} />
           </Link>
           <Link
-            className="inline-flex items-center justify-center gap-2 border border-slate-200 bg-white px-4 py-2.5 text-sm font-medium text-slate-700 transition hover:-translate-y-px hover:border-slate-300 hover:bg-slate-50"
+            className="inline-flex gap-3 items-center justify-center gap-2 border border-slate-200 bg-white px-4 py-2.5 text-sm font-medium text-slate-700 transition hover:-translate-y-px hover:border-slate-300 hover:bg-slate-50"
             href="/ops/receipts"
           >
             Gerer les recettes

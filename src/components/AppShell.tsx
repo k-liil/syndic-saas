@@ -172,7 +172,7 @@ export function AppShell({
               <div className="flex min-w-0 items-center gap-3">
                 <Suspense
                   fallback={
-                    <div className="rounded-full border border-slate-200 bg-white px-4 py-2 text-sm text-slate-500 shadow-sm">
+                    <div className="rounded-md border border-slate-200 bg-white px-4 py-2 text-sm text-slate-500 shadow-sm">
                       Chargement...
                     </div>
                   }
@@ -186,12 +186,12 @@ export function AppShell({
                   <div className="relative">
                     <button
                       onClick={() => setNotificationsOpen((value) => !value)}
-                      className="glass-panel relative flex h-12 w-12 items-center justify-center rounded-full hover:-translate-y-px"
+                      className="glass-panel relative flex h-12 w-12 items-center justify-center rounded-md hover:-translate-y-px"
                       aria-label="Notifications"
                     >
                       <Bell size={18} />
                       {unreadCount > 0 ? (
-                        <span className="absolute -right-0.5 -top-0.5 flex h-5 min-w-5 items-center justify-center rounded-full bg-rose-500 px-1 text-[10px] font-bold text-white">
+                        <span className="absolute -right-0.5 -top-0.5 flex h-5 min-w-5 items-center justify-center rounded-md bg-rose-500 px-1 text-[10px] font-bold text-white">
                           {unreadCount > 9 ? "9+" : unreadCount}
                         </span>
                       ) : null}
@@ -217,7 +217,7 @@ export function AppShell({
 
                         <div className="mt-4 max-h-96 space-y-2 overflow-auto">
                           {notifications.length === 0 ? (
-                            <div className="rounded-2xl bg-slate-50 px-4 py-6 text-center text-sm text-slate-500">
+                            <div className="rounded-md bg-slate-50 px-4 py-6 text-center text-sm text-slate-500">
                               Aucune notification.
                             </div>
                           ) : (
@@ -232,7 +232,7 @@ export function AppShell({
                                   }
                                 }}
                                 className={[
-                                  "block rounded-2xl border px-4 py-3 transition",
+                                  "block rounded-md border px-4 py-3 transition",
                                   item.isRead
                                     ? "border-slate-200 bg-white hover:bg-slate-50"
                                     : "border-cyan-100 bg-cyan-50/70 hover:bg-cyan-50",
@@ -244,7 +244,7 @@ export function AppShell({
                                     <div className="mt-1 text-xs text-slate-600">{item.message || "Nouvelle activite"}</div>
                                   </div>
                                   {!item.isRead ? (
-                                    <span className="mt-1 h-2.5 w-2.5 shrink-0 rounded-full bg-cyan-500" />
+                                    <span className="mt-1 h-2.5 w-2.5 shrink-0 rounded-md bg-cyan-500" />
                                   ) : null}
                                 </div>
                                 <div className="mt-2 text-[11px] text-slate-400">
@@ -261,10 +261,10 @@ export function AppShell({
 
                 <button
                   onClick={() => setOpen((v) => !v)}
-                  className="glass-panel flex items-center gap-2 rounded-full px-2.5 py-1.5 text-left hover:-translate-y-px"
+                  className="glass-panel flex items-center gap-2 rounded-md px-2.5 py-1.5 text-left hover:-translate-y-px"
                   aria-label="User menu"
                 >
-                  <span className="flex h-9 w-9 items-center justify-center rounded-full bg-slate-950 text-white">
+                  <span className="flex h-9 w-9 items-center justify-center rounded-md bg-slate-950 text-white">
                     <User size={16} />
                   </span>
                   <span className="hidden sm:block">
@@ -277,7 +277,7 @@ export function AppShell({
                   <div className="absolute right-0 mt-35 w-72 z-50 rounded-[24px] border border-slate-200 bg-white p-4 shadow-[0_20px_60px_rgba(15,23,42,0.12)]">
                     {session?.user ? (
                       <>
-                        <div className="rounded-2xl bg-slate-50 p-4">
+                        <div className="rounded-md bg-slate-50 p-4">
                           <div className="text-xs uppercase tracking-[0.18em] text-slate-400">
                             Compte
                           </div>
@@ -289,7 +289,7 @@ export function AppShell({
 
                         <button
                           onClick={() => signOut({ callbackUrl: "/login" })}
-                          className="mt-4 flex w-full items-center justify-center gap-2 rounded-2xl border border-rose-200 bg-rose-50 px-4 py-3 text-sm font-medium text-rose-700 transition hover:-translate-y-px hover:bg-rose-100"
+                          className="mt-4 flex w-full items-center justify-center gap-2 rounded-md border border-rose-200 bg-rose-50 px-4 py-3 text-sm font-medium text-rose-700 transition hover:-translate-y-px hover:bg-rose-100"
                         >
                           <LogOut size={16} />
                           Se deconnecter
@@ -298,7 +298,7 @@ export function AppShell({
                     ) : (
                       <Link
                         href="/login"
-                        className="flex items-center justify-center gap-2 rounded-2xl border border-slate-200 px-4 py-3 text-sm font-medium text-slate-700 transition hover:bg-slate-50"
+                        className="flex items-center justify-center gap-2 rounded-md border border-slate-200 px-4 py-3 text-sm font-medium text-slate-700 transition hover:bg-slate-50"
                       >
                         <LogIn size={16} />
                         Connexion

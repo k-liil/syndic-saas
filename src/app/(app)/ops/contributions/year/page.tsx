@@ -133,7 +133,7 @@ function ContributionsYearPageContent() {
   if (!year) {
     return (
       <div className="flex h-[40vh] items-center justify-center">
-        <div className="rounded-2xl border border-zinc-200 bg-white p-8 text-center shadow-sm">
+        <div className="rounded-md border border-zinc-200 bg-white p-8 text-center shadow-sm">
           <div className="text-lg font-semibold text-zinc-800">Aucun exercice selectionne</div>
           <div className="mt-2 text-sm text-zinc-500">
             Selectionne un exercice fiscal en haut de la page.
@@ -166,23 +166,23 @@ function ContributionsYearPageContent() {
       </div>
 
       <div className="flex flex-wrap gap-2">
-        <div className="inline-flex items-center gap-2 rounded-full bg-emerald-50 px-3 py-1.5 text-xs font-medium text-emerald-700">
-          <span className="h-2.5 w-2.5 rounded-full bg-emerald-500" />
+        <div className="inline-flex gap-3 items-center gap-2 rounded-md bg-emerald-50 px-3 py-1.5 text-xs font-medium text-emerald-700">
+          <span className="h-2.5 w-2.5 rounded-md bg-emerald-500" />
           Paye
         </div>
 
-        <div className="inline-flex items-center gap-2 rounded-full bg-rose-50 px-3 py-1.5 text-xs font-medium text-rose-700">
-          <span className="h-2.5 w-2.5 rounded-full bg-rose-500" />
+        <div className="inline-flex gap-3 items-center gap-2 rounded-md bg-rose-50 px-3 py-1.5 text-xs font-medium text-rose-700">
+          <span className="h-2.5 w-2.5 rounded-md bg-rose-500" />
           Retard
         </div>
 
-        <div className="inline-flex items-center gap-2 rounded-full bg-amber-50 px-3 py-1.5 text-xs font-medium text-amber-700">
-          <span className="h-2.5 w-2.5 rounded-full bg-amber-500" />
+        <div className="inline-flex gap-3 items-center gap-2 rounded-md bg-amber-50 px-3 py-1.5 text-xs font-medium text-amber-700">
+          <span className="h-2.5 w-2.5 rounded-md bg-amber-500" />
           Partiel
         </div>
 
-        <div className="inline-flex items-center gap-2 rounded-full bg-sky-50 px-3 py-1.5 text-xs font-medium text-sky-700">
-          <span className="h-2.5 w-2.5 rounded-full bg-sky-500" />
+        <div className="inline-flex gap-3 items-center gap-2 rounded-md bg-sky-50 px-3 py-1.5 text-xs font-medium text-sky-700">
+          <span className="h-2.5 w-2.5 rounded-md bg-sky-500" />
           Avance
         </div>
       </div>
@@ -195,12 +195,12 @@ function ContributionsYearPageContent() {
             <h2 className="text-lg font-semibold">{building.name}</h2>
 
             <div className="grid gap-3 sm:grid-cols-3 xl:grid-cols-4">
-              <div className="rounded-2xl border border-zinc-200 bg-white p-4 shadow-sm">
+              <div className="rounded-md border border-zinc-200 bg-white p-4 shadow-sm">
                 <div className="text-xs uppercase tracking-wide text-zinc-400">Lots</div>
                 <div className="mt-2 text-xl font-bold text-zinc-900">{rows.length}</div>
               </div>
 
-              <div className="rounded-2xl border border-zinc-200 bg-white p-4 shadow-sm">
+              <div className="rounded-md border border-zinc-200 bg-white p-4 shadow-sm">
                 <div className="text-xs uppercase tracking-wide text-zinc-400">Mois payes</div>
                 <div className="mt-2 text-xl font-bold text-emerald-600">
                   {rows.reduce((sum, row) => {
@@ -209,7 +209,7 @@ function ContributionsYearPageContent() {
                 </div>
               </div>
 
-              <div className="rounded-2xl border border-zinc-200 bg-white p-4 shadow-sm">
+              <div className="rounded-md border border-zinc-200 bg-white p-4 shadow-sm">
                 <div className="text-xs uppercase tracking-wide text-zinc-400">Retards</div>
                 <div className="mt-2 text-xl font-bold text-rose-600">
                   {rows.reduce((sum, row) => {
@@ -218,7 +218,7 @@ function ContributionsYearPageContent() {
                 </div>
               </div>
 
-              <div className="rounded-2xl border border-zinc-200 bg-white p-4 shadow-sm">
+              <div className="rounded-md border border-zinc-200 bg-white p-4 shadow-sm">
                 <div className="text-xs uppercase tracking-wide text-zinc-400">Partiels</div>
                 <div className="mt-2 text-xl font-bold text-amber-600">
                   {rows.reduce((sum, row) => {
@@ -241,7 +241,7 @@ export default function ContributionsYearPage() {
     <Suspense
       fallback={
         <div className="space-y-6">
-          <div className="rounded-2xl border border-zinc-200 bg-white p-8 text-center text-sm text-zinc-500 shadow-sm">
+          <div className="rounded-md border border-zinc-200 bg-white p-8 text-center text-sm text-zinc-500 shadow-sm">
             Chargement des cotisations...
           </div>
         </div>

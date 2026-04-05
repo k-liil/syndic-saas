@@ -5,7 +5,7 @@ import { forwardRef, useCallback, useEffect, useImperativeHandle, useMemo, useSt
 import { useSession } from "next-auth/react";
 import { useApiUrl, useOrgId } from "@/lib/org-context";
 import { canManage } from "@/lib/roles";
-import { Building2, Mail, MapPin, Pencil, Phone, Plus, Trash2, User, X } from "lucide-react";
+import { Building2, Mail, MapPin, Pencil, Phone, Plus, Trash2, User, X, PlusCircle } from "lucide-react";
 
 type Supplier = {
   id: string;
@@ -88,7 +88,7 @@ async function fileToDataUrl(file: File) {
 }
 
 const primaryGradientButtonClass =
-  "inline-flex items-center gap-2 rounded-xl bg-gradient-to-r from-cyan-500 to-blue-600 px-5 text-sm font-semibold text-white shadow-[0_10px_24px_rgba(14,165,233,0.22)] transition hover:from-cyan-600 hover:to-blue-700";
+  "inline-flex gap-3 items-center gap-2 rounded-md bg-gradient-to-r from-cyan-500 to-blue-600 px-5 text-sm font-semibold text-white shadow-[0_10px_24px_rgba(14,165,233,0.22)] transition hover:from-cyan-600 hover:to-blue-700";
 
 const SuppliersContent = forwardRef<SuppliersPageHandle, SuppliersPageProps>(
   function SuppliersContent({ hidePageHeader = false, onDirtyChange, onStatusChange }, ref) {
@@ -363,17 +363,14 @@ const SuppliersContent = forwardRef<SuppliersPageHandle, SuppliersPageProps>(
                 <div className="flex gap-2">
                   <button
                     onClick={() => setShowSectorsModal(true)}
-                    className="inline-flex h-11 items-center gap-2 rounded-xl border border-slate-200 bg-white px-5 text-sm font-semibold text-slate-700 hover:bg-slate-50"
+                    className="inline-flex gap-3 h-11 items-center gap-2 rounded-md border border-slate-200 bg-white px-5 text-sm font-semibold text-slate-700 hover:bg-slate-50"
                   >
                     Gérer les métiers
                   </button>
                   <button
                     onClick={openCreateModal}
-                    className={`${primaryGradientButtonClass} h-11`}
-                  >
-                    <Plus className="h-4 w-4" />
-                    Ajouter un Prestataire
-                  </button>
+                    className={`${primaryGradientButtonClass} h-11 flex items-center gap-2`}
+                  ><PlusCircle className="h-4 w-4" /> Ajouter un Prestataire</button>
                 </div>
               ) : null}
             </div>
@@ -382,17 +379,14 @@ const SuppliersContent = forwardRef<SuppliersPageHandle, SuppliersPageProps>(
           <div className="flex justify-end mb-6">
             <button
               onClick={openCreateModal}
-              className={`${primaryGradientButtonClass} h-11`}
-            >
-              <Plus className="h-4 w-4" />
-              Ajouter un Prestataire
-            </button>
+              className={`${primaryGradientButtonClass} h-11 flex items-center gap-2`}
+            ><PlusCircle className="h-4 w-4" /> Ajouter un Prestataire</button>
           </div>
         ) : null}
 
         <div className="flex-1 overflow-auto">
           {items.length === 0 ? (
-            <div className="rounded-2xl border border-dashed border-slate-300 bg-white/70 p-10 text-center text-sm text-slate-500">
+            <div className="rounded-md border border-dashed border-slate-300 bg-white/70 p-10 text-center text-sm text-slate-500">
               Aucun prestataire configure.
             </div>
           ) : (
@@ -416,10 +410,10 @@ const SuppliersContent = forwardRef<SuppliersPageHandle, SuppliersPageProps>(
                           width={56}
                           height={56}
                           unoptimized
-                          className="h-14 w-14 rounded-2xl object-cover ring-1 ring-slate-200"
+                          className="h-14 w-14 rounded-md object-cover ring-1 ring-slate-200"
                         />
                       ) : (
-                        <div className="flex h-14 w-14 items-center justify-center rounded-2xl bg-slate-100 text-sm font-semibold text-slate-600 ring-1 ring-slate-200">
+                        <div className="flex h-14 w-14 items-center justify-center rounded-md bg-slate-100 text-sm font-semibold text-slate-600 ring-1 ring-slate-200">
                           {getInitials(supplier.name) || "PR"}
                         </div>
                       )}
@@ -430,14 +424,14 @@ const SuppliersContent = forwardRef<SuppliersPageHandle, SuppliersPageProps>(
                         </div>
                         <div className="mt-1 flex flex-wrap items-center gap-2">
                           <span
-                            className={`inline-flex rounded-full px-3 py-1 text-xs font-semibold ${getSectorBadgeClass(
+                            className={`inline-flex gap-3 rounded-md px-3 py-1 text-xs font-semibold ${getSectorBadgeClass(
                               supplier.sector
                             )}`}
                           >
                             {supplier.sector || "Autre"}
                           </span>
                           {!supplier.isActive ? (
-                            <span className="inline-flex rounded-full bg-slate-200 px-3 py-1 text-xs font-medium text-slate-600">
+                            <span className="inline-flex gap-3 rounded-md bg-slate-200 px-3 py-1 text-xs font-medium text-slate-600">
                               Inactif
                             </span>
                           ) : null}
@@ -461,21 +455,7 @@ const SuppliersContent = forwardRef<SuppliersPageHandle, SuppliersPageProps>(
                           const hasHistory = (supplier._count?.payments ?? 0) > 0;
                           return (
                             <button
-                              onClick={(event) => {
-                                event.stopPropagation();
-                                if (!hasHistory) requestDeleteSupplier(supplier);
-                              }}
-                              disabled={hasHistory}
-                              className={`rounded-full p-2 transition ${
-                                hasHistory
-                                  ? "text-slate-300 cursor-not-allowed"
-                                  : "text-red-500 hover:bg-red-50"
-                              }`}
-                              title={hasHistory ? "Impossible de supprimer (paiements liés)" : "Supprimer"}
-                              aria-label={`Supprimer ${supplier.name}`}
-                            >
-                              <Trash2 className="h-5 w-5" />
-                            </button>
+                              onClick={(event) =>{ event.stopPropagation(); if (!hasHistory) requestDeleteSupplier(supplier); }} disabled={hasHistory} className={`rounded-md p-2 transition ${ hasHistory ? "text-slate-300 cursor-not-allowed" : "text-red-500 hover:bg-red-50" }`} title={hasHistory ? "Impossible de supprimer (paiements liés)" : "Supprimer"} aria-label={`Supprimer ${supplier.name}`} > <Trash2 className="h-5 w-5" /></button>
                           );
                         })()}
                       </div>
@@ -514,7 +494,7 @@ const SuppliersContent = forwardRef<SuppliersPageHandle, SuppliersPageProps>(
                     ) : null}
 
                     {supplier.note ? (
-                      <div className="rounded-2xl bg-slate-50 px-3 py-2 text-sm text-slate-500">
+                      <div className="rounded-md bg-slate-50 px-3 py-2 text-sm text-slate-500">
                         {supplier.note}
                       </div>
                     ) : null}
@@ -530,13 +510,13 @@ const SuppliersContent = forwardRef<SuppliersPageHandle, SuppliersPageProps>(
                           event.stopPropagation();
                           void toggleSupplier(supplier);
                         }}
-                        className={`relative inline-flex h-6 w-11 items-center rounded-full transition ${
+                        className={`relative inline-flex gap-3 h-6 w-11 items-center rounded-md transition ${
                           supplier.isActive ? "bg-emerald-500" : "bg-slate-300"
                         }`}
                         title={supplier.isActive ? "Actif" : "Inactif"}
                       >
                         <span
-                          className={`inline-block h-4 w-4 transform rounded-full bg-white transition ${
+                          className={`inline-block h-4 w-4 transform rounded-md bg-white transition ${
                             supplier.isActive ? "translate-x-6" : "translate-x-1"
                           }`}
                         />
@@ -557,7 +537,7 @@ const SuppliersContent = forwardRef<SuppliersPageHandle, SuppliersPageProps>(
                 <h2 className="text-xl font-semibold text-slate-900">
                   {editingId ? "Modifier le prestataire" : "Ajouter un prestataire"}
                 </h2>
-                <button onClick={closeModal} className="rounded-lg p-2 text-slate-400 hover:bg-slate-100">
+                <button onClick={closeModal} className="flex items-center gap-2 rounded-lg p-2 text-slate-400 hover:bg-slate-100">
                   <X className="h-5 w-5" />
                 </button>
               </div>
@@ -581,7 +561,7 @@ const SuppliersContent = forwardRef<SuppliersPageHandle, SuppliersPageProps>(
                     )}
                   </div>
 
-                  <label className="inline-flex h-11 w-full cursor-pointer items-center justify-center gap-2 rounded-xl border border-slate-200 bg-white px-4 text-sm font-medium text-slate-700 hover:bg-slate-50">
+                  <label className="inline-flex gap-3 h-11 w-full cursor-pointer items-center justify-center gap-2 rounded-md border border-slate-200 bg-white px-4 text-sm font-medium text-slate-700 hover:bg-slate-50">
                     <Building2 className="h-4 w-4" />
                     Charger une photo
                     <input
@@ -605,7 +585,7 @@ const SuppliersContent = forwardRef<SuppliersPageHandle, SuppliersPageProps>(
                         Nom de l&apos;entreprise ou de la personne
                       </label>
                       <input
-                        className="h-11 w-full rounded-xl border border-slate-200 px-4 text-sm"
+                        className="h-11 w-full rounded-md border border-slate-200 px-4 text-sm"
                         value={name}
                         onChange={(event) => setName(event.target.value)}
                         placeholder="Ex: Lydec"
@@ -617,7 +597,7 @@ const SuppliersContent = forwardRef<SuppliersPageHandle, SuppliersPageProps>(
                         Metier / secteur
                       </label>
                       <select
-                        className="h-11 w-full rounded-xl border border-slate-200 bg-white px-4 text-sm"
+                        className="h-11 w-full rounded-md border border-slate-200 bg-white px-4 text-sm"
                         value={sector}
                         onChange={(event) => setSector(event.target.value)}
                       >
@@ -636,7 +616,7 @@ const SuppliersContent = forwardRef<SuppliersPageHandle, SuppliersPageProps>(
                         Nom du contact
                       </label>
                       <input
-                        className="h-11 w-full rounded-xl border border-slate-200 px-4 text-sm"
+                        className="h-11 w-full rounded-md border border-slate-200 px-4 text-sm"
                         value={contactName}
                         onChange={(event) => setContactName(event.target.value)}
                         placeholder="Ex: Maitre avocat"
@@ -648,7 +628,7 @@ const SuppliersContent = forwardRef<SuppliersPageHandle, SuppliersPageProps>(
                         Telephone
                       </label>
                       <input
-                        className="h-11 w-full rounded-xl border border-slate-200 px-4 text-sm"
+                        className="h-11 w-full rounded-md border border-slate-200 px-4 text-sm"
                         value={phone}
                         onChange={(event) => setPhone(event.target.value)}
                         placeholder="Ex: 0600000000"
@@ -662,7 +642,7 @@ const SuppliersContent = forwardRef<SuppliersPageHandle, SuppliersPageProps>(
                         Email
                       </label>
                       <input
-                        className="h-11 w-full rounded-xl border border-slate-200 px-4 text-sm"
+                        className="h-11 w-full rounded-md border border-slate-200 px-4 text-sm"
                         value={email}
                         onChange={(event) => setEmail(event.target.value)}
                         placeholder="Ex: contact@prestataire.ma"
@@ -674,7 +654,7 @@ const SuppliersContent = forwardRef<SuppliersPageHandle, SuppliersPageProps>(
                         Adresse
                       </label>
                       <input
-                        className="h-11 w-full rounded-xl border border-slate-200 px-4 text-sm"
+                        className="h-11 w-full rounded-md border border-slate-200 px-4 text-sm"
                         value={address}
                         onChange={(event) => setAddress(event.target.value)}
                         placeholder="Optionnel"
@@ -687,7 +667,7 @@ const SuppliersContent = forwardRef<SuppliersPageHandle, SuppliersPageProps>(
                       Note
                     </label>
                     <textarea
-                      className="min-h-28 w-full rounded-xl border border-slate-200 px-4 py-3 text-sm"
+                      className="min-h-28 w-full rounded-md border border-slate-200 px-4 py-3 text-sm"
                       value={note}
                       onChange={(event) => setNote(event.target.value)}
                       placeholder="Informations utiles, horaires, remarques..."
@@ -695,16 +675,14 @@ const SuppliersContent = forwardRef<SuppliersPageHandle, SuppliersPageProps>(
                   </div>
 
                   <div className="flex justify-end gap-3 pt-2">
-                    <button
-                      onClick={closeModal}
-                      className="rounded-xl border border-slate-200 px-4 py-2.5 text-sm font-medium text-slate-700 hover:bg-slate-50"
+                    <button onClick={closeModal}
+                      className="flex items-center gap-2 rounded-md border border-slate-200 px-4 py-2.5 text-sm font-medium text-slate-700 hover:bg-slate-50"
                     >
                       Annuler
                     </button>
-                    <button
-                      onClick={saveSupplier}
+                    <button onClick={saveSupplier}
                       disabled={!name.trim() || saving}
-                      className="rounded-xl bg-gradient-to-r from-cyan-500 to-blue-600 px-5 py-2.5 text-sm font-semibold text-white shadow-[0_10px_24px_rgba(14,165,233,0.22)] transition hover:from-cyan-600 hover:to-blue-700 disabled:opacity-50"
+                      className="flex items-center gap-2 rounded-md bg-gradient-to-r from-cyan-500 to-blue-600 px-5 py-2.5 text-sm font-semibold text-white shadow-[0_10px_24px_rgba(14,165,233,0.22)] transition hover:from-cyan-600 hover:to-blue-700 disabled:opacity-50"
                     >
                       {saving ? "Enregistrement..." : editingId ? "Enregistrer" : "Ajouter"}
                     </button>
@@ -746,10 +724,10 @@ const SuppliersContent = forwardRef<SuppliersPageHandle, SuppliersPageProps>(
                         width={72}
                         height={72}
                         unoptimized
-                        className="h-[72px] w-[72px] rounded-2xl object-cover"
+                        className="h-[72px] w-[72px] rounded-md object-cover"
                       />
                     ) : (
-                      <div className="flex h-[72px] w-[72px] items-center justify-center rounded-2xl bg-slate-100 text-base font-semibold text-slate-600">
+                      <div className="flex h-[72px] w-[72px] items-center justify-center rounded-md bg-slate-100 text-base font-semibold text-slate-600">
                         {getInitials(detail.supplier.name) || "PR"}
                       </div>
                     )}
@@ -760,7 +738,7 @@ const SuppliersContent = forwardRef<SuppliersPageHandle, SuppliersPageProps>(
                       </div>
                       <div className="mt-1">
                         <span
-                          className={`inline-flex rounded-full px-3 py-1 text-sm font-semibold ${getSectorBadgeClass(
+                          className={`inline-flex gap-3 rounded-md px-3 py-1 text-sm font-semibold ${getSectorBadgeClass(
                             detail.supplier.sector
                           )}`}
                         >
@@ -836,21 +814,18 @@ const SuppliersContent = forwardRef<SuppliersPageHandle, SuppliersPageProps>(
               <div className="p-6">
                 <div className="flex gap-2">
                   <input
-                    className="h-11 flex-1 rounded-xl border border-slate-200 px-4 text-sm"
+                    className="h-11 flex-1 rounded-md border border-slate-200 px-4 text-sm"
                     placeholder="Nouveau métier (ex: Peinture)"
                     value={newSectorName}
                     onChange={(e) => setNewSectorName(e.target.value)}
                   />
-                  <button
-                    onClick={addSector}
+                  <button onClick={addSector}
                     disabled={!newSectorName.trim() || savingSector}
-                    className="rounded-xl bg-gradient-to-r from-cyan-500 to-blue-600 px-4 text-sm font-semibold text-white shadow-[0_10px_24px_rgba(14,165,233,0.22)] transition hover:from-cyan-600 hover:to-blue-700 disabled:opacity-50"
-                  >
-                    Ajouter
-                  </button>
+                    className="flex items-center gap-2 rounded-md bg-gradient-to-r from-cyan-500 to-blue-600 px-4 text-sm font-semibold text-white shadow-[0_10px_24px_rgba(14,165,233,0.22)] transition hover:from-cyan-600 hover:to-blue-700 disabled:opacity-50"
+                  ><PlusCircle className="h-4 w-4" /> Ajouter</button>
                 </div>
 
-                <div className="mt-6 max-h-[300px] overflow-auto rounded-2xl border border-slate-200 bg-slate-50/50 p-2">
+                <div className="mt-6 max-h-[300px] overflow-auto rounded-md border border-slate-200 bg-slate-50/50 p-2">
                   {sectors.length === 0 ? (
                     <div className="py-4 text-center text-xs text-slate-400">
                       Aucun métier personnalisé.
@@ -860,7 +835,7 @@ const SuppliersContent = forwardRef<SuppliersPageHandle, SuppliersPageProps>(
                       {sectors.map((s) => (
                         <div
                           key={s.id}
-                          className="flex items-center justify-between rounded-xl bg-white p-3 shadow-sm ring-1 ring-slate-200/50"
+                          className="flex items-center justify-between rounded-md bg-white p-3 shadow-sm ring-1 ring-slate-200/50"
                         >
                           <div className="flex items-center gap-3">
                             <button
@@ -917,11 +892,7 @@ const SuppliersContent = forwardRef<SuppliersPageHandle, SuppliersPageProps>(
                               <Pencil className="h-3.5 w-3.5" />
                             </button>
                             <button
-                              onClick={() => void deleteSector(s.id)}
-                              className="rounded-lg p-1 text-slate-400 hover:bg-red-50 hover:text-red-500"
-                            >
-                              <Trash2 className="h-3.5 w-3.5" />
-                            </button>
+                              onClick={() =>void deleteSector(s.id)} className="rounded-lg p-1 text-slate-400 hover:bg-red-50 hover:text-red-500" > <Trash2 className="h-3.5 w-3.5" /></button>
                           </div>
                         </div>
                       ))}
@@ -943,16 +914,16 @@ const SuppliersContent = forwardRef<SuppliersPageHandle, SuppliersPageProps>(
               <div className="mt-6 flex justify-end gap-3">
                 <button
                   onClick={() => setDeleteTarget(null)}
-                  className="rounded-xl border border-slate-200 px-4 py-2 text-sm font-medium text-slate-700 hover:bg-slate-50"
+                  className="rounded-md border border-slate-200 px-4 py-2 text-sm font-medium text-slate-700 hover:bg-slate-50"
                 >
                   Annuler
                 </button>
                 <button
                   onClick={() => void confirmDelete()}
                   disabled={isDeleting}
-                  className="rounded-xl bg-red-600 px-5 py-2 text-sm font-semibold text-white hover:bg-red-700 disabled:opacity-50"
+                  className="rounded-md bg-gradient-to-r from-rose-500 to-red-600 px-6 py-2.5 text-sm font-bold text-white shadow-[0_10px_20px_rgba(244,63,94,0.2)] transition-all hover:scale-[1.02] active:scale-[0.98] disabled:opacity-40"
                 >
-                  Supprimer
+                  {isDeleting ? "Suppression..." : "Supprimer"}
                 </button>
               </div>
             </div>

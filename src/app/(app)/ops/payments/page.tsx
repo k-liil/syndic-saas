@@ -1,7 +1,7 @@
 "use client";
 
 import { Suspense, useCallback, useEffect, useRef, useState } from "react";
-import { Eye, Paperclip, Pencil, Trash2 } from "lucide-react";
+import { Eye, Paperclip, Pencil, Trash2, PlusCircle, Upload } from "lucide-react";
 import { useSession } from "next-auth/react";
 import { useSearchParams } from "next/navigation";
 import { canManage } from "@/lib/roles";
@@ -601,7 +601,7 @@ function toggleSelect(id: string) {
   return (
     <div className="flex h-[calc(100vh-9.5rem)] min-h-0 flex-col gap-6">
       {toast ? (
-        <div className="fixed right-6 top-6 z-[100] rounded-2xl bg-emerald-500 px-4 py-3 text-sm font-semibold text-white shadow-lg">
+        <div className="fixed right-6 top-6 z-[100] rounded-md bg-emerald-500 px-4 py-3 text-sm font-semibold text-white shadow-lg">
           {toast}
         </div>
       ) : null}
@@ -619,14 +619,14 @@ function toggleSelect(id: string) {
       <div>
         <div className="flex flex-col gap-3 xl:flex-row xl:items-center">
           <input
-            className="h-12 flex-1 rounded-2xl border border-zinc-200 bg-white px-4 text-sm outline-none placeholder:text-zinc-400"
+            className="h-12 flex-1 rounded-md border border-zinc-200 bg-white px-4 text-sm outline-none placeholder:text-zinc-400"
             placeholder="Rechercher une dépense..."
             value={search}
             onChange={(e) => setSearch(e.target.value)}
           />
 
           <select
-            className="h-12 rounded-2xl border border-zinc-200 bg-white px-4 text-sm outline-none xl:w-52"
+            className="h-12 rounded-md border border-zinc-200 bg-white px-4 text-sm outline-none xl:w-52"
             value={filterSupplierId}
             onChange={(e) => setFilterSupplierId(e.target.value)}
           >
@@ -642,7 +642,7 @@ function toggleSelect(id: string) {
             type="text"
             inputMode="numeric"
             placeholder="dd/mm/yyyy"
-            className="h-12 rounded-2xl border border-zinc-200 bg-white px-4 text-sm outline-none xl:w-44"
+            className="h-12 rounded-md border border-zinc-200 bg-white px-4 text-sm outline-none xl:w-44"
             value={dateFrom}
             onChange={(e) => setDateFrom(e.target.value)}
           />
@@ -651,7 +651,7 @@ function toggleSelect(id: string) {
             type="text"
             inputMode="numeric"
             placeholder="dd/mm/yyyy"
-            className="h-12 rounded-2xl border border-zinc-200 bg-white px-4 text-sm outline-none xl:w-44"
+            className="h-12 rounded-md border border-zinc-200 bg-white px-4 text-sm outline-none xl:w-44"
             value={dateTo}
             onChange={(e) => setDateTo(e.target.value)}
           />
@@ -659,43 +659,32 @@ function toggleSelect(id: string) {
 {canEdit ? <div className="flex gap-3">
   <button
     type="button"
-    onClick={() => {
-      setImportOpen(true);
-      setImportFile(null);
-      setImportResult(null);
-    }}
-    className="h-12 rounded-2xl border border-zinc-200 bg-white px-5 text-sm font-semibold text-zinc-700"
+    onClick={() =>{ setImportOpen(true); setImportFile(null); setImportResult(null); }}
+    className="flex items-center gap-2 h-12 rounded-md border border-zinc-200 bg-white px-5 text-sm font-semibold text-zinc-700 hover:bg-zinc-50 transition-colors"
   >
-    Importer
+    <Upload className="h-4 w-4" /> Importer
   </button>
 
   <button
     type="button"
-    onClick={() => {
-      resetForm();
-      setEditingPayment(null);
-      setOpenCreate(true);
-    }}
-    className="btn-brand h-12 rounded-2xl px-5 text-sm font-semibold"
+    onClick={() =>{ resetForm(); setEditingPayment(null); setOpenCreate(true); }}
+    className="flex items-center gap-2 rounded-md bg-gradient-to-r from-cyan-500 to-blue-600 px-5 h-12 text-sm font-semibold text-white shadow-[0_10px_24px_rgba(14,165,233,0.22)] transition-all hover:scale-[1.02] active:scale-[0.98]"
   >
-    + Ajouter une dépense
+    <PlusCircle className="h-4 w-4" /> Ajouter une dépense
   </button>
 </div> : null}
 
         </div>
 
 {canEdit && selectedPayments.length > 0 && (
-  <div className="mt-3 flex items-center justify-between rounded-2xl border border-zinc-200 bg-white p-3 shadow-sm">
+  <div className="mt-3 flex items-center justify-between rounded-md border border-zinc-200 bg-white p-3 shadow-sm">
     <div className="text-sm text-zinc-600">
       {selectedPayments.length} dépense(s) sélectionnée(s)
     </div>
 
-    <button
-      onClick={deleteSelected}
-      className="rounded-xl bg-red-600 px-4 py-2 text-sm text-white"
-    >
-      Supprimer
-    </button>
+    <button onClick={deleteSelected}
+      className="flex items-center gap-2 rounded-md bg-red-600 px-4 py-2 text-sm text-white"
+    ><Trash2 className="h-4 w-4" /> Supprimer</button>
   </div>
 )}
 
@@ -797,13 +786,13 @@ function toggleSelect(id: string) {
                         </td>
                         <td className="px-5 py-4">{p.supplier.name}</td>
                         <td className="px-5 py-4">
-                          <span className="inline-flex rounded-full bg-zinc-100 px-3 py-1 text-xs font-medium text-zinc-700">
+                          <span className="inline-flex gap-3 rounded-md bg-zinc-100 px-3 py-1 text-xs font-medium text-zinc-700">
                             {p.accountingPost ? `${p.accountingPost.code} - ${p.accountingPost.name}` : "-"}
                           </span>
                         </td>
                         <td className="px-4 py-3">
                           <span
-                            className={`inline-flex items-center rounded-full px-3 py-1 text-xs font-medium ${
+                            className={`inline-flex gap-3 items-center rounded-md px-3 py-1 text-xs font-medium ${
                               p.method === "CASH"
                                 ? "bg-emerald-100 text-emerald-700"
                                 : p.method === "TRANSFER"
@@ -833,7 +822,7 @@ function toggleSelect(id: string) {
                                 e.stopPropagation();
                                 openAttachment(p.attachments![0]);
                               }}
-                              className="inline-flex h-9 w-9 items-center justify-center rounded-xl border border-sky-200 bg-sky-50 text-sky-700 hover:bg-sky-100"
+                              className="inline-flex gap-3 h-9 w-9 items-center justify-center rounded-md border border-sky-200 bg-sky-50 text-sky-700 hover:bg-sky-100"
                               title="Voir la piece jointe"
                             >
                               <Eye className="h-4 w-4" />
@@ -863,22 +852,14 @@ function toggleSelect(id: string) {
                                   setAttachments(p.attachments ?? []);
                                   setOpenCreate(true);
                                 }}
-                                className="inline-flex h-9 w-9 items-center justify-center rounded-xl border border-zinc-200 bg-white text-zinc-600 transition hover:border-sky-200 hover:bg-sky-50 hover:text-sky-700"
+                                className="inline-flex gap-3 h-9 w-9 items-center justify-center rounded-md border border-zinc-200 bg-white text-zinc-600 transition hover:border-sky-200 hover:bg-sky-50 hover:text-sky-700"
                                 title="Modifier"
                               >
                                 <Pencil className="h-4 w-4" />
                               </button>
                               <button
                                 type="button"
-                                onClick={(e) => {
-                                  e.stopPropagation();
-                                  setPaymentToDelete(p);
-                                }}
-                                className="inline-flex h-9 w-9 items-center justify-center rounded-xl border border-red-200 bg-red-50 text-red-700 transition hover:bg-red-100"
-                                title="Supprimer"
-                              >
-                                <Trash2 className="h-4 w-4" />
-                              </button>
+                                onClick={(e) =>{ e.stopPropagation(); setPaymentToDelete(p); }} className="inline-flex gap-3 h-9 w-9 items-center justify-center rounded-md border border-red-200 bg-red-50 text-red-700 transition hover:bg-red-100" title="Supprimer" > <Trash2 className="h-4 w-4" /></button>
                             </div>
                           ) : (
                             <span className="text-xs text-zinc-400">Lecture seule</span>
@@ -902,10 +883,9 @@ function toggleSelect(id: string) {
                 {editingPayment ? "Modifier la dépense" : "Ajouter une dépense"}
               </h2>
 
-              <button
-                type="button"
+              <button type="button"
                 onClick={closeCreateModal}
-                className="text-2xl leading-none text-zinc-400"
+                className="flex items-center gap-2 text-2xl leading-none text-zinc-400"
               >
                 ×
               </button>
@@ -917,7 +897,7 @@ function toggleSelect(id: string) {
                   Titre de la dépense
                 </label>
                 <input
-                  className="h-12 w-full rounded-2xl border border-zinc-200 px-4 text-sm outline-none"
+                  className="h-12 w-full rounded-md border border-zinc-200 px-4 text-sm outline-none"
                   value={title}
                   onChange={(e) => {
                     const nextTitle = e.target.value;
@@ -938,7 +918,7 @@ function toggleSelect(id: string) {
                     type="number"
                     step="0.01"
                     inputMode="decimal"
-                    className="h-12 w-full rounded-2xl border border-zinc-200 px-4 text-sm outline-none"
+                    className="h-12 w-full rounded-md border border-zinc-200 px-4 text-sm outline-none"
                     value={amount}
                     onChange={(e) => {
                       const v = e.target.value;
@@ -955,7 +935,7 @@ function toggleSelect(id: string) {
                     type="text"
                     inputMode="numeric"
                     placeholder="dd/mm/yyyy"
-                    className="h-12 w-full rounded-2xl border border-zinc-200 px-4 text-sm outline-none"
+                    className="h-12 w-full rounded-md border border-zinc-200 px-4 text-sm outline-none"
                     value={date}
                     onChange={(e) => setDate(e.target.value)}
                   />
@@ -967,7 +947,7 @@ function toggleSelect(id: string) {
                   Prestataire / Fournisseur
                 </label>
                 <select
-                  className="h-12 w-full rounded-2xl border border-zinc-200 px-4 text-sm outline-none"
+                  className="h-12 w-full rounded-md border border-zinc-200 px-4 text-sm outline-none"
                   value={supplierId}
                   onChange={(e) => {
                     const nextSupplierId = e.target.value;
@@ -992,7 +972,7 @@ function toggleSelect(id: string) {
                 </label>
 
                 <select
-                  className="h-12 w-full rounded-2xl border border-zinc-200 px-4 text-sm outline-none"
+                  className="h-12 w-full rounded-md border border-zinc-200 px-4 text-sm outline-none"
                   value={categoryId}
                   onChange={(e) => {
                     setCategoryId(e.target.value);
@@ -1019,7 +999,7 @@ function toggleSelect(id: string) {
                   <button
                     type="button"
                     onClick={() => setMethod("CASH")}
-                    className={`rounded-2xl border p-3 text-left shadow-sm transition ${
+                    className={`rounded-md border p-3 text-left shadow-sm transition ${
                       method === "CASH"
                         ? "border-emerald-500 bg-emerald-50 shadow-sm"
                         : "border-zinc-200 bg-white hover:border-zinc-300 hover:shadow-sm"
@@ -1037,7 +1017,7 @@ function toggleSelect(id: string) {
                   <button
                     type="button"
                     onClick={() => setMethod("TRANSFER")}
-                    className={`rounded-2xl border p-3 text-left shadow-sm transition ${
+                    className={`rounded-md border p-3 text-left shadow-sm transition ${
                       method === "TRANSFER"
                         ? "border-blue-500 bg-blue-50 shadow-sm"
                         : "border-zinc-200 bg-white hover:border-zinc-300 hover:shadow-sm"
@@ -1055,7 +1035,7 @@ function toggleSelect(id: string) {
                   <button
                     type="button"
                     onClick={() => setMethod("CHECK")}
-                    className={`rounded-2xl border p-3 text-left shadow-sm transition ${
+                    className={`rounded-md border p-3 text-left shadow-sm transition ${
                       method === "CHECK"
                         ? "border-orange-500 bg-orange-50 shadow-sm"
                         : "border-zinc-200 bg-white hover:border-zinc-300 hover:shadow-sm"
@@ -1073,7 +1053,7 @@ function toggleSelect(id: string) {
                   <button
   type="button"
   onClick={() => setMethod("DEBIT")}
-  className={`rounded-2xl border p-3 text-left shadow-sm transition ${
+  className={`rounded-md border p-3 text-left shadow-sm transition ${
     method === "DEBIT"
       ? "border-purple-500 bg-purple-50 shadow-sm"
       : "border-zinc-200 bg-white hover:border-zinc-300 hover:shadow-sm"
@@ -1098,7 +1078,7 @@ function toggleSelect(id: string) {
                       Banque
                     </label>
                     <select
-                      className="h-12 w-full rounded-2xl border border-zinc-200 px-4 text-sm outline-none"
+                      className="h-12 w-full rounded-md border border-zinc-200 px-4 text-sm outline-none"
                       value={bankName}
                       onChange={(e) => setBankName(e.target.value)}
                     >
@@ -1117,7 +1097,7 @@ function toggleSelect(id: string) {
                         Numéro de chèque
                       </label>
                       <input
-                        className="h-12 w-full rounded-2xl border border-zinc-200 px-4 text-sm outline-none"
+                        className="h-12 w-full rounded-md border border-zinc-200 px-4 text-sm outline-none"
                         value={bankRef}
                         onChange={(e) => setBankRef(e.target.value)}
                       />
@@ -1130,7 +1110,7 @@ function toggleSelect(id: string) {
                 <label className="mb-2 block text-sm font-medium text-zinc-700">
                   Factures / bons
                 </label>
-                <div className="space-y-3 rounded-2xl border border-zinc-200 p-4">
+                <div className="space-y-3 rounded-md border border-zinc-200 p-4">
                   <input
                     type="file"
                     multiple
@@ -1146,7 +1126,7 @@ function toggleSelect(id: string) {
                       {attachments.map((attachment, index) => (
                         <div
                           key={`${attachment.name}-${index}`}
-                          className="inline-flex items-center gap-2 rounded-full bg-zinc-100 px-3 py-1.5 text-xs text-zinc-700"
+                          className="inline-flex gap-3 items-center gap-2 rounded-md bg-zinc-100 px-3 py-1.5 text-xs text-zinc-700"
                         >
                           <Paperclip className="h-3.5 w-3.5" />
                           <button
@@ -1179,7 +1159,7 @@ function toggleSelect(id: string) {
                   Note
                 </label>
                 <textarea
-                  className="min-h-28 w-full rounded-2xl border border-zinc-200 p-4 text-sm outline-none"
+                  className="min-h-28 w-full rounded-md border border-zinc-200 p-4 text-sm outline-none"
                   value={note}
                   onChange={(e) => {
                     const nextNote = e.target.value;
@@ -1191,11 +1171,10 @@ function toggleSelect(id: string) {
                 />
               </div>
 
-              <button
-                type="button"
+              <button type="button"
                 onClick={editingPayment ? updatePayment : createPayment}
                 disabled={submitting}
-                className="btn-brand h-12 w-full rounded-2xl text-sm font-semibold disabled:opacity-50"
+                className="flex items-center gap-2 btn-brand h-12 w-full rounded-md text-sm font-semibold disabled:opacity-50"
               >
                 {editingPayment
                   ? "Enregistrer les modifications"
@@ -1229,21 +1208,21 @@ function toggleSelect(id: string) {
               </div>
 
               <div className="grid grid-cols-2 gap-4">
-                <div className="rounded-xl border border-zinc-200 bg-zinc-50 px-4 py-3">
+                <div className="rounded-md border border-zinc-200 bg-zinc-50 px-4 py-3">
                   <div className="text-xs text-zinc-500">Montant</div>
                   <div className="font-medium">
                     {formatMoney(selectedPayment.amount)}
                   </div>
                 </div>
 
-                <div className="rounded-xl border border-zinc-200 bg-zinc-50 px-4 py-3">
+                <div className="rounded-md border border-zinc-200 bg-zinc-50 px-4 py-3">
                   <div className="text-xs text-zinc-500">Date</div>
                   <div className="font-medium">
                     {formatDate(selectedPayment.date)}
                   </div>
                 </div>
 
-                <div className="rounded-xl border border-zinc-200 bg-zinc-50 px-4 py-3">
+                <div className="rounded-md border border-zinc-200 bg-zinc-50 px-4 py-3">
                   <div className="text-xs text-zinc-500">Méthode</div>
                   <div className="font-medium">
                     {selectedPayment.method === "CASH"
@@ -1254,14 +1233,14 @@ function toggleSelect(id: string) {
                   </div>
                 </div>
 
-                <div className="rounded-xl border border-zinc-200 bg-zinc-50 px-4 py-3">
+                <div className="rounded-md border border-zinc-200 bg-zinc-50 px-4 py-3">
                   <div className="text-xs text-zinc-500">Prestataire</div>
                   <div className="font-medium">
                     {selectedPayment.supplier.name}
                   </div>
                 </div>
 
-                <div className="rounded-xl border border-zinc-200 bg-zinc-50 px-4 py-3">
+                <div className="rounded-md border border-zinc-200 bg-zinc-50 px-4 py-3">
                   <div className="text-xs text-zinc-500">Poste</div>
                   <div className="font-medium">
                     {selectedPayment.accountingPost ? `${selectedPayment.accountingPost.code} - ${selectedPayment.accountingPost.name}` : "-"}
@@ -1269,14 +1248,14 @@ function toggleSelect(id: string) {
                 </div>
 
                 {selectedPayment.bankName ? (
-                  <div className="rounded-xl border border-zinc-200 bg-zinc-50 px-4 py-3">
+                  <div className="rounded-md border border-zinc-200 bg-zinc-50 px-4 py-3">
                     <div className="text-xs text-zinc-500">Banque</div>
                     <div className="font-medium">{selectedPayment.bankName}</div>
                   </div>
                 ) : null}
 
                 {selectedPayment.bankRef ? (
-                  <div className="rounded-xl border border-zinc-200 bg-zinc-50 px-4 py-3">
+                  <div className="rounded-md border border-zinc-200 bg-zinc-50 px-4 py-3">
                     <div className="text-xs text-zinc-500">
                       Référence / Chèque
                     </div>
@@ -1305,7 +1284,7 @@ function toggleSelect(id: string) {
                     setSelectedPayment(null);
                     setOpenCreate(true);
                   }}
-                  className="rounded-xl border border-zinc-200 bg-white px-4 py-2 text-sm font-semibold text-zinc-700"
+                  className="rounded-md border border-zinc-200 bg-white px-4 py-2 text-sm font-semibold text-zinc-700"
                 >
                   Modifier
                 </button>
@@ -1313,13 +1292,13 @@ function toggleSelect(id: string) {
               </div>
 
               {selectedPayment.note ? (
-                <div className="rounded-xl border border-zinc-200 bg-zinc-50 px-4 py-3 text-sm text-zinc-700">
+                <div className="rounded-md border border-zinc-200 bg-zinc-50 px-4 py-3 text-sm text-zinc-700">
                   {selectedPayment.note}
                 </div>
               ) : null}
 
               {selectedPayment.attachments && selectedPayment.attachments.length > 0 ? (
-                <div className="space-y-3 rounded-xl border border-zinc-200 bg-zinc-50 px-4 py-3">
+                <div className="space-y-3 rounded-md border border-zinc-200 bg-zinc-50 px-4 py-3">
                   <div className="text-xs font-semibold uppercase tracking-wide text-zinc-500">
                     Pieces jointes
                   </div>
@@ -1329,7 +1308,7 @@ function toggleSelect(id: string) {
                         key={`${attachment.name}-${index}`}
                         type="button"
                         onClick={() => openAttachment(attachment)}
-                        className="inline-flex items-center gap-2 rounded-full bg-white px-3 py-1.5 text-xs font-medium text-zinc-700 shadow-sm hover:text-sky-700"
+                        className="inline-flex gap-3 items-center gap-2 rounded-md bg-white px-3 py-1.5 text-xs font-medium text-zinc-700 shadow-sm hover:text-sky-700"
                       >
                         <Paperclip className="h-3.5 w-3.5" />
                         <span className="max-w-48 truncate">{attachment.name}</span>
@@ -1376,18 +1355,15 @@ function toggleSelect(id: string) {
                 <button
                   type="button"
                   onClick={() => setPaymentToDelete(null)}
-                  className="rounded-2xl border border-zinc-200 bg-white px-5 py-3 text-sm font-semibold text-zinc-700 shadow-sm"
+                  className="rounded-md border border-zinc-200 bg-white px-5 py-3 text-sm font-semibold text-zinc-700 shadow-sm"
                 >
                   Annuler
                 </button>
 
-                <button
-                  type="button"
+                <button type="button"
                   onClick={deletePayment}
-                  className="rounded-2xl bg-red-600 px-5 py-3 text-sm font-semibold text-white shadow-sm hover:bg-red-700"
-                >
-                  Supprimer
-                </button>
+                  className="flex items-center gap-2 rounded-md bg-red-600 px-5 py-3 text-sm font-semibold text-white shadow-sm hover:bg-red-700"
+                ><Trash2 className="h-4 w-4" /> Supprimer</button>
               </div>
             </div>
           </div>
@@ -1430,7 +1406,7 @@ function toggleSelect(id: string) {
           className="block w-full text-sm"
         />
 
-        <div className="rounded-2xl bg-zinc-50 p-3 text-xs text-zinc-600">
+        <div className="rounded-md bg-zinc-50 p-3 text-xs text-zinc-600">
           supplierName,categoryName,method,amount,date,bankName,bankRef,note
           <br />
           Plombier Ahmed,Plomberie,CASH,350,2024-02-02,,,&quot;Réparation fuite&quot;
@@ -1438,10 +1414,9 @@ function toggleSelect(id: string) {
           Electricien Sami,Electricité,TRANSFER,1200,2024-02-10,Attijari,,&quot;Remplacement disjoncteur&quot;
         </div>
 
-        <button
-          onClick={importPayments}
+        <button onClick={importPayments}
           disabled={!importFile || importBusy}
-          className="h-12 w-full rounded-2xl bg-zinc-900 text-sm font-medium text-white disabled:opacity-50"
+          className="flex items-center gap-2 h-12 w-full rounded-md bg-blue-600 hover:bg-blue-700 text-sm font-medium text-white disabled:opacity-50"
         >
           {importBusy ? "Import en cours..." : "Importer"}
         </button>
@@ -1449,12 +1424,12 @@ function toggleSelect(id: string) {
         {importResult ? (
           <div className="grid gap-2">
             <div className="flex items-center gap-3">
-              <span className="inline-flex items-center gap-1 rounded-full bg-emerald-100 px-3 py-1 text-sm font-medium text-emerald-700">
+              <span className="inline-flex gap-3 items-center gap-1 rounded-md bg-emerald-100 px-3 py-1 text-sm font-medium text-emerald-700">
                 ✓ {importResult.imported} importé{importResult.imported > 1 ? "s" : ""}
               </span>
 
               <span
-                className={`inline-flex items-center gap-1 rounded-full px-3 py-1 text-sm font-medium ${
+                className={`inline-flex gap-3 items-center gap-1 rounded-md px-3 py-1 text-sm font-medium ${
                   importResult.errors.length > 0
                     ? "bg-red-100 text-red-700"
                     : "bg-zinc-200 text-zinc-600"
@@ -1466,7 +1441,7 @@ function toggleSelect(id: string) {
             </div>
 
             {importResult.errors.length > 0 ? (
-              <div className="rounded-xl border border-zinc-200 bg-white p-3">
+              <div className="rounded-md border border-zinc-200 bg-white p-3">
                 <div className="mb-2 text-sm font-medium text-zinc-900">Détail des erreurs</div>
                 <ul className="max-h-48 space-y-1 overflow-auto text-sm text-zinc-700">
                   {importResult.errors.map((e, idx) => (

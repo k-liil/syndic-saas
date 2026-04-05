@@ -35,7 +35,7 @@ export async function GET(req: Request) {
       const term = q.slice(1);
       if (term) searchConditions.push({ [field]: { endsWith: term, mode: "insensitive" } });
     } else {
-      searchConditions.push({ [field]: { equals: q, mode: "insensitive" } });
+      searchConditions.push({ [field]: { contains: q, mode: "insensitive" } });
     }
   }
 

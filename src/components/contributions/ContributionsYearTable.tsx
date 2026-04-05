@@ -44,7 +44,7 @@ function StatusBadge({ value }: { value: MonthStatus }) {
   if (value === "PAID") {
     return (
       <div className="flex h-[54px] w-full items-center justify-center">
-        <span className="h-3 w-3 rounded-full bg-emerald-500" />
+        <span className="h-3 w-3 rounded-md bg-emerald-500" />
       </div>
     );
   }
@@ -52,7 +52,7 @@ function StatusBadge({ value }: { value: MonthStatus }) {
   if (value === "PARTIAL") {
     return (
       <div className="flex h-[54px] w-full items-center justify-center">
-        <span className="h-3 w-3 rounded-full bg-amber-500" />
+        <span className="h-3 w-3 rounded-md bg-amber-500" />
       </div>
     );
   }
@@ -60,7 +60,7 @@ function StatusBadge({ value }: { value: MonthStatus }) {
   if (value === "UNPAID") {
     return (
       <div className="flex h-[54px] w-full items-center justify-center">
-        <span className="h-3 w-3 rounded-full bg-rose-500" />
+        <span className="h-3 w-3 rounded-md bg-rose-500" />
       </div>
     );
   }
@@ -68,14 +68,14 @@ function StatusBadge({ value }: { value: MonthStatus }) {
   if (value === "ADVANCE") {
     return (
       <div className="flex h-[54px] w-full items-center justify-center">
-        <span className="h-3 w-3 rounded-full bg-sky-500" />
+        <span className="h-3 w-3 rounded-md bg-sky-500" />
       </div>
     );
   }
 
   return (
     <div className="flex h-[54px] w-full items-center justify-center">
-      <span className="h-2.5 w-2.5 rounded-full bg-zinc-200" />
+      <span className="h-2.5 w-2.5 rounded-md bg-zinc-200" />
     </div>
   );
 }

@@ -1,4 +1,5 @@
 "use client"
+import { PlusCircle } from "lucide-react";
 
 interface Props {
   search: string
@@ -17,12 +18,9 @@ export function TableToolbar({ search, onSearch, onAdd }: Props) {
       />
 
       {onAdd && (
-        <button
-          onClick={onAdd}
-          className="rounded-lg bg-black text-white px-4 py-2 text-sm"
-        >
-          Ajouter
-        </button>
+        <button onClick={onAdd}
+          className="flex items-center gap-2 rounded-lg bg-black text-white px-4 py-2 text-sm"
+        ><PlusCircle className="h-4 w-4" /> Ajouter</button>
       )}
     </div>
   )

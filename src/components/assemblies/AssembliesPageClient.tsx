@@ -118,7 +118,7 @@ export default function AssembliesPageClient() {
 
   return (
     <div className="flex flex-col gap-6">
-      {toast ? <div className="fixed right-6 top-6 z-[100] rounded-2xl bg-slate-900 px-4 py-3 text-sm font-semibold text-white shadow-lg">{toast}</div> : null}
+      {toast ? <div className="fixed right-6 top-6 z-[100] rounded-md bg-slate-900 px-4 py-3 text-sm font-semibold text-white shadow-lg">{toast}</div> : null}
 
       <div className="flex items-start justify-between gap-4">
         <div>
@@ -126,10 +126,7 @@ export default function AssembliesPageClient() {
           <p className="mt-1 text-sm text-slate-500">{org?.name ?? "Organisation actuelle"}</p>
         </div>
         {canEdit ? (
-          <button type="button" onClick={() => setOpenCreate(true)} className="btn-brand inline-flex h-11 items-center justify-center gap-2 rounded-2xl px-5 text-sm font-semibold">
-            <Plus className="h-4 w-4" />
-            Planifier une AG
-          </button>
+          <button type="button" onClick={() =>setOpenCreate(true)} className="btn-brand inline-flex gap-3 h-11 items-center justify-center gap-2 rounded-md px-5 text-sm font-semibold"> <Plus className="h-4 w-4" /> Planifier une AG</button>
         ) : null}
       </div>
 
@@ -137,9 +134,9 @@ export default function AssembliesPageClient() {
         <div className="grid gap-3 lg:grid-cols-[minmax(0,1fr)_320px]">
           <div className="relative">
             <Search className="pointer-events-none absolute left-4 top-1/2 h-4 w-4 -translate-y-1/2 text-slate-400" />
-            <input type="text" value={query} onChange={(event) => setQuery(event.target.value)} placeholder="Rechercher par titre..." className="h-11 w-full rounded-2xl border border-slate-200 bg-white pl-10 pr-4 text-sm outline-none transition focus:border-slate-900" />
+            <input type="text" value={query} onChange={(event) => setQuery(event.target.value)} placeholder="Rechercher par titre..." className="h-11 w-full rounded-md border border-slate-200 bg-white pl-10 pr-4 text-sm outline-none transition focus:border-slate-900" />
           </div>
-          <select value={status} onChange={(event) => setStatus(event.target.value)} className="h-11 rounded-2xl border border-slate-200 bg-white px-4 text-sm outline-none transition focus:border-slate-900">
+          <select value={status} onChange={(event) => setStatus(event.target.value)} className="h-11 rounded-md border border-slate-200 bg-white px-4 text-sm outline-none transition focus:border-slate-900">
             <option value="ALL">Tous les statuts</option>
             {Object.entries(meetingStatusLabels).map(([value, label]) => (
               <option key={value} value={value}>{label}</option>
@@ -167,8 +164,8 @@ export default function AssembliesPageClient() {
               <div className="font-semibold text-slate-900">{item.title}</div>
               <div className="text-slate-600">{item.organization.name}</div>
               <div className="text-slate-600">{formatDate(item.date)}</div>
-              <div><span className="inline-flex rounded-full bg-sky-50 px-3 py-1 text-xs font-semibold text-sky-700">{item.type === "EXTRAORDINARY" ? "Extraordinaire" : "Ordinaire"}</span></div>
-              <div><span className={`inline-flex rounded-full border px-3 py-1 text-xs font-semibold ${getMeetingStatusTone(item.status)}`}>{meetingStatusLabels[item.status]}</span></div>
+              <div><span className="inline-flex gap-3 rounded-md bg-sky-50 px-3 py-1 text-xs font-semibold text-sky-700">{item.type === "EXTRAORDINARY" ? "Extraordinaire" : "Ordinaire"}</span></div>
+              <div><span className={`inline-flex gap-3 rounded-md border px-3 py-1 text-xs font-semibold ${getMeetingStatusTone(item.status)}`}>{meetingStatusLabels[item.status]}</span></div>
               <div><Link href={`/organisation/assemblies/${item.id}`} className="font-semibold text-slate-700 hover:text-slate-900">Gerer</Link></div>
             </div>
           ))
@@ -185,32 +182,32 @@ export default function AssembliesPageClient() {
             <div className="space-y-5 px-6 py-5">
               <div>
                 <label className="mb-1.5 block text-sm font-medium text-slate-700">Copropriete</label>
-                <select value={selectedOrgId} onChange={(event) => setSelectedOrgId(event.target.value)} className="h-11 w-full rounded-2xl border border-slate-200 px-4 text-sm outline-none transition focus:border-slate-900">
+                <select value={selectedOrgId} onChange={(event) => setSelectedOrgId(event.target.value)} className="h-11 w-full rounded-md border border-slate-200 px-4 text-sm outline-none transition focus:border-slate-900">
                   <option value="">Selectionner une copropriete</option>
                   {orgs.map((item) => <option key={item.id} value={item.id}>{item.name}</option>)}
                 </select>
               </div>
               <div>
                 <label className="mb-1.5 block text-sm font-medium text-slate-700">Titre / Ordre du jour principal</label>
-                <input type="text" value={title} onChange={(event) => setTitle(event.target.value)} className="h-11 w-full rounded-2xl border border-slate-200 px-4 text-sm outline-none transition focus:border-slate-900" />
+                <input type="text" value={title} onChange={(event) => setTitle(event.target.value)} className="h-11 w-full rounded-md border border-slate-200 px-4 text-sm outline-none transition focus:border-slate-900" />
               </div>
               <div className="grid gap-4 md:grid-cols-2">
                 <div>
                   <label className="mb-1.5 block text-sm font-medium text-slate-700">Type d&apos;assemblee</label>
-                  <select value={meetingType} onChange={(event) => setMeetingType(event.target.value as "ORDINARY" | "EXTRAORDINARY")} className="h-11 w-full rounded-2xl border border-slate-200 px-4 text-sm outline-none transition focus:border-slate-900">
+                  <select value={meetingType} onChange={(event) => setMeetingType(event.target.value as "ORDINARY" | "EXTRAORDINARY")} className="h-11 w-full rounded-md border border-slate-200 px-4 text-sm outline-none transition focus:border-slate-900">
                     {meetingTypeOptions.map((item) => <option key={item.value} value={item.value}>{item.label}</option>)}
                   </select>
                 </div>
                 <div>
                   <label className="mb-1.5 block text-sm font-medium text-slate-700">Date de tenue</label>
-                  <input type="text" value={date} onChange={(event) => setDate(event.target.value)} placeholder="dd/mm/yyyy" className="h-11 w-full rounded-2xl border border-slate-200 px-4 text-sm outline-none transition focus:border-slate-900" />
+                  <input type="text" value={date} onChange={(event) => setDate(event.target.value)} placeholder="dd/mm/yyyy" className="h-11 w-full rounded-md border border-slate-200 px-4 text-sm outline-none transition focus:border-slate-900" />
                 </div>
               </div>
               <div>
                 <label className="mb-1.5 block text-sm font-medium text-slate-700">Lieu (optionnel)</label>
-                <input type="text" value={location} onChange={(event) => setLocation(event.target.value)} className="h-11 w-full rounded-2xl border border-slate-200 px-4 text-sm outline-none transition focus:border-slate-900" />
+                <input type="text" value={location} onChange={(event) => setLocation(event.target.value)} className="h-11 w-full rounded-md border border-slate-200 px-4 text-sm outline-none transition focus:border-slate-900" />
               </div>
-              <button type="button" onClick={() => void handleCreate()} className="btn-brand h-11 w-full rounded-2xl text-sm font-semibold">Planifier l&apos;AG</button>
+              <button type="button" onClick={() => void handleCreate()} className="btn-brand h-11 w-full rounded-md text-sm font-semibold">Planifier l&apos;AG</button>
             </div>
           </div>
         </div>

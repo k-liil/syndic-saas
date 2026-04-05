@@ -8,7 +8,7 @@ import {
 } from "@/app/(app)/setup/suppliers/SuppliersContent";
 import { canAccessSettings } from "@/lib/roles";
 import { useApiUrl } from "@/lib/org-context";
-import { Save, Loader2, ArrowRight, Activity, HandCoins, Building2, UserRound, Trash2, Pencil, Plus } from "lucide-react";
+import { Save, Loader2, ArrowRight, Activity, HandCoins, Building2, UserRound, Trash2, Pencil, Plus, PlusCircle } from "lucide-react";
 import { Modal } from "@/components/ui/Modal";
 
 type Settings = {
@@ -578,9 +578,9 @@ export default function SettingsPage() {
       <div className="flex flex-wrap gap-2 border-b border-zinc-200 pb-2">
         <button
           onClick={() => setTab("general")}
-          className={`px-4 py-2 text-sm font-medium rounded-xl ${
+          className={`px-4 py-2 text-sm font-medium rounded-md ${
             tab === "general"
-              ? "bg-indigo-600 text-white"
+              ? "bg-gradient-to-r from-cyan-500 to-blue-600 text-white shadow-sm transition-all"
               : "bg-zinc-100 text-zinc-700 hover:bg-zinc-200"
           }`}
         >
@@ -589,9 +589,9 @@ export default function SettingsPage() {
 
         <button
           onClick={() => setTab("numbering")}
-          className={`px-4 py-2 text-sm font-medium rounded-xl ${
+          className={`px-4 py-2 text-sm font-medium rounded-md ${
             tab === "numbering"
-              ? "bg-indigo-600 text-white"
+              ? "bg-gradient-to-r from-cyan-500 to-blue-600 text-white shadow-sm transition-all"
               : "bg-zinc-100 text-zinc-700 hover:bg-zinc-200"
           }`}
         >
@@ -600,9 +600,9 @@ export default function SettingsPage() {
 
         <button
           onClick={() => setTab("banks")}
-          className={`px-4 py-2 text-sm font-medium rounded-xl ${
+          className={`px-4 py-2 text-sm font-medium rounded-md ${
             tab === "banks"
-              ? "bg-indigo-600 text-white"
+              ? "bg-gradient-to-r from-cyan-500 to-blue-600 text-white shadow-sm transition-all"
               : "bg-zinc-100 text-zinc-700 hover:bg-zinc-200"
           }`}
         >
@@ -611,9 +611,9 @@ export default function SettingsPage() {
 
         <button
           onClick={() => setTab("contributions")}
-          className={`px-4 py-2 text-sm font-medium rounded-xl ${
+          className={`px-4 py-2 text-sm font-medium rounded-md ${
             tab === "contributions"
-              ? "bg-indigo-600 text-white"
+              ? "bg-gradient-to-r from-cyan-500 to-blue-600 text-white shadow-sm transition-all"
               : "bg-zinc-100 text-zinc-700 hover:bg-zinc-200"
           }`}
         >
@@ -632,7 +632,7 @@ export default function SettingsPage() {
               banques internes utilisees dans les encaissements.
             </p>
             {s?.organization ? (
-              <div className="mt-4 inline-flex items-center gap-2 rounded-2xl border border-zinc-200 bg-zinc-50 px-3 py-2 text-sm text-zinc-600">
+              <div className="mt-4 inline-flex gap-3 items-center gap-2 rounded-md border border-zinc-200 bg-zinc-50 px-3 py-2 text-sm text-zinc-600">
                 <span className="font-semibold text-zinc-900">Organisation</span>
                 <span>{s.organization.name}</span>
                 <span className="text-zinc-400">/</span>
@@ -642,17 +642,16 @@ export default function SettingsPage() {
           </div>
 
           <div className="flex items-center gap-3">
-            <button
-              type="button"
+            <button type="button"
               onClick={handlePrimaryAction}
               disabled={primaryAction.disabled}
-              className="h-11 rounded-2xl bg-zinc-900 px-5 text-sm font-semibold text-white shadow-sm transition hover:opacity-95 disabled:cursor-not-allowed disabled:opacity-40"
+              className="flex items-center gap-2 h-11 rounded-md bg-gradient-to-r from-cyan-500 to-blue-600 px-6 text-sm font-bold text-white shadow-[0_10px_24px_rgba(14,165,233,0.22)] transition-all hover:scale-[1.02] active:scale-[0.98] disabled:cursor-not-allowed disabled:opacity-40"
             >
               {primaryAction.label}
             </button>
 
             <div
-              className="h-12 w-12 rounded-2xl border border-zinc-200 shadow-inner"
+              className="h-12 w-12 rounded-md border border-zinc-200 shadow-inner"
               style={{ backgroundColor: brandColor }}
             />
           </div>
@@ -660,7 +659,7 @@ export default function SettingsPage() {
 
         {status.text ? (
           <div
-            className={`mt-5 rounded-2xl px-4 py-3 text-sm font-medium ${
+            className={`mt-5 rounded-md px-4 py-3 text-sm font-medium ${
               status.type === "error"
                 ? "bg-red-50 text-red-700"
                 : status.type === "success"
@@ -692,7 +691,7 @@ export default function SettingsPage() {
                     Nom du syndic
                   </label>
                   <input
-                    className="h-12 w-full rounded-2xl border border-zinc-200 bg-white px-4 text-sm shadow-sm outline-none ring-0 placeholder:text-zinc-400"
+                    className="h-12 w-full rounded-md border border-zinc-200 bg-white px-4 text-sm shadow-sm outline-none ring-0 placeholder:text-zinc-400"
                     value={brandName}
                     onChange={(e) => setBrandName(e.target.value)}
                     placeholder="Ex: Syndic Al Amal"
@@ -708,10 +707,10 @@ export default function SettingsPage() {
                       type="color"
                       value={brandColor}
                       onChange={(e) => setBrandColor(e.target.value)}
-                      className="h-12 w-16 rounded-2xl border border-zinc-200 bg-white p-1 shadow-sm"
+                      className="h-12 w-16 rounded-md border border-zinc-200 bg-white p-1 shadow-sm"
                     />
                     <input
-                      className="h-12 w-full rounded-2xl border border-zinc-200 bg-white px-4 font-mono text-sm shadow-sm outline-none"
+                      className="h-12 w-full rounded-md border border-zinc-200 bg-white px-4 font-mono text-sm shadow-sm outline-none"
                       value={brandColor}
                       onChange={(e) => setBrandColor(e.target.value)}
                     />
@@ -737,7 +736,7 @@ export default function SettingsPage() {
                   </label>
                   <input
                     type="number"
-                    className="h-12 w-full rounded-2xl border border-zinc-200 bg-white px-4 text-sm shadow-sm outline-none"
+                    className="h-12 w-full rounded-md border border-zinc-200 bg-white px-4 text-sm shadow-sm outline-none"
                     value={startYear}
                     onChange={(e) => setStartYear(Number(e.target.value))}
                     min={2000}
@@ -750,7 +749,7 @@ export default function SettingsPage() {
                     Mois de depart
                   </label>
                   <select
-                    className="h-12 w-full rounded-2xl border border-zinc-200 bg-white px-4 text-sm shadow-sm outline-none"
+                    className="h-12 w-full rounded-md border border-zinc-200 bg-white px-4 text-sm shadow-sm outline-none"
                     value={startMonth}
                     onChange={(e) => setStartMonth(Number(e.target.value))}
                   >
@@ -777,7 +776,7 @@ export default function SettingsPage() {
                   </label>
                   <input
                     type="number"
-                    className="h-12 w-full rounded-2xl border border-zinc-200 bg-white px-4 text-sm shadow-sm outline-none"
+                    className="h-12 w-full rounded-md border border-zinc-200 bg-white px-4 text-sm shadow-sm outline-none"
                     value={openingCashBalance}
                     onChange={(e) => setOpeningCashBalance(Number(e.target.value))}
                     step="0.01"
@@ -790,7 +789,7 @@ export default function SettingsPage() {
                   </label>
                   <input
                     type="number"
-                    className="h-12 w-full rounded-2xl border border-zinc-200 bg-white px-4 text-sm shadow-sm outline-none"
+                    className="h-12 w-full rounded-md border border-zinc-200 bg-white px-4 text-sm shadow-sm outline-none"
                     value={openingBankBalance}
                     onChange={(e) => setOpeningBankBalance(Number(e.target.value))}
                     step="0.01"
@@ -820,7 +819,7 @@ export default function SettingsPage() {
                   </label>
                   <input
                     type="number"
-                    className="h-12 w-full rounded-2xl border border-zinc-200 bg-white px-4 text-sm shadow-sm outline-none"
+                    className="h-12 w-full rounded-md border border-zinc-200 bg-white px-4 text-sm shadow-sm outline-none"
                     value={receiptStartNumber}
                     onChange={(e) => setReceiptStartNumber(Number(e.target.value))}
                     min={1}
@@ -836,12 +835,12 @@ export default function SettingsPage() {
                     <button
                       type="button"
                       onClick={() => setReceiptUsePrefix(!receiptUsePrefix)}
-                      className={`relative inline-flex h-6 w-11 items-center rounded-full transition ${
+                      className={`relative inline-flex gap-3 h-6 w-11 items-center rounded-md transition ${
                         receiptUsePrefix ? "bg-emerald-500" : "bg-zinc-300"
                       }`}
                     >
                       <span
-                        className={`inline-block h-4 w-4 transform rounded-full bg-white transition ${
+                        className={`inline-block h-4 w-4 transform rounded-md bg-white transition ${
                           receiptUsePrefix ? "translate-x-6" : "translate-x-1"
                         }`}
                       />
@@ -856,7 +855,7 @@ export default function SettingsPage() {
                     Prefixe encaissement
                   </label>
                   <input
-                    className="h-12 w-full rounded-2xl border border-zinc-200 bg-white px-4 text-sm shadow-sm outline-none"
+                    className="h-12 w-full rounded-md border border-zinc-200 bg-white px-4 text-sm shadow-sm outline-none"
                     value={receiptPrefix}
                     onChange={(e) => setReceiptPrefix(e.target.value)}
                     placeholder="Ex: E"
@@ -864,7 +863,7 @@ export default function SettingsPage() {
                 </div>
               ) : null}
 
-              <div className="mt-4 rounded-2xl bg-indigo-50 px-4 py-3 text-sm text-indigo-700">
+              <div className="mt-4 rounded-md bg-indigo-50 px-4 py-3 text-sm text-indigo-700">
                 Apercu :{" "}
                 <span className="font-semibold">
                   {receiptUsePrefix && receiptPrefix.trim()
@@ -891,7 +890,7 @@ export default function SettingsPage() {
                   </label>
                   <input
                     type="number"
-                    className="h-12 w-full rounded-2xl border border-zinc-200 bg-white px-4 text-sm shadow-sm outline-none"
+                    className="h-12 w-full rounded-md border border-zinc-200 bg-white px-4 text-sm shadow-sm outline-none"
                     value={paymentStartNumber}
                     onChange={(e) => setPaymentStartNumber(Number(e.target.value))}
                     min={1}
@@ -907,12 +906,12 @@ export default function SettingsPage() {
                     <button
                       type="button"
                       onClick={() => setPaymentUsePrefix(!paymentUsePrefix)}
-                      className={`relative inline-flex h-6 w-11 items-center rounded-full transition ${
+                      className={`relative inline-flex gap-3 h-6 w-11 items-center rounded-md transition ${
                         paymentUsePrefix ? "bg-emerald-500" : "bg-zinc-300"
                       }`}
                     >
                       <span
-                        className={`inline-block h-4 w-4 transform rounded-full bg-white transition ${
+                        className={`inline-block h-4 w-4 transform rounded-md bg-white transition ${
                           paymentUsePrefix ? "translate-x-6" : "translate-x-1"
                         }`}
                       />
@@ -927,7 +926,7 @@ export default function SettingsPage() {
                     Prefixe paiement
                   </label>
                   <input
-                    className="h-12 w-full rounded-2xl border border-zinc-200 bg-white px-4 text-sm shadow-sm outline-none"
+                    className="h-12 w-full rounded-md border border-zinc-200 bg-white px-4 text-sm shadow-sm outline-none"
                     value={paymentPrefix}
                     onChange={(e) => setPaymentPrefix(e.target.value)}
                     placeholder="Ex: P"
@@ -935,7 +934,7 @@ export default function SettingsPage() {
                 </div>
               ) : null}
 
-              <div className="mt-4 rounded-2xl bg-amber-50 px-4 py-3 text-sm text-amber-700">
+              <div className="mt-4 rounded-md bg-amber-50 px-4 py-3 text-sm text-amber-700">
                 Apercu :{" "}
                 <span className="font-semibold">
                   {paymentUsePrefix && paymentPrefix.trim()
@@ -961,15 +960,14 @@ export default function SettingsPage() {
 
             <div className="mt-5 flex flex-col gap-3 sm:flex-row">
               <input
-                className="h-12 flex-1 rounded-2xl border border-zinc-200 bg-white px-4 text-sm shadow-sm outline-none placeholder:text-zinc-400"
+                className="h-12 flex-1 rounded-md border border-zinc-200 bg-white px-4 text-sm shadow-sm outline-none placeholder:text-zinc-400"
                 value={newBankName}
                 onChange={(e) => setNewBankName(e.target.value)}
                 placeholder="Ex: Attijariwafa Bank"
               />
-              <button
-                type="button"
+              <button type="button"
                 disabled
-                className="h-12 rounded-2xl bg-zinc-900 px-5 text-sm font-semibold text-white shadow-sm disabled:cursor-not-allowed disabled:opacity-50"
+                className="flex items-center gap-2 h-12 rounded-md bg-blue-600 hover:bg-blue-700 px-5 text-sm font-semibold text-white shadow-sm disabled:cursor-not-allowed disabled:opacity-50"
               >
                 Utilise Enregistrer
               </button>
@@ -977,14 +975,14 @@ export default function SettingsPage() {
 
             <div className="mt-5 space-y-3">
               {banks.length === 0 ? (
-                <div className="rounded-2xl border border-dashed border-zinc-200 bg-zinc-50 px-4 py-5 text-sm text-zinc-500">
+                <div className="rounded-md border border-dashed border-zinc-200 bg-zinc-50 px-4 py-5 text-sm text-zinc-500">
                   Aucune banque interne configuree.
                 </div>
               ) : (
                 banks.map((bank) => (
                   <div
                     key={bank.id}
-                    className="flex flex-col gap-3 rounded-2xl border border-zinc-200 bg-zinc-50 px-4 py-4 sm:flex-row sm:items-center sm:justify-between"
+                    className="flex flex-col gap-3 rounded-md border border-zinc-200 bg-zinc-50 px-4 py-4 sm:flex-row sm:items-center sm:justify-between"
                   >
                     <div className="min-w-0">
                       <div className="truncate text-sm font-medium text-zinc-900">
@@ -994,8 +992,8 @@ export default function SettingsPage() {
                         <span
                           className={
                             bank.isActive
-                              ? "inline-flex rounded-full bg-emerald-100 px-2.5 py-1 text-xs font-medium text-emerald-700"
-                              : "inline-flex rounded-full bg-zinc-200 px-2.5 py-1 text-xs font-medium text-zinc-600"
+                              ? "inline-flex gap-3 rounded-md bg-emerald-100 px-2.5 py-1 text-xs font-medium text-emerald-700"
+                              : "inline-flex gap-3 rounded-md bg-zinc-200 px-2.5 py-1 text-xs font-medium text-zinc-600"
                           }
                         >
                           {bank.isActive ? "Active" : "Inactive"}
@@ -1007,13 +1005,13 @@ export default function SettingsPage() {
                       <button
                         type="button"
                         onClick={() => toggleBank(bank)}
-                        className={`relative inline-flex h-6 w-11 items-center rounded-full transition ${
+                        className={`relative inline-flex gap-3 h-6 w-11 items-center rounded-md transition ${
                           bank.isActive ? "bg-emerald-500" : "bg-zinc-300"
                         }`}
                         title={bank.isActive ? "Désactiver" : "Réactiver"}
                       >
                         <span
-                          className={`inline-block h-4 w-4 transform rounded-full bg-white transition ${
+                          className={`inline-block h-4 w-4 transform rounded-md bg-white transition ${
                             bank.isActive ? "translate-x-6" : "translate-x-1"
                           }`}
                         />
@@ -1021,12 +1019,7 @@ export default function SettingsPage() {
 
                       <button
                         type="button"
-                        onClick={() => requestDeleteBank(bank.id, bank.name)}
-                        className="rounded-full p-2 text-red-500 hover:bg-red-50 transition"
-                        title="Supprimer"
-                      >
-                        <Trash2 className="h-5 w-5" />
-                      </button>
+                        onClick={() =>requestDeleteBank(bank.id, bank.name)} className="rounded-md p-2 text-red-500 hover:bg-red-50 transition" title="Supprimer" > <Trash2 className="h-5 w-5" /></button>
                     </div>
                   </div>
                 ))
@@ -1081,7 +1074,7 @@ export default function SettingsPage() {
                       type="number"
                       value={globalFixedAmount || ""}
                       onChange={(e) => setGlobalFixedAmount(e.target.value ? Number(e.target.value) : null)}
-                      className="h-10 w-full rounded-xl border border-zinc-200 bg-white px-3 text-sm"
+                      className="h-10 w-full rounded-md border border-zinc-200 bg-white px-3 text-sm"
                       placeholder="Ex: 1200"
                     />
                   </div>
@@ -1101,22 +1094,15 @@ export default function SettingsPage() {
                   <p className="text-sm text-zinc-500">Regroupez des lots pour leur appliquer un montant commun.</p>
                 </div>
                 <button
-                  onClick={() => setShowGroupModal(true)}
-                  className="inline-flex h-10 items-center gap-2 rounded-xl bg-indigo-50 px-4 text-sm font-medium text-indigo-700 hover:bg-indigo-100 transition"
-                >
-                  <Plus className="h-4 w-4" />
-                  Nouveau groupe
-                </button>
+                  onClick={() =>setShowGroupModal(true)} className="inline-flex gap-3 h-10 items-center gap-2 rounded-md bg-indigo-50 px-4 text-sm font-medium text-indigo-700 hover:bg-indigo-100 transition" > <Plus className="h-4 w-4" /> Nouveau groupe</button>
               </div>
 
               <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
                 {groups.map((group) => (
-                  <div key={group.id} className="rounded-2xl border border-zinc-200 p-4 hover:border-indigo-200 transition bg-zinc-50/50">
+                  <div key={group.id} className="rounded-md border border-zinc-200 p-4 hover:border-indigo-200 transition bg-zinc-50/50">
                     <div className="flex items-center justify-between mb-3">
                       <h3 className="font-semibold text-zinc-900">{group.name}</h3>
-                      <button onClick={() => deleteGroup(group.id)} className="text-zinc-400 hover:text-red-500 transition">
-                        <Trash2 className="h-4 w-4" />
-                      </button>
+                      <button onClick={() =>deleteGroup(group.id)} className="text-zinc-400 hover:text-red-500 transition"> <Trash2 className="h-4 w-4" /></button>
                     </div>
                     <div className="flex flex-wrap gap-1.5">
                       {group.units.map((u) => (
@@ -1128,7 +1114,7 @@ export default function SettingsPage() {
                   </div>
                 ))}
                 {groups.length === 0 && (
-                  <div className="col-span-full py-8 text-center text-zinc-400 border-2 border-dashed border-zinc-100 rounded-2xl">
+                  <div className="col-span-full py-8 text-center text-zinc-400 border-2 border-dashed border-zinc-100 rounded-md">
                     Aucun groupe créé
                   </div>
                 )}
@@ -1143,15 +1129,10 @@ export default function SettingsPage() {
                   <p className="text-sm text-zinc-500">Configurez des montants spécifiques pour des périodes données.</p>
                 </div>
                 <button
-                  onClick={() => setShowPeriodModal(true)}
-                  className="inline-flex h-10 items-center gap-2 rounded-xl bg-indigo-50 px-4 text-sm font-medium text-indigo-700 hover:bg-indigo-100 transition"
-                >
-                  <Plus className="h-4 w-4" />
-                  Ajouter une période
-                </button>
+                  onClick={() =>setShowPeriodModal(true)} className="inline-flex gap-3 h-10 items-center gap-2 rounded-md bg-indigo-50 px-4 text-sm font-medium text-indigo-700 hover:bg-indigo-100 transition" > <Plus className="h-4 w-4" /> Ajouter une période</button>
               </div>
 
-              <div className="overflow-hidden rounded-2xl border border-zinc-200">
+              <div className="overflow-hidden rounded-md border border-zinc-200">
                 <table className="w-full text-left text-sm">
                   <thead className="bg-zinc-50 text-zinc-500 font-medium">
                     <tr>
@@ -1172,7 +1153,7 @@ export default function SettingsPage() {
                            `Lot: ${units.find(u => u.id === p.unitId)?.lotNumber || "N/A"}`}
                         </td>
                         <td className="px-4 py-3">
-                          <span className="px-2 py-0.5 rounded-full bg-zinc-100 text-[10px] font-semibold text-zinc-600">
+                          <span className="px-2 py-0.5 rounded-md bg-zinc-100 text-[10px] font-semibold text-zinc-600">
                             {p.contributionType === "SURFACE" ? "Surface" : "Fixe"}
                           </span>
                         </td>
@@ -1180,9 +1161,7 @@ export default function SettingsPage() {
                         <td className="px-4 py-3">{p.endPeriod ? formatPeriod(p.endPeriod) : "Indéterminée"}</td>
                         <td className="px-4 py-3 text-right font-semibold">{p.amount.toLocaleString()} DH</td>
                         <td className="px-4 py-3 text-right">
-                          <button onClick={() => deletePeriod(p.id)} className="text-zinc-400 hover:text-red-500 transition p-1">
-                            <Trash2 className="h-4 w-4" />
-                          </button>
+                          <button onClick={() =>deletePeriod(p.id)} className="text-zinc-400 hover:text-red-500 transition p-1"> <Trash2 className="h-4 w-4" /></button>
                         </td>
                       </tr>
                     ))}
@@ -1205,17 +1184,16 @@ export default function SettingsPage() {
                   <p className="text-sm text-zinc-500 font-medium mt-1">Vérifiez les montants qui seront générés pour une date donnée.</p>
                 </div>
               
-              <div className="flex items-center gap-3 p-4 bg-indigo-50/50 rounded-2xl mb-6">
+              <div className="flex items-center gap-3 p-4 bg-indigo-50/50 rounded-md mb-6">
                 <input
                   type="month"
                   value={simulationPeriod}
                   onChange={(e) => setSimulationPeriod(e.target.value)}
-                  className="h-10 rounded-xl border border-zinc-200 bg-white px-3 text-sm focus:ring-2 focus:ring-indigo-500 outline-none"
+                  className="h-10 rounded-md border border-zinc-200 bg-white px-3 text-sm focus:ring-2 focus:ring-indigo-500 outline-none"
                 />
-                <button
-                  onClick={runSimulation}
+                <button onClick={runSimulation}
                   disabled={simLoading || !simulationPeriod}
-                  className="btn-brand h-10 rounded-xl px-6 text-sm font-semibold disabled:opacity-50"
+                  className="flex items-center gap-2 btn-brand h-10 rounded-md px-6 text-sm font-semibold disabled:opacity-50"
                 >
                   {simLoading ? "Calcul..." : "Lancer la simulation"}
                 </button>
@@ -1224,17 +1202,17 @@ export default function SettingsPage() {
               {simulationResult && (
                 <div className="space-y-6 animate-in slide-in-from-top-4 duration-500">
                   <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-                    <div className="p-4 rounded-2xl bg-emerald-50 border border-emerald-100">
+                    <div className="p-4 rounded-md bg-emerald-50 border border-emerald-100">
                       <div className="text-emerald-600 text-xs font-bold uppercase tracking-wider mb-1">Total calculé</div>
                       <div className="text-2xl font-bold text-emerald-900">{simulationResult.totalConfigured.toLocaleString()} DH</div>
                     </div>
-                    <div className="p-4 rounded-2xl bg-zinc-50 border border-zinc-200">
+                    <div className="p-4 rounded-md bg-zinc-50 border border-zinc-200">
                       <div className="text-zinc-500 text-xs font-bold uppercase tracking-wider mb-1">Nombre de lots</div>
                       <div className="text-2xl font-bold text-zinc-900">{simulationResult.configured.length + simulationResult.unconfigured.length}</div>
                     </div>
                   </div>
 
-                  <div className="border border-zinc-200 rounded-2xl overflow-hidden shadow-sm bg-white">
+                  <div className="border border-zinc-200 rounded-md overflow-hidden shadow-sm bg-white">
                     <div className="bg-zinc-50 px-4 py-3 border-b border-zinc-200 font-semibold text-zinc-800 text-sm">Détails des calculs</div>
                     <div className="max-h-96 overflow-auto">
                       <table className="w-full text-left text-sm">
@@ -1286,14 +1264,13 @@ export default function SettingsPage() {
               <button
                 onClick={() => setDeleteTarget(null)}
                 disabled={isDeleting}
-                className="rounded-xl border border-slate-200 px-4 py-2 text-sm font-medium text-slate-700 hover:bg-slate-50 disabled:opacity-50"
+                className="rounded-md border border-slate-200 px-4 py-2 text-sm font-medium text-slate-700 hover:bg-slate-50 disabled:opacity-50"
               >
                 Annuler
               </button>
-              <button
-                onClick={confirmDelete}
+              <button onClick={confirmDelete}
                 disabled={isDeleting}
-                className="rounded-xl bg-red-600 px-5 py-2 text-sm font-semibold text-white shadow-sm hover:bg-red-700 disabled:opacity-50"
+                className="flex items-center gap-2 rounded-md bg-red-600 px-5 py-2 text-sm font-semibold text-white shadow-sm hover:bg-red-700 disabled:opacity-50"
               >
                 {isDeleting ? "Suppression..." : "Supprimer"}
               </button>
@@ -1312,7 +1289,7 @@ export default function SettingsPage() {
           <div>
             <label className="block text-sm font-medium text-zinc-700 mb-1">Nom du groupe</label>
             <input
-              className="h-10 w-full rounded-xl border border-zinc-200 px-3 text-sm"
+              className="h-10 w-full rounded-md border border-zinc-200 px-3 text-sm"
               value={groupName}
               onChange={(e) => setGroupName(e.target.value)}
               placeholder="Ex: Bloc A, Commerces..."
@@ -1320,7 +1297,7 @@ export default function SettingsPage() {
           </div>
           <div>
             <label className="block text-sm font-medium text-zinc-700 mb-2">Lots à inclure</label>
-            <div className="max-h-60 overflow-auto border border-zinc-200 rounded-xl p-2 bg-zinc-50/50">
+            <div className="max-h-60 overflow-auto border border-zinc-200 rounded-md p-2 bg-zinc-50/50">
               <div className="grid grid-cols-2 gap-2">
                 {units.map((u) => {
                   const isInGroup = groups.some(g => g.units.some(gu => gu.unit.id === u.id));
@@ -1350,14 +1327,13 @@ export default function SettingsPage() {
           <div className="flex justify-end gap-3 pt-4 pt-2">
             <button
               onClick={() => setShowGroupModal(false)}
-              className="px-4 py-2 text-sm font-medium text-zinc-600 hover:bg-zinc-100 rounded-xl"
+              className="px-4 py-2 text-sm font-medium text-zinc-600 hover:bg-zinc-100 rounded-md"
             >
               Annuler
             </button>
-            <button
-              onClick={createGroup}
+            <button onClick={createGroup}
               disabled={!groupName.trim() || selectedUnitIds.length === 0}
-              className="btn-brand rounded-xl px-6 py-2 text-sm font-semibold disabled:opacity-50"
+              className="flex items-center gap-2 btn-brand rounded-md px-6 py-2 text-sm font-semibold disabled:opacity-50"
             >
               Créer le groupe
             </button>
@@ -1376,7 +1352,7 @@ export default function SettingsPage() {
             <div className="col-span-full">
               <label className="block text-sm font-medium text-zinc-700 mb-1">Cible</label>
               <select
-                className="h-10 w-full rounded-xl border border-zinc-200 px-3 text-sm"
+                className="h-10 w-full rounded-md border border-zinc-200 px-3 text-sm"
                 value={periodType}
                 onChange={(e) => setPeriodType(e.target.value as ContributionType)}
               >
@@ -1390,7 +1366,7 @@ export default function SettingsPage() {
               <div className="col-span-full">
                 <label className="block text-sm font-medium text-zinc-700 mb-1">Groupe</label>
                 <select
-                  className="h-10 w-full rounded-xl border border-zinc-200 px-3 text-sm"
+                  className="h-10 w-full rounded-md border border-zinc-200 px-3 text-sm"
                   value={periodGroupId}
                   onChange={(e) => setPeriodGroupId(e.target.value)}
                 >
@@ -1406,7 +1382,7 @@ export default function SettingsPage() {
               <div className="col-span-full">
                 <label className="block text-sm font-medium text-zinc-700 mb-1">Lot</label>
                 <select
-                  className="h-10 w-full rounded-xl border border-zinc-200 px-3 text-sm"
+                  className="h-10 w-full rounded-md border border-zinc-200 px-3 text-sm"
                   value={periodUnitId}
                   onChange={(e) => setPeriodUnitId(e.target.value)}
                 >
@@ -1422,7 +1398,7 @@ export default function SettingsPage() {
               <label className="block text-sm font-medium text-zinc-700 mb-1">Mois début</label>
               <input
                 type="month"
-                className="h-10 w-full rounded-xl border border-zinc-200 px-3 text-sm"
+                className="h-10 w-full rounded-md border border-zinc-200 px-3 text-sm"
                 value={periodStart}
                 onChange={(e) => setPeriodStart(e.target.value)}
               />
@@ -1431,7 +1407,7 @@ export default function SettingsPage() {
               <label className="block text-sm font-medium text-zinc-700 mb-1">Mois fin (opt.)</label>
               <input
                 type="month"
-                className="h-10 w-full rounded-xl border border-zinc-200 px-3 text-sm"
+                className="h-10 w-full rounded-md border border-zinc-200 px-3 text-sm"
                 value={periodEnd}
                 onChange={(e) => setPeriodEnd(e.target.value)}
               />
@@ -1442,7 +1418,7 @@ export default function SettingsPage() {
               </label>
               <input
                 type="number"
-                className="h-10 w-full rounded-xl border border-zinc-200 px-3 text-sm font-bold"
+                className="h-10 w-full rounded-md border border-zinc-200 px-3 text-sm font-bold"
                 value={periodAmount}
                 onChange={(e) => setPeriodAmount(e.target.value)}
                 placeholder="Ex: 1200"
@@ -1452,17 +1428,14 @@ export default function SettingsPage() {
           <div className="flex justify-end gap-3 pt-4">
             <button
               onClick={() => setShowPeriodModal(false)}
-              className="px-4 py-2 text-sm font-medium text-zinc-600 hover:bg-zinc-100 rounded-xl"
+              className="px-4 py-2 text-sm font-medium text-zinc-600 hover:bg-zinc-100 rounded-md"
             >
               Annuler
             </button>
-            <button
-              onClick={addPeriod}
+            <button onClick={addPeriod}
               disabled={!periodStart || !periodAmount}
-              className="btn-brand rounded-xl px-6 py-2 text-sm font-semibold disabled:opacity-50"
-            >
-              Ajouter
-            </button>
+              className="flex items-center gap-2 btn-brand rounded-md px-6 py-2 text-sm font-semibold disabled:opacity-50"
+            ><PlusCircle className="h-4 w-4" /> Ajouter</button>
           </div>
         </div>
       </Modal>

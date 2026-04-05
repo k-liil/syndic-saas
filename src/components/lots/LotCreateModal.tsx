@@ -2,6 +2,7 @@
 
 import { useEffect, useMemo, useState } from "react";
 import { Modal } from "@/components/ui/Modal";
+import { PlusCircle } from "lucide-react";
 import { OwnerCreateModal } from "@/components/owners/OwnerCreateModal";
 
 type Owner = { id: string; name: string };
@@ -81,7 +82,7 @@ export function LotCreateModal({
             <div className="grid gap-2">
               <label className="text-sm font-medium">Numéro</label>
               <input
-                className="h-10 rounded-xl border border-zinc-200 px-3"
+                className="h-10 rounded-md border border-zinc-200 px-3"
                 value={number}
                 onChange={(e) => setNumber(e.target.value)}
               />
@@ -90,7 +91,7 @@ export function LotCreateModal({
             <div className="grid gap-2">
               <label className="text-sm font-medium">Surface (m²)</label>
               <input
-                className="h-10 rounded-xl border border-zinc-200 px-3"
+                className="h-10 rounded-md border border-zinc-200 px-3"
                 value={surface}
                 onChange={(e) => setSurface(e.target.value)}
                 inputMode="decimal"
@@ -101,7 +102,7 @@ export function LotCreateModal({
           <div className="grid gap-2">
             <label className="text-sm font-medium">Type</label>
             <select
-              className="h-10 rounded-xl border border-zinc-200 bg-white px-3"
+              className="h-10 rounded-md border border-zinc-200 bg-white px-3"
               value={type}
               onChange={(e) => setType(e.target.value as LotType)}
             >
@@ -114,7 +115,7 @@ export function LotCreateModal({
           <div className="grid gap-2">
             <label className="text-sm font-medium">Copropriétaire</label>
             <select
-              className="h-10 rounded-xl border border-zinc-200 bg-white px-3"
+              className="h-10 rounded-md border border-zinc-200 bg-white px-3"
               value={ownerId}
               onChange={(e) => setOwnerId(e.target.value)}
             >
@@ -128,20 +129,13 @@ export function LotCreateModal({
 
             <button
               type="button"
-              onClick={() => setOpenOwner(true)}
-              className="w-fit text-sm text-indigo-600 hover:underline"
-            >
-              + Créer un nouveau copropriétaire
-            </button>
+              onClick={() =>setOpenOwner(true)} className="w-fit text-sm text-indigo-600 hover:underline" > <PlusCircle className="h-4 w-4" /> Créer un nouveau copropriétaire</button>
           </div>
 
-          <button
-            onClick={createLot}
+          <button onClick={createLot}
             disabled={!canCreate || loading}
-            className="mt-2 h-11 w-full rounded-xl bg-zinc-900 text-sm font-medium text-white hover:bg-zinc-800 disabled:opacity-40"
-          >
-            Ajouter un Lot
-          </button>
+            className="flex items-center justify-center gap-2 mt-2 h-11 w-full rounded-md bg-gradient-to-r from-cyan-500 to-blue-600 text-sm font-semibold text-white shadow-[0_10px_24px_rgba(14,165,233,0.22)] transition-all hover:scale-[1.01] active:scale-[0.98] disabled:opacity-40"
+          ><PlusCircle className="h-4 w-4" /> Ajouter un Lot</button>
         </div>
       </Modal>
 

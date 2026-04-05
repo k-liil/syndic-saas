@@ -124,7 +124,7 @@ export function OtherReceiptModal({
     >
       <div className="grid gap-4">
         {error ? (
-          <div className="rounded-xl border border-red-200 bg-red-50 px-3 py-2 text-sm text-red-700">
+          <div className="rounded-md border border-red-200 bg-red-50 px-3 py-2 text-sm text-red-700">
             {error}
           </div>
         ) : null}
@@ -132,7 +132,7 @@ export function OtherReceiptModal({
         <div>
           <label className="text-sm font-medium">Type</label>
           <select
-            className="h-10 w-full rounded-xl border px-3"
+            className="h-10 w-full rounded-md border px-3"
             value={type}
             onChange={(e) => setType(e.target.value as OtherReceiptType)}
           >
@@ -144,7 +144,7 @@ export function OtherReceiptModal({
         <div>
           <label className="text-sm font-medium">Description</label>
           <input
-            className="h-10 w-full rounded-xl border px-3"
+            className="h-10 w-full rounded-md border px-3"
             value={description}
             onChange={(e) => setDescription(e.target.value)}
             placeholder="Ex: Loyer local commercial"
@@ -154,7 +154,7 @@ export function OtherReceiptModal({
         <div>
           <label className="text-sm font-medium">Montant</label>
           <input
-            className="h-10 w-full rounded-xl border px-3"
+            className="h-10 w-full rounded-md border px-3"
             value={amount}
             onChange={(e) => setAmount(e.target.value)}
             inputMode="decimal"
@@ -165,7 +165,7 @@ export function OtherReceiptModal({
         <div>
           <label className="text-sm font-medium">Méthode</label>
           <select
-            className="h-10 w-full rounded-xl border px-3"
+            className="h-10 w-full rounded-md border px-3"
             value={method}
             onChange={(e) => setMethod(e.target.value as Method)}
           >
@@ -179,7 +179,7 @@ export function OtherReceiptModal({
           <label className="text-sm font-medium">Date</label>
           <input
             type="date"
-            className="h-10 w-full rounded-xl border px-3"
+            className="h-10 w-full rounded-md border px-3"
             value={date}
             onChange={(e) => setDate(e.target.value)}
           />
@@ -189,7 +189,7 @@ export function OtherReceiptModal({
           <div>
             <label className="text-sm font-medium">Banque</label>
             <input
-              className="h-10 w-full rounded-xl border px-3"
+              className="h-10 w-full rounded-md border px-3"
               value={bankName}
               onChange={(e) => setBankName(e.target.value)}
               placeholder="Nom de la banque"
@@ -201,7 +201,7 @@ export function OtherReceiptModal({
           <div>
             <label className="text-sm font-medium">Numéro de chèque</label>
             <input
-              className="h-10 w-full rounded-xl border px-3"
+              className="h-10 w-full rounded-md border px-3"
               value={bankRef}
               onChange={(e) => setBankRef(e.target.value)}
               placeholder="Numéro du chèque"
@@ -213,7 +213,7 @@ export function OtherReceiptModal({
           <div>
             <label className="text-sm font-medium">Référence bancaire</label>
             <input
-              className="h-10 w-full rounded-xl border px-3"
+              className="h-10 w-full rounded-md border px-3"
               value={bankRef}
               onChange={(e) => setBankRef(e.target.value)}
               placeholder="Référence du virement"
@@ -224,15 +224,14 @@ export function OtherReceiptModal({
         <div>
           <label className="text-sm font-medium">Note</label>
           <textarea
-            className="w-full rounded-xl border px-3 py-2"
+            className="w-full rounded-md border px-3 py-2"
             value={note}
             onChange={(e) => setNote(e.target.value)}
             placeholder="Note optionnelle"
           />
         </div>
 
-        <button
-          onClick={save}
+        <button onClick={save}
           disabled={
             busy ||
             !description.trim() ||
@@ -240,9 +239,9 @@ export function OtherReceiptModal({
             ((method === "TRANSFER" || method === "CHECK") && !bankName.trim()) ||
             (method === "CHECK" && !bankRef.trim())
           }
-          className="btn-brand h-11 rounded-xl disabled:opacity-50"
+          className="flex items-center justify-center gap-2 btn-brand h-12 w-full rounded-md disabled:opacity-50"
         >
-          {busy ? "Enregistrement..." : isEdit ? "Mettre à jour" : "Enregistrer"}
+          {busy ? "Enregistrement..." : isEdit ? "Mettre à jour" : "Enregistrer la recette"}
         </button>
       </div>
     </Modal>

@@ -44,7 +44,7 @@ export function OwnerCreateModal({
         <div className="grid gap-2">
           <label className="text-sm font-medium">Nom</label>
           <input
-            className="h-10 rounded-xl border border-zinc-200 px-3"
+            className="h-10 rounded-md border border-zinc-200 px-3"
             placeholder="Nom"
             value={name}
             onChange={(e) => setName(e.target.value)}
@@ -52,16 +52,14 @@ export function OwnerCreateModal({
         </div>
 
         <div className="flex justify-end gap-2 pt-2">
-          <button
-            onClick={onClose}
-            className="rounded-xl border border-zinc-200 px-4 py-2 text-sm hover:bg-zinc-50"
+          <button onClick={onClose}
+            className="flex items-center gap-2 rounded-md border border-zinc-200 px-4 py-2 text-sm hover:bg-zinc-50"
           >
             Annuler
           </button>
-          <button
-            onClick={createOwner}
+          <button onClick={createOwner}
             disabled={!canCreate || loading}
-            className="rounded-xl bg-zinc-900 px-4 py-2 text-sm font-medium text-white hover:bg-zinc-800 disabled:opacity-40"
+            className="flex items-center gap-2 rounded-md bg-gradient-to-r from-cyan-500 to-blue-600 px-4 py-2.5 text-sm font-semibold text-white shadow-[0_10px_24px_rgba(14,165,233,0.22)] transition-all hover:scale-[1.02] active:scale-[0.98] disabled:opacity-40"
           >
             Créer le copropriétaire
           </button>

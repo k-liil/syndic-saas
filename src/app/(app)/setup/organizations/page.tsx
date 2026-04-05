@@ -5,7 +5,7 @@ import { useSession } from "next-auth/react";
 import { isSuperAdmin } from "@/lib/roles";
 import { Modal } from "@/components/ui/Modal";
 import { Table, THead, TR, TH, TD } from "@/components/ui/Table";
-import { Building2, Users, Home, Receipt, AlertCircle } from "lucide-react";
+import { Building2, Users, Home, Receipt, AlertCircle, PlusCircle } from "lucide-react";
 
 type OrgStats = {
   id: string;
@@ -244,17 +244,14 @@ export default function OrganizationsPage() {
           <p className="mt-1 text-sm text-zinc-500">Gestion de vos copropriétés</p>
         </div>
         {isGlobalAdmin && (
-          <button
-            onClick={openCreate}
-            className="rounded-xl bg-gradient-to-r from-cyan-500 to-blue-600 px-4 py-2 text-sm font-medium text-white shadow-sm transition-all hover:from-cyan-600 hover:to-blue-700 hover:shadow"
-          >
-            + Nouvelle organisation
-          </button>
+          <button onClick={openCreate}
+            className="flex items-center gap-2 rounded-md bg-gradient-to-r from-cyan-500 to-blue-600 px-4 py-2 text-sm font-medium text-white shadow-sm transition-all hover:from-cyan-600 hover:to-blue-700 hover:shadow"
+          ><PlusCircle className="h-4 w-4" /> Nouvelle organisation</button>
         )}
       </div>
 
       {error && (
-        <div className="rounded-xl border border-red-200 bg-red-50 p-4 text-sm text-red-800">
+        <div className="rounded-md border border-red-200 bg-red-50 p-4 text-sm text-red-800">
           {error}
         </div>
       )}
@@ -262,7 +259,7 @@ export default function OrganizationsPage() {
       {loading ? (
         <div className="py-8 text-center text-zinc-500">Chargement...</div>
       ) : organizations.length === 0 ? (
-        <div className="rounded-2xl border border-dashed border-zinc-300 bg-zinc-50/50 p-12 text-center text-zinc-500">
+        <div className="rounded-md border border-dashed border-zinc-300 bg-zinc-50/50 p-12 text-center text-zinc-500">
           Aucune organisation pour le moment
         </div>
       ) : (
@@ -271,19 +268,19 @@ export default function OrganizationsPage() {
             <div
               key={org.id}
               onClick={() => openEdit(org)}
-              className="group relative flex cursor-pointer flex-col justify-between overflow-hidden rounded-2xl border border-zinc-200 bg-white p-5 text-left shadow-sm transition-all hover:border-cyan-200 hover:shadow-lg"
+              className="group relative flex cursor-pointer flex-col justify-between overflow-hidden rounded-md border border-zinc-200 bg-white p-5 text-left shadow-sm transition-all hover:border-cyan-200 hover:shadow-lg"
             >
               <div>
                 <div className="flex items-start justify-between">
                   {org.logoUrl ? (
-                    <img src={org.logoUrl} alt={org.name} className="h-10 w-10 shrink-0 rounded-xl object-contain drop-shadow-sm" />
+                    <img src={org.logoUrl} alt={org.name} className="h-10 w-10 shrink-0 rounded-md object-contain drop-shadow-sm" />
                   ) : (
-                    <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-xl bg-cyan-50 font-bold text-cyan-600">
+                    <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-md bg-cyan-50 font-bold text-cyan-600">
                       {org.name.substring(0, 2).toUpperCase()}
                     </div>
                   )}
                   <span
-                    className={`inline-flex items-center rounded-full px-2.5 py-1 text-xs font-semibold ${
+                    className={`inline-flex gap-3 items-center rounded-md px-2.5 py-1 text-xs font-semibold ${
                       org.isActive
                         ? "bg-emerald-50 text-emerald-600 ring-1 ring-inset ring-emerald-500/20"
                         : "bg-red-50 text-red-600 ring-1 ring-inset ring-red-500/20"
@@ -351,7 +348,7 @@ export default function OrganizationsPage() {
           <div>
             <label className="block text-sm font-medium text-zinc-700">Nom *</label>
             <input
-              className="mt-1 h-10 w-full rounded-xl border border-zinc-200 px-3"
+              className="mt-1 h-10 w-full rounded-md border border-zinc-200 px-3"
               value={formData.name}
               onChange={(e) => setFormData(prev => ({ ...prev, name: e.target.value }))}
               placeholder="Ex: Les Jardins de Cherrat"
@@ -360,7 +357,7 @@ export default function OrganizationsPage() {
           <div>
             <label className="block text-sm font-medium text-zinc-700">Adresse</label>
             <input
-              className="mt-1 h-10 w-full rounded-xl border border-zinc-200 px-3"
+              className="mt-1 h-10 w-full rounded-md border border-zinc-200 px-3"
               value={formData.address}
               onChange={(e) => setFormData(prev => ({ ...prev, address: e.target.value }))}
               placeholder="Ex: Route côtière..."
@@ -370,7 +367,7 @@ export default function OrganizationsPage() {
             <div className="flex-1">
               <label className="block text-sm font-medium text-zinc-700">Ville</label>
               <input
-                className="mt-1 h-10 w-full rounded-xl border border-zinc-200 px-3"
+                className="mt-1 h-10 w-full rounded-md border border-zinc-200 px-3"
                 value={formData.city}
                 onChange={(e) => setFormData(prev => ({ ...prev, city: e.target.value }))}
               />
@@ -378,7 +375,7 @@ export default function OrganizationsPage() {
             <div className="w-1/3">
               <label className="block text-sm font-medium text-zinc-700">Code postal</label>
               <input
-                className="mt-1 h-10 w-full rounded-xl border border-zinc-200 px-3"
+                className="mt-1 h-10 w-full rounded-md border border-zinc-200 px-3"
                 value={formData.zipCode}
                 onChange={(e) => setFormData(prev => ({ ...prev, zipCode: e.target.value }))}
               />
@@ -387,7 +384,7 @@ export default function OrganizationsPage() {
           <div>
             <label className="block text-sm font-medium text-zinc-700">Slug * (URL)</label>
             <input
-              className="mt-1 h-10 w-full rounded-xl border border-zinc-200 px-3"
+              className="mt-1 h-10 w-full rounded-md border border-zinc-200 px-3"
               value={formData.slug}
               onChange={(e) => handleSlugChange(e.target.value, false)}
               placeholder="les-jardins-cherrat"
@@ -397,7 +394,7 @@ export default function OrganizationsPage() {
             <label className="block text-sm font-medium text-zinc-700">Adresse email</label>
             <input
               type="email"
-              className="mt-1 h-10 w-full rounded-xl border border-zinc-200 px-3"
+              className="mt-1 h-10 w-full rounded-md border border-zinc-200 px-3"
               value={formData.email}
               onChange={(e) => setFormData(prev => ({ ...prev, email: e.target.value }))}
             />
@@ -405,7 +402,7 @@ export default function OrganizationsPage() {
           <div>
             <label className="block text-sm font-medium text-zinc-700">Téléphone</label>
             <input
-              className="mt-1 h-10 w-full rounded-xl border border-zinc-200 px-3"
+              className="mt-1 h-10 w-full rounded-md border border-zinc-200 px-3"
               value={formData.phone}
               onChange={(e) => setFormData(prev => ({ ...prev, phone: e.target.value }))}
             />
@@ -413,7 +410,7 @@ export default function OrganizationsPage() {
           <div>
             <label className="block text-sm font-medium text-zinc-700">Titre foncier</label>
             <input
-              className="mt-1 h-10 w-full rounded-xl border border-zinc-200 px-3"
+              className="mt-1 h-10 w-full rounded-md border border-zinc-200 px-3"
               value={formData.landTitle}
               onChange={(e) => setFormData(prev => ({ ...prev, landTitle: e.target.value }))}
             />
@@ -421,7 +418,7 @@ export default function OrganizationsPage() {
           <div>
             <label className="block text-sm font-medium text-zinc-700">Numéro de contact SRM</label>
             <input
-              className="mt-1 h-10 w-full rounded-xl border border-zinc-200 px-3"
+              className="mt-1 h-10 w-full rounded-md border border-zinc-200 px-3"
               value={formData.srmContact}
               onChange={(e) => setFormData(prev => ({ ...prev, srmContact: e.target.value }))}
             />
@@ -429,7 +426,7 @@ export default function OrganizationsPage() {
           <div className="md:col-span-2">
             <label className="block text-sm font-medium text-zinc-700">RIB</label>
             <input
-              className="mt-1 h-10 w-full rounded-xl border border-zinc-200 px-3"
+              className="mt-1 h-10 w-full rounded-md border border-zinc-200 px-3"
               value={formData.rib}
               onChange={(e) => setFormData(prev => ({ ...prev, rib: e.target.value }))}
             />
@@ -452,14 +449,13 @@ export default function OrganizationsPage() {
           </div>
           <div className="md:col-span-2 pt-4">
             {createError && (
-              <div className="mb-4 rounded-xl border border-red-200 bg-red-50 p-3 text-sm text-red-700">
+              <div className="mb-4 rounded-md border border-red-200 bg-red-50 p-3 text-sm text-red-700">
                 {createError}
               </div>
             )}
-            <button
-              onClick={createOrganization}
+            <button onClick={createOrganization}
               disabled={creating}
-              className="w-full rounded-xl bg-gradient-to-r from-cyan-500 to-blue-600 py-2.5 text-sm font-medium text-white shadow-sm transition-all hover:from-cyan-600 hover:to-blue-700 hover:shadow disabled:opacity-40"
+              className="flex items-center gap-2 w-full rounded-md bg-gradient-to-r from-cyan-500 to-blue-600 py-2.5 text-sm font-medium text-white shadow-sm transition-all hover:from-cyan-600 hover:to-blue-700 hover:shadow disabled:opacity-40"
             >
               {creating ? "Création..." : "Créer l'organisation"}
             </button>
@@ -479,7 +475,7 @@ export default function OrganizationsPage() {
           <div>
             <label className="block text-sm font-medium text-zinc-700">Nom *</label>
             <input
-              className="mt-1 h-10 w-full rounded-xl border border-zinc-200 px-3"
+              className="mt-1 h-10 w-full rounded-md border border-zinc-200 px-3"
               value={editFormData.name}
               onChange={(e) => setEditFormData(prev => ({ ...prev, name: e.target.value }))}
             />
@@ -487,7 +483,7 @@ export default function OrganizationsPage() {
           <div>
             <label className="block text-sm font-medium text-zinc-700">Adresse</label>
             <input
-              className="mt-1 h-10 w-full rounded-xl border border-zinc-200 px-3"
+              className="mt-1 h-10 w-full rounded-md border border-zinc-200 px-3"
               value={editFormData.address}
               onChange={(e) => setEditFormData(prev => ({ ...prev, address: e.target.value }))}
             />
@@ -496,7 +492,7 @@ export default function OrganizationsPage() {
             <div className="flex-1">
               <label className="block text-sm font-medium text-zinc-700">Ville</label>
               <input
-                className="mt-1 h-10 w-full rounded-xl border border-zinc-200 px-3"
+                className="mt-1 h-10 w-full rounded-md border border-zinc-200 px-3"
                 value={editFormData.city}
                 onChange={(e) => setEditFormData(prev => ({ ...prev, city: e.target.value }))}
               />
@@ -504,7 +500,7 @@ export default function OrganizationsPage() {
             <div className="w-1/3">
               <label className="block text-sm font-medium text-zinc-700">Code postal</label>
               <input
-                className="mt-1 h-10 w-full rounded-xl border border-zinc-200 px-3"
+                className="mt-1 h-10 w-full rounded-md border border-zinc-200 px-3"
                 value={editFormData.zipCode}
                 onChange={(e) => setEditFormData(prev => ({ ...prev, zipCode: e.target.value }))}
               />
@@ -513,7 +509,7 @@ export default function OrganizationsPage() {
           <div>
             <label className="block text-sm font-medium text-zinc-700">Slug * (URL)</label>
             <input
-              className="mt-1 h-10 w-full rounded-xl border border-zinc-200 px-3"
+              className="mt-1 h-10 w-full rounded-md border border-zinc-200 px-3"
               value={editFormData.slug}
               onChange={(e) => handleSlugChange(e.target.value, true)}
             />
@@ -522,7 +518,7 @@ export default function OrganizationsPage() {
             <label className="block text-sm font-medium text-zinc-700">Adresse email</label>
             <input
               type="email"
-              className="mt-1 h-10 w-full rounded-xl border border-zinc-200 px-3"
+              className="mt-1 h-10 w-full rounded-md border border-zinc-200 px-3"
               value={editFormData.email}
               onChange={(e) => setEditFormData(prev => ({ ...prev, email: e.target.value }))}
             />
@@ -530,7 +526,7 @@ export default function OrganizationsPage() {
           <div>
             <label className="block text-sm font-medium text-zinc-700">Téléphone</label>
             <input
-              className="mt-1 h-10 w-full rounded-xl border border-zinc-200 px-3"
+              className="mt-1 h-10 w-full rounded-md border border-zinc-200 px-3"
               value={editFormData.phone}
               onChange={(e) => setEditFormData(prev => ({ ...prev, phone: e.target.value }))}
             />
@@ -538,7 +534,7 @@ export default function OrganizationsPage() {
           <div>
             <label className="block text-sm font-medium text-zinc-700">Titre foncier</label>
             <input
-              className="mt-1 h-10 w-full rounded-xl border border-zinc-200 px-3"
+              className="mt-1 h-10 w-full rounded-md border border-zinc-200 px-3"
               value={editFormData.landTitle}
               onChange={(e) => setEditFormData(prev => ({ ...prev, landTitle: e.target.value }))}
             />
@@ -546,7 +542,7 @@ export default function OrganizationsPage() {
           <div>
             <label className="block text-sm font-medium text-zinc-700">Numéro de contact SRM</label>
             <input
-              className="mt-1 h-10 w-full rounded-xl border border-zinc-200 px-3"
+              className="mt-1 h-10 w-full rounded-md border border-zinc-200 px-3"
               value={editFormData.srmContact}
               onChange={(e) => setEditFormData(prev => ({ ...prev, srmContact: e.target.value }))}
             />
@@ -554,7 +550,7 @@ export default function OrganizationsPage() {
           <div className="md:col-span-2">
             <label className="block text-sm font-medium text-zinc-700">RIB</label>
             <input
-              className="mt-1 h-10 w-full rounded-xl border border-zinc-200 px-3"
+              className="mt-1 h-10 w-full rounded-md border border-zinc-200 px-3"
               value={editFormData.rib}
               onChange={(e) => setEditFormData(prev => ({ ...prev, rib: e.target.value }))}
             />
@@ -592,14 +588,13 @@ export default function OrganizationsPage() {
           <div className="md:col-span-2 pt-4 border-t border-slate-100 flex justify-end gap-3">
             <button
               onClick={() => setEditingOrg(null)}
-              className="rounded-xl border border-zinc-200 px-4 py-2 text-sm font-medium hover:bg-zinc-50"
+              className="rounded-md border border-zinc-200 px-4 py-2 text-sm font-medium hover:bg-zinc-50"
             >
               Annuler
             </button>
-            <button
-              onClick={saveOrg}
+            <button onClick={saveOrg}
               disabled={saving || !editFormData.name.trim()}
-              className="rounded-xl w-32 bg-gradient-to-r from-cyan-500 to-blue-600 px-4 py-2 text-sm font-medium text-white shadow-sm transition-all hover:from-cyan-600 hover:to-blue-700 hover:shadow disabled:opacity-40"
+              className="flex items-center gap-2 rounded-md w-32 bg-gradient-to-r from-cyan-500 to-blue-600 px-4 py-2 text-sm font-medium text-white shadow-sm transition-all hover:from-cyan-600 hover:to-blue-700 hover:shadow disabled:opacity-40"
             >
               {saving ? "Sauvegarde..." : "Enregistrer"}
             </button>

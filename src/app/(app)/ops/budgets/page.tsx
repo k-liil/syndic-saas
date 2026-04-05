@@ -34,9 +34,9 @@ function ProgressBar({ percent, color }: { percent: number; color: string }) {
   const clampedPercent = Math.min(percent, 100);
   return (
     <div className="flex items-center gap-2">
-      <div className="h-2 w-16 flex-1 overflow-hidden rounded-full bg-zinc-200">
+      <div className="h-2 w-16 flex-1 overflow-hidden rounded-md bg-zinc-200">
         <div
-          className={`h-full rounded-full transition-all ${color}`}
+          className={`h-full rounded-md transition-all ${color}`}
           style={{ width: `${clampedPercent}%` }}
         />
       </div>
@@ -75,18 +75,18 @@ function BudgetAmountModal({
 
   return (
     <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/40 p-4" onClick={onClose}>
-      <div className="w-full max-w-md rounded-2xl bg-white shadow-2xl" onClick={(e) => e.stopPropagation()}>
+      <div className="w-full max-w-md rounded-md bg-white shadow-2xl" onClick={(e) => e.stopPropagation()}>
         <div className="flex items-center justify-between border-b border-zinc-200 px-6 py-4">
           <h2 className="text-lg font-semibold text-zinc-900">
             {line.budgetId ? "Modifier le budget" : "Budgetiser le poste"}
           </h2>
-          <button onClick={onClose} className="text-2xl text-zinc-400 hover:text-zinc-600">
+          <button onClick={onClose} className="flex items-center gap-2 text-2xl text-zinc-400 hover:text-zinc-600">
             &times;
           </button>
         </div>
 
         <div className="space-y-4 px-6 py-5">
-          <div className="rounded-xl bg-zinc-50 p-4">
+          <div className="rounded-md bg-zinc-50 p-4">
             <div className="font-mono text-sm font-semibold text-indigo-600">
               {line.accountingPost.code}
             </div>
@@ -101,7 +101,7 @@ function BudgetAmountModal({
             <input
               type="text"
               inputMode="decimal"
-              className="h-12 w-full rounded-xl border border-zinc-200 px-4 text-sm outline-none"
+              className="h-12 w-full rounded-md border border-zinc-200 px-4 text-sm outline-none"
               value={amount}
               onChange={(e) => setAmount(e.target.value)}
               placeholder="0.00"
@@ -111,7 +111,7 @@ function BudgetAmountModal({
           <button
             onClick={() => void handleSubmit()}
             disabled={submitting || !amount.trim()}
-            className="btn-brand h-12 w-full rounded-xl text-sm font-semibold disabled:opacity-50"
+            className="btn-brand h-12 w-full rounded-md text-sm font-semibold disabled:opacity-50"
           >
             {submitting ? "Enregistrement..." : "Enregistrer"}
           </button>
@@ -132,10 +132,10 @@ function DeleteConfirmModal({
 }) {
   return (
     <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/40 p-4" onClick={onClose}>
-      <div className="w-full max-w-sm rounded-2xl bg-white shadow-2xl" onClick={(e) => e.stopPropagation()}>
+      <div className="w-full max-w-sm rounded-md bg-white shadow-2xl" onClick={(e) => e.stopPropagation()}>
         <div className="flex items-center justify-between border-b border-zinc-200 px-6 py-4">
           <h2 className="text-lg font-semibold text-zinc-900">Supprimer le budget</h2>
-          <button onClick={onClose} className="text-2xl text-zinc-400 hover:text-zinc-600">
+          <button onClick={onClose} className="flex items-center gap-2 text-2xl text-zinc-400 hover:text-zinc-600">
             &times;
           </button>
         </div>
@@ -153,15 +153,14 @@ function DeleteConfirmModal({
           </p>
 
           <div className="mt-5 flex gap-3">
-            <button
-              onClick={onClose}
-              className="flex-1 rounded-xl border border-zinc-200 py-3 text-sm font-medium text-zinc-700"
+            <button onClick={onClose}
+              className="flex-1 rounded-md border border-zinc-200 py-3 text-sm font-medium text-zinc-700 gap-2"
             >
               Annuler
             </button>
             <button
               onClick={() => void onConfirm()}
-              className="flex-1 rounded-xl bg-red-600 py-3 text-sm font-medium text-white"
+              className="flex-1 rounded-md bg-red-600 py-3 text-sm font-medium text-white"
             >
               Supprimer
             </button>
@@ -277,26 +276,10 @@ function BudgetTable({
                   <td className="px-4 py-3">
                     <div className="flex items-center justify-end gap-2">
                       <button
-                        onClick={(event) => {
-                          event.stopPropagation();
-                          onEdit(line);
-                        }}
-                        className="rounded-lg p-1.5 text-indigo-600 hover:bg-indigo-50"
-                        title={line.budgetId ? "Modifier le montant" : "Budgetiser"}
-                      >
-                        {line.budgetId ? <Pencil size={16} /> : <Plus size={16} />}
-                      </button>
+                        onClick={(event) =>{ event.stopPropagation(); onEdit(line); }} className="rounded-lg p-1.5 text-indigo-600 hover:bg-indigo-50" title={line.budgetId ? "Modifier le montant" : "Budgetiser"} > {line.budgetId ? <Pencil size={16} /> : <Plus size={16} />}</button>
                       {line.budgetId ? (
                         <button
-                          onClick={(event) => {
-                            event.stopPropagation();
-                            onDelete(line);
-                          }}
-                          className="rounded-lg p-1.5 text-red-500 hover:bg-red-50"
-                          title="Supprimer le budget"
-                        >
-                          <Trash2 size={16} />
-                        </button>
+                          onClick={(event) =>{ event.stopPropagation(); onDelete(line); }} className="rounded-lg p-1.5 text-red-500 hover:bg-red-50" title="Supprimer le budget" > <Trash2 size={16} /></button>
                       ) : null}
                     </div>
                   </td>
@@ -414,7 +397,7 @@ function BudgetsPageContent() {
   return (
     <div className="space-y-6">
       {toast ? (
-        <div className="fixed right-6 top-6 z-[100] rounded-2xl bg-emerald-500 px-5 py-3 text-sm font-semibold text-white shadow-lg">
+        <div className="fixed right-6 top-6 z-[100] rounded-md bg-emerald-500 px-5 py-3 text-sm font-semibold text-white shadow-lg">
           {toast}
         </div>
       ) : null}
@@ -437,7 +420,7 @@ function BudgetsPageContent() {
       ) : (
         <>
           <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-4">
-            <div className="rounded-2xl border border-zinc-200 bg-white p-5 shadow-sm">
+            <div className="rounded-md border border-zinc-200 bg-white p-5 shadow-sm">
               <div className="flex items-center gap-2">
                 <div className="rounded-lg bg-indigo-100 p-2">
                   <Wallet className="h-4 w-4 text-indigo-600" />
@@ -450,7 +433,7 @@ function BudgetsPageContent() {
               <div className="mt-1 text-xs text-zinc-400">MAD</div>
             </div>
 
-            <div className="rounded-2xl border border-zinc-200 bg-white p-5 shadow-sm">
+            <div className="rounded-md border border-zinc-200 bg-white p-5 shadow-sm">
               <div className="flex items-center gap-2">
                 <div className="rounded-lg bg-red-100 p-2">
                   <TrendingDown className="h-4 w-4 text-red-600" />
@@ -465,7 +448,7 @@ function BudgetsPageContent() {
               </div>
             </div>
 
-            <div className="rounded-2xl border border-zinc-200 bg-white p-5 shadow-sm">
+            <div className="rounded-md border border-zinc-200 bg-white p-5 shadow-sm">
               <div className="flex items-center gap-2">
                 <div className="rounded-lg bg-green-100 p-2">
                   <TrendingUp className="h-4 w-4 text-green-600" />
@@ -478,7 +461,7 @@ function BudgetsPageContent() {
               <div className="mt-1 text-xs text-zinc-400">MAD</div>
             </div>
 
-            <div className="rounded-2xl border border-zinc-200 bg-white p-5 shadow-sm">
+            <div className="rounded-md border border-zinc-200 bg-white p-5 shadow-sm">
               <div className="flex items-center gap-2">
                 <div className="rounded-lg bg-amber-100 p-2">
                   <PiggyBank className="h-4 w-4 text-amber-600" />

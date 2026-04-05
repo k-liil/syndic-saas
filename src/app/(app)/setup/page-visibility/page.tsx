@@ -45,13 +45,13 @@ function Toggle({
       aria-checked={checked}
       onClick={onChange}
       className={[
-        "relative inline-flex h-6 w-11 items-center rounded-full transition",
+        "relative inline-flex gap-3 h-6 w-11 items-center rounded-md transition",
         checked ? "bg-cyan-500" : "bg-slate-300",
       ].join(" ")}
     >
       <span
         className={[
-          "inline-block h-4 w-4 rounded-full bg-white transition",
+          "inline-block h-4 w-4 rounded-md bg-white transition",
           checked ? "translate-x-6" : "translate-x-1",
         ].join(" ")}
       />
@@ -129,7 +129,7 @@ export default function PageVisibilityPage() {
     return (
       <div className="flex h-[60vh] items-center justify-center">
         <div className="rounded-3xl border border-slate-200 bg-white p-8 text-center shadow-sm">
-          <div className="mx-auto flex h-12 w-12 items-center justify-center rounded-2xl bg-slate-100 text-slate-500">
+          <div className="mx-auto flex h-12 w-12 items-center justify-center rounded-md bg-slate-100 text-slate-500">
             <Shield size={20} />
           </div>
           <h1 className="mt-4 text-lg font-semibold text-slate-900">Acces reserve</h1>
@@ -142,7 +142,7 @@ export default function PageVisibilityPage() {
   return (
     <div className="space-y-6">
       {toast ? (
-        <div className="fixed right-6 top-20 z-[100] rounded-2xl bg-slate-900 px-4 py-3 text-sm font-semibold text-white shadow-lg">
+        <div className="fixed right-6 top-20 z-[100] rounded-md bg-slate-900 px-4 py-3 text-sm font-semibold text-white shadow-lg">
           {toast}
         </div>
       ) : null}
@@ -159,7 +159,7 @@ export default function PageVisibilityPage() {
             type="button"
             onClick={() => void saveAll()}
             disabled={saving || loading}
-            className="btn-brand rounded-2xl px-5 py-3 text-sm font-semibold disabled:opacity-50"
+            className="btn-brand rounded-md px-5 py-3 text-sm font-semibold disabled:opacity-50"
           >
             {saving ? "Enregistrement..." : "Enregistrer"}
           </button>

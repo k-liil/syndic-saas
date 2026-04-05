@@ -4,8 +4,7 @@ import { useCallback, useEffect, useMemo, useState } from "react";
 import { useSession } from "next-auth/react";
 import { Modal } from "@/components/ui/Modal";
 import { Table, THead, TR, TH, TD } from "@/components/ui/Table";
-import { CheckCircle2, XCircle, AlertTriangle } from "lucide-react";
-import { Pencil, Trash2 } from "lucide-react";
+import { CheckCircle2, XCircle, AlertTriangle, Upload, PlusCircle, Pencil, Trash2 } from "lucide-react";
 import { canManage } from "@/lib/roles";
 import { useApiUrl, useOrgId } from "@/lib/org-context";
 
@@ -157,17 +156,13 @@ export default function BuildingsPage() {
           {canEdit ? (
             <div className="flex gap-2">
               <button
-                onClick={() => setOpenImport(true)}
-                className="rounded-xl border border-zinc-200 bg-white px-4 py-2 text-sm font-medium hover:bg-zinc-50"
-              >
-                Importer
-              </button>
+                onClick={() =>setOpenImport(true)} className="flex items-center gap-2 rounded-md border border-zinc-200 bg-white px-4 py-2 text-sm font-medium hover:bg-zinc-50" > <Upload className="h-4 w-4" /> Importer</button>
 
               <button
-                onClick={() => setOpenAdd(true)}
-                className="rounded-xl bg-zinc-900 px-4 py-2 text-sm font-medium text-white hover:bg-zinc-800"
+                onClick={() =>setOpenAdd(true)}
+                className="flex items-center gap-2 rounded-md bg-gradient-to-r from-cyan-500 to-blue-600 px-4 py-2.5 text-sm font-semibold text-white shadow-[0_10px_24px_rgba(14,165,233,0.22)] transition-all hover:scale-[1.02] active:scale-[0.98]"
               >
-                + Ajouter un bâtiment
+                <PlusCircle className="h-4 w-4" /> Ajouter un bâtiment
               </button>
             </div>
           ) : null}
@@ -201,19 +196,14 @@ export default function BuildingsPage() {
                         type="button"
                         onClick={() => editBuilding(b)}
                         title="Éditer"
-                        className="inline-flex h-9 w-9 items-center justify-center rounded-lg border border-zinc-200 bg-white hover:bg-zinc-50"
+                        className="inline-flex gap-3 h-9 w-9 items-center justify-center rounded-lg border border-zinc-200 bg-white hover:bg-zinc-50"
                       >
                         <Pencil className="h-4 w-4 text-blue-600" />
                       </button>
 
                       <button
                         type="button"
-                        onClick={() => deleteBuilding(b.id)}
-                        title="Supprimer"
-                        className="inline-flex h-9 w-9 items-center justify-center rounded-lg border border-zinc-200 bg-white hover:bg-zinc-50"
-                      >
-                        <Trash2 className="h-4 w-4 text-red-600" />
-                      </button>
+                        onClick={() =>deleteBuilding(b.id)} title="Supprimer" className="inline-flex h-9 w-9 items-center justify-center rounded-lg border border-zinc-200 bg-white hover:bg-red-50 hover:border-red-200 transition-colors group" > <Trash2 className="h-4 w-4 text-red-600 group-hover:scale-110 transition-transform" /></button>
                     </div> : <div className="text-right text-xs text-zinc-500">Lecture seule</div>}
                   </TD>
                 </TR>
@@ -238,7 +228,7 @@ export default function BuildingsPage() {
           <div className="grid gap-2">
             <label className="text-sm font-medium">Nom</label>
             <input
-              className="h-10 rounded-xl border border-zinc-200 px-3"
+              className="h-10 rounded-md border border-zinc-200 px-3"
               placeholder="Nom de l’bâtiment"
               value={name}
               onChange={(e) => setName(e.target.value)}
@@ -248,17 +238,16 @@ export default function BuildingsPage() {
           <div className="grid gap-2">
             <label className="text-sm font-medium">Adresse</label>
             <input
-              className="h-10 rounded-xl border border-zinc-200 px-3"
+              className="h-10 rounded-md border border-zinc-200 px-3"
               placeholder="Optionnel"
               value={address}
               onChange={(e) => setAddress(e.target.value)}
             />
           </div>
 
-          <button
-            onClick={createBuilding}
+          <button onClick={createBuilding}
             disabled={!canCreate || loading}
-            className="mt-2 h-11 w-full rounded-xl bg-zinc-900 text-sm font-medium text-white hover:bg-zinc-800 disabled:opacity-40"
+            className="flex items-center gap-2 mt-2 h-11 w-full rounded-md bg-blue-600 hover:bg-blue-700 text-sm font-medium text-white hover:bg-zinc-800 disabled:opacity-40"
           >
             {loading ? (editingId ? "Enregistrement..." : "Création...") : (editingId ? "Enregistrer" : "Créer")}
           </button>
@@ -279,22 +268,21 @@ export default function BuildingsPage() {
             className="block w-full text-sm"
           />
 
-          <pre className="rounded-xl bg-zinc-50 p-3 text-xs overflow-auto">
+          <pre className="rounded-md bg-zinc-50 p-3 text-xs overflow-auto">
 name,address
 Bâtiment 1,Adresse test
 Bâtiment 2,
           </pre>
 
-          <button
-            onClick={importBuildings}
+          <button onClick={importBuildings}
             disabled={!importFile || importBusy}
-            className="h-11 w-full rounded-xl bg-zinc-900 text-sm font-medium text-white hover:bg-zinc-800 disabled:opacity-40"
+            className="flex items-center gap-2 h-11 w-full rounded-md bg-blue-600 hover:bg-blue-700 text-sm font-medium text-white hover:bg-zinc-800 disabled:opacity-40"
           >
             {importBusy ? "Import..." : "Importer"}
           </button>
 
           {importError ? (
-  <div className="flex items-start gap-2 rounded-xl border border-red-200 bg-red-50 p-3 text-sm text-red-800">
+  <div className="flex items-start gap-2 rounded-md border border-red-200 bg-red-50 p-3 text-sm text-red-800">
     <XCircle className="mt-0.5 h-5 w-5 shrink-0" />
     <div>
       <div className="font-medium">Import échoué</div>
@@ -306,7 +294,7 @@ Bâtiment 2,
     {importResult ? (
       <div className="grid gap-3">
         <div className="grid gap-2 sm:grid-cols-2">
-          <div className="flex items-center gap-2 rounded-xl border border-emerald-200 bg-emerald-50 p-3">
+          <div className="flex items-center gap-2 rounded-md border border-emerald-200 bg-emerald-50 p-3">
             <CheckCircle2 className="h-5 w-5 text-emerald-700" />
             <div>
               <div className="text-xs text-emerald-800/80">Importés</div>
@@ -315,7 +303,7 @@ Bâtiment 2,
           </div>
 
           <div
-            className={`flex items-center gap-2 rounded-xl border p-3 ${
+            className={`flex items-center gap-2 rounded-md border p-3 ${
               importResult.errors.length > 0
                 ? "border-amber-200 bg-amber-50"
                 : "border-zinc-200 bg-zinc-50"
@@ -334,7 +322,7 @@ Bâtiment 2,
         </div>
 
         {importResult.errors.length > 0 ? (
-          <div className="rounded-xl border border-zinc-200 bg-white p-3">
+          <div className="rounded-md border border-zinc-200 bg-white p-3">
             <div className="mb-2 text-sm font-medium text-zinc-900">Détail des erreurs</div>
             <ul className="max-h-48 space-y-1 overflow-auto text-sm text-zinc-700">
               {importResult.errors.map((e, idx) => (

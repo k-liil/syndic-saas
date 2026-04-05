@@ -105,22 +105,14 @@ export default function BackupContent() {
             Historique et déclenchement manuel des sauvegardes GitHub.
           </p>
         </div>
-        <button
-          onClick={handleManualBackup} 
+        <button onClick={handleManualBackup} 
           disabled={isBackingUp || !config?.hasToken}
-          className="flex items-center gap-2 rounded-xl bg-gradient-to-r from-indigo-500 to-blue-600 px-4 py-2.5 text-sm font-medium text-white shadow-sm transition-all hover:from-indigo-600 hover:to-blue-700 disabled:opacity-50 active:scale-95"
-        >
-          {isBackingUp ? (
-            <RefreshCw className="h-4 w-4 animate-spin" />
-          ) : (
-            <Plus className="h-4 w-4" />
-          )}
-          {isBackingUp ? "Traitement..." : "Sauvegarder maintenant"}
-        </button>
+          className="flex items-center gap-2 rounded-md bg-gradient-to-r from-indigo-500 to-blue-600 px-4 py-2.5 text-sm font-medium text-white shadow-sm transition-all hover:from-indigo-600 hover:to-blue-700 disabled:opacity-50 active:scale-95"
+        >{isBackingUp ? ( <RefreshCw className="h-4 w-4 animate-spin" /> ) : ( <Plus className="h-4 w-4" /> )} {isBackingUp ? "Traitement..." : "Sauvegarder maintenant"}</button>
       </div>
 
       {statusMsg && (
-        <div className={`p-4 rounded-xl border text-sm flex items-center gap-3 animate-in fade-in slide-in-from-top-2 ${
+        <div className={`p-4 rounded-md border text-sm flex items-center gap-3 animate-in fade-in slide-in-from-top-2 ${
           statusMsg.type === 'success' ? 'bg-emerald-50 border-emerald-200 text-emerald-800' :
           statusMsg.type === 'error' ? 'bg-red-50 border-red-200 text-red-800' :
           'bg-blue-50 border-blue-200 text-blue-800'
@@ -133,7 +125,7 @@ export default function BackupContent() {
       )}
 
       <div className="grid grid-cols-1 md:grid-cols-3 gap-5">
-        <div className="rounded-2xl border border-zinc-200 bg-white p-5 shadow-sm">
+        <div className="rounded-md border border-zinc-200 bg-white p-5 shadow-sm">
           <div className="flex items-center gap-3 mb-3">
             <div className="p-2 bg-zinc-50 rounded-lg">
               <Github className="h-5 w-5 text-zinc-600" />
@@ -145,14 +137,14 @@ export default function BackupContent() {
               </p>
             </div>
           </div>
-          <span className={`inline-flex items-center rounded-full px-2.5 py-0.5 text-xs font-semibold ${
+          <span className={`inline-flex gap-3 items-center rounded-md px-2.5 py-0.5 text-xs font-semibold ${
             config?.hasToken ? "bg-emerald-50 text-emerald-600" : "bg-red-50 text-red-600"
           }`}>
             {config ? (config.hasToken ? "Connecté" : "Déconnecté") : "..."}
           </span>
         </div>
 
-        <div className="rounded-2xl border border-zinc-200 bg-white p-5 shadow-sm">
+        <div className="rounded-md border border-zinc-200 bg-white p-5 shadow-sm">
           <div className="flex items-center gap-3 mb-3">
             <div className="p-2 bg-indigo-50 rounded-lg">
               <Database className="h-5 w-5 text-indigo-600" />
@@ -169,7 +161,7 @@ export default function BackupContent() {
           </p>
         </div>
 
-        <div className="rounded-2xl border border-zinc-200 bg-white p-5 shadow-sm">
+        <div className="rounded-md border border-zinc-200 bg-white p-5 shadow-sm">
           <div className="flex items-center gap-3 mb-3">
             <div className="p-2 bg-emerald-50 rounded-lg">
               <CheckCircle2 className="h-5 w-5 text-emerald-600" />
@@ -185,7 +177,7 @@ export default function BackupContent() {
         </div>
       </div>
 
-      <div className="rounded-2xl border border-zinc-200 bg-white shadow-sm overflow-hidden">
+      <div className="rounded-md border border-zinc-200 bg-white shadow-sm overflow-hidden">
         <div className="p-5 border-b border-zinc-100 flex items-center justify-between bg-zinc-50/30">
           <h3 className="font-bold text-zinc-900">Historique des sauvegardes</h3>
           <RefreshCw 
@@ -240,7 +232,7 @@ export default function BackupContent() {
                       <a 
                         href={`/api/backups/download?file=${encodeURIComponent(b.name)}`}
                         download={b.name}
-                        className="inline-flex items-center gap-1.5 rounded-lg bg-zinc-100 px-3 py-1.5 text-xs font-bold text-zinc-700 hover:bg-zinc-200 transition-colors"
+                        className="inline-flex gap-3 items-center gap-1.5 rounded-lg bg-zinc-100 px-3 py-1.5 text-xs font-bold text-zinc-700 hover:bg-zinc-200 transition-colors"
                       >
                         <Download className="h-3.5 w-3.5" />
                         Télécharger
@@ -255,7 +247,7 @@ export default function BackupContent() {
       </div>
 
       {config && !config.hasToken && !loading && (
-        <div className="p-4 rounded-2xl border border-red-200 bg-red-50 text-red-800 flex items-start gap-4">
+        <div className="p-4 rounded-md border border-red-200 bg-red-50 text-red-800 flex items-start gap-4">
           <AlertCircle className="h-5 w-5 shrink-0 mt-0.5" />
           <div className="space-y-1">
             <h5 className="font-bold">Configuration Incomplète</h5>
