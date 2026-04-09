@@ -150,15 +150,28 @@ export async function GET(req: Request) {
           ? Number(settings.globalFixedAmount)
           : null);
     } else if (contributionType === "GROUP_FIXED") {
-      for (const groupUnit of item.groupUnits) {
-        const amount = getApplicablePeriod(groupUnit.group.periods, checkDate);
-        if (amount !== null) {
-          contributionAmount = amount;
-          break;
+      // Prioritize explicit periods on groups, then fallback to group defaultAmount
+      if (item.groupUnits && Array.isArray(item.groupUnits)) {
+        for (const groupUnit of item.groupUnits) {
+          if (!groupUnit.group) continue;
+          
+          const amount = groupUnit.group.periods ? getApplicablePeriod(groupUnit.group.periods, checkDate) : null;
+          if (amount !== null) {
+            contributionAmount = amount;
+            break;
+          }
+
+          // Fallback to group-level defaultAmount
+          if (groupUnit.group.defaultAmount !== null && groupUnit.group.defaultAmount !== undefined) {
+             contributionAmount = Number(groupUnit.group.defaultAmount);
+             break;
+          }
         }
       }
     } else if (contributionType === "SURFACE") {
-      const amountPerSquareMeter = getApplicablePeriod(item.contributionPeriods, checkDate);
+      const amountPerSquareMeter = (item.contributionPeriods && Array.isArray(item.contributionPeriods)) 
+        ? getApplicablePeriod(item.contributionPeriods, checkDate) 
+        : null;
       if (amountPerSquareMeter !== null && item.surface) {
         contributionAmount = Number(item.surface) * amountPerSquareMeter;
       }
