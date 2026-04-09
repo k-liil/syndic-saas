@@ -1308,7 +1308,7 @@ export default function SettingsPage() {
               />
             </div>
             <div>
-              <label className="block text-sm font-medium text-zinc-700 mb-1">Montant par défaut (DH)</label>
+              <label className="block text-sm font-medium text-zinc-700 mb-1">Montant par dï¿½faut (DH)</label>
               <input
                 type="number"
                 className="h-10 w-full rounded-md border border-zinc-200 px-3 text-sm focus:ring-2 focus:ring-indigo-500 outline-none"
