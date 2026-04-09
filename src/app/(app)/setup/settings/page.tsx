@@ -1297,14 +1297,26 @@ export default function SettingsPage() {
         title="Nouveau groupe de lots"
       >
         <div className="p-4 space-y-4">
-          <div>
-            <label className="block text-sm font-medium text-zinc-700 mb-1">Nom du groupe</label>
-            <input
-              className="h-10 w-full rounded-md border border-zinc-200 px-3 text-sm"
-              value={groupName}
-              onChange={(e) => setGroupName(e.target.value)}
-              placeholder="Ex: Bloc A, Commerces..."
-            />
+          <div className="grid grid-cols-2 gap-4">
+            <div>
+              <label className="block text-sm font-medium text-zinc-700 mb-1">Nom du groupe</label>
+              <input
+                className="h-10 w-full rounded-md border border-zinc-200 px-3 text-sm focus:ring-2 focus:ring-indigo-500 outline-none"
+                value={groupName}
+                onChange={(e) => setGroupName(e.target.value)}
+                placeholder="Ex: Bloc A, Commerces..."
+              />
+            </div>
+            <div>
+              <label className="block text-sm font-medium text-zinc-700 mb-1">Montant par défaut (DH)</label>
+              <input
+                type="number"
+                className="h-10 w-full rounded-md border border-zinc-200 px-3 text-sm focus:ring-2 focus:ring-indigo-500 outline-none"
+                value={groupAmount}
+                onChange={(e) => setGroupAmount(e.target.value)}
+                placeholder="Ex: 1200"
+              />
+            </div>
           </div>
           <div>
             <label className="block text-sm font-medium text-zinc-700 mb-2">Lots Ã  inclure</label>

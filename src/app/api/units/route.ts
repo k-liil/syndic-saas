@@ -91,6 +91,7 @@ export async function GET(req: Request) {
             select: {
               id: true,
               name: true,
+              defaultAmount: true,
               periods: {
                 orderBy: { startPeriod: "desc" },
                 select: { id: true, startPeriod: true, endPeriod: true, amount: true },
