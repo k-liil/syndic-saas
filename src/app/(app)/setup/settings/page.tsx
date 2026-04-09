@@ -1308,7 +1308,7 @@ export default function SettingsPage() {
               />
             </div>
             <div>
-              <label className="block text-sm font-medium text-zinc-700 mb-1">Montant par d�faut (DH)</label>
+              <label className="block text-sm font-medium text-zinc-700 mb-1">Montant par défaut (DH)</label>
               <input
                 type="number"
                 className="h-10 w-full rounded-md border border-zinc-200 px-3 text-sm focus:ring-2 focus:ring-indigo-500 outline-none"
@@ -1319,7 +1319,19 @@ export default function SettingsPage() {
             </div>
           </div>
           <div>
-            <label className="block text-sm font-medium text-zinc-700 mb-2">Lots à inclure</label>
+            <div className="flex items-center justify-between mb-2">
+              <label className="block text-sm font-medium text-zinc-700">Lots à inclure</label>
+              <button
+                type="button"
+                onClick={() => {
+                  const freeUnits = units.filter(u => !groups.some(g => g.units.some(gu => gu.unit.id === u.id)));
+                  setSelectedUnitIds(freeUnits.map(u => u.id));
+                }}
+                className="text-[11px] font-bold text-indigo-600 hover:underline"
+              >
+                Tout sélectionner
+              </button>
+            </div>
             <div className="max-h-60 overflow-auto border border-zinc-200 rounded-md p-2 bg-zinc-50/50">
               <div className="grid grid-cols-2 gap-2">
                 {units.map((u) => {
