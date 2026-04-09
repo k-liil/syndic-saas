@@ -3,8 +3,6 @@ import { prisma } from "@/lib/prisma";
 import { requireAuth, requireManager } from "@/lib/authz";
 import { DueStatus, PaymentMethod, ReceiptType, Prisma } from "@prisma/client";
 import { getOrgIdFromRequest } from "@/lib/org-utils";
-import { getMonthlyContributionAmount } from "@/lib/contribution-amounts";
-import { buildContributionStartPeriod } from "@/lib/contribution-start";
 import { reallocateUnitContributions } from "@/lib/allocation";
 import { getApplicableContribution } from "@/lib/contribution-engine";
 
@@ -420,14 +418,15 @@ export async function POST(req: Request) {
         nextNumber = lastReceipt.receiptNumber + 1;
       }
 
-      const startPeriod = buildContributionStartPeriod(
-        {
-          overrideStart: unit.overrideStart,
-          startYear: unit.startYear,
-          startMonth: unit.startMonth,
-        },
-        settings,
-      );
+      const startPeriod = (ensuredUnit as any).overrideStart
+        ? firstDayOfMonth(new Date((ensuredUnit as any).overrideStart))
+        : new Date(
+            Date.UTC(
+              ensuredUnit.startYear ?? settings?.startYear ?? 2026,
+              (ensuredUnit.startMonth ?? settings?.startMonth ?? 1) - 1,
+              1
+            )
+          );
       const receiptPeriod = firstDayOfMonth(date);
 
       /* créer automatiquement l'exercice fiscal si nécessaire */
@@ -571,8 +570,6 @@ await tx.fiscalYear.upsert({
         if (remaining <= 0) break;
 
         futureOffset += 1;
-
-        if (!fee || fee <= 0) break;
 
         const futurePeriod = addMonthsUTC(receiptPeriod, futureOffset);
         await ensureDue(futurePeriod);

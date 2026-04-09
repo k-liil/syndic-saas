@@ -2,9 +2,8 @@ import { NextResponse } from "next/server";
 import { prisma } from "@/lib/prisma";
 import { requireManager } from "@/lib/authz";
 import { DueStatus, PaymentMethod, ReceiptType } from "@prisma/client";
-import { getMonthlyContributionAmount } from "@/lib/contribution-amounts";
-import { buildContributionStartPeriod } from "@/lib/contribution-start";
 import { getOrgIdFromRequest } from "@/lib/org-utils";
+import { getApplicableContribution } from "@/lib/contribution-engine";
 
 type Row = {
   lotNumber: string;
@@ -119,14 +118,18 @@ export async function POST(req: Request) {
       },
       organizationId: orgId,
     },
-    select: {
-      id: true,
-      lotNumber: true,
-      buildingId: true,
-      overrideStart: true,
-      startYear: true,
-      startMonth: true,
-    } as any,
+    include: {
+      groupUnits: {
+        include: {
+          group: {
+            include: {
+              periods: { orderBy: { startPeriod: "desc" } },
+            },
+          },
+        },
+      },
+      contributionPeriods: { orderBy: { startPeriod: "desc" } },
+    },
   });
 
   const unitsByLotNumber = new Map<string, any>();
@@ -165,6 +168,16 @@ export async function POST(req: Request) {
       receiptStartNumber: true,
       globalFixedAmount: true,
     },
+  });
+
+  const globalPeriods = await prisma.contributionPeriod.findMany({
+    where: {
+      organizationId: orgId,
+      contributionType: "GLOBAL_FIXED",
+      groupId: null,
+      unitId: null,
+    },
+    orderBy: { startPeriod: "asc" },
   });
 
   const startYear = settings?.startYear ?? 2026;
@@ -326,45 +339,53 @@ export async function POST(req: Request) {
             const unit = group[0].unit;
 
 
-            // 2. Determine necessary period reach for the whole group
+            const startPeriod = unit.overrideStart
+              ? firstDayOfMonth(new Date(unit.overrideStart))
+              : new Date(
+                  Date.UTC(
+                    unit.startYear ?? settings?.startYear ?? 2026,
+                    (unit.startMonth ?? settings?.startMonth ?? 1) - 1,
+                    1
+                  )
+                );
+
+            // Pre-generate up to latestPeriod + 24 months as buffer for advances
             let earliestPeriod = firstDayOfMonth(group[0].receiptDate);
             let latestPeriod = firstDayOfMonth(group[0].receiptDate);
-            const fee = getMonthlyContributionAmount(
-                settings?.globalFixedAmount !== null && settings?.globalFixedAmount !== undefined
-                  ? Number(settings.globalFixedAmount)
-                  : 0
-            );
-
             for (const item of group) {
               const rp = firstDayOfMonth(item.receiptDate);
               if (rp < earliestPeriod) earliestPeriod = rp;
               if (rp > latestPeriod) latestPeriod = rp;
             }
 
-            const startPeriod = buildContributionStartPeriod(
-                { overrideStart: unit.overrideStart, startYear: unit.startYear, startMonth: unit.startMonth },
-                settings
-            );
-
-            // Pre-generate up to latestPeriod + 24 months as buffer for advances
-            const neededPeriods: Date[] = [];
             let cur = startPeriod < earliestPeriod ? startPeriod : earliestPeriod;
             const limitDate = addMonthsUTC(latestPeriod, 24); 
+            
+            const duesData: any[] = [];
             while (cur.getTime() <= limitDate.getTime()) {
-              neededPeriods.push(cur);
+              const { amount } = getApplicableContribution(
+                unit as any,
+                cur,
+                settings as any,
+                globalPeriods
+              );
+
+              if (amount && amount > 0) {
+                duesData.push({
+                  unitId: unit.id,
+                  organizationId: orgId,
+                  period: cur,
+                  amountDue: amount,
+                  paidAmount: 0,
+                  status: DueStatus.UNPAID,
+                });
+              }
               cur = addMonthsUTC(cur, 1);
             }
 
-            if (fee > 0 && neededPeriods.length > 0) {
+            if (duesData.length > 0) {
               await tx.monthlyDue.createMany({
-                data: neededPeriods.map(p => ({
-                  unitId: unit.id,
-                  organizationId: orgId,
-                  period: p,
-                  amountDue: fee,
-                  paidAmount: 0,
-                  status: DueStatus.UNPAID,
-                })),
+                data: duesData,
                 skipDuplicates: true,
               });
             }
