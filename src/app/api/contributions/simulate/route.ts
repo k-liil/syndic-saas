@@ -30,7 +30,6 @@ export async function POST(req: Request) {
         include: {
           group: {
             include: {
-              defaultAmount: true,
               periods: {
                 orderBy: { startPeriod: "desc" },
               },
