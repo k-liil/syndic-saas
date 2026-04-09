@@ -31,161 +31,154 @@ function getApplicablePeriod(
 }
 
 export async function GET(req: Request) {
-  const gate = await requireAuth();
-  if (!gate.ok) {
-    return NextResponse.json({ error: gate.error }, { status: gate.status });
-  }
+  try {
+    const gate = await requireAuth();
+    if (!gate.ok) {
+      return NextResponse.json({ error: gate.error }, { status: gate.status });
+    }
 
-  const orgId = await getOrgIdFromRequest(req, gate);
-  if (!orgId) {
-    return NextResponse.json([]);
-  }
+    const orgId = await getOrgIdFromRequest(req, gate);
+    if (!orgId) {
+      return NextResponse.json({ error: "Organization not found" }, { status: 400 });
+    }
 
-  const { searchParams } = new URL(req.url);
-  const type = searchParams.get("type");
+    const { searchParams } = new URL(req.url);
+    const type = searchParams.get("type");
 
-  const where =
-    type && ["APARTMENT", "GARAGE", "COMMERCIAL"].includes(type)
-      ? { organizationId: orgId!, type: type as "APARTMENT" | "GARAGE" | "COMMERCIAL" }
-      : { organizationId: orgId! };
+    const where =
+      type && ["APARTMENT", "GARAGE", "COMMERCIAL"].includes(type)
+        ? { organizationId: orgId!, type: type as "APARTMENT" | "GARAGE" | "COMMERCIAL" }
+        : { organizationId: orgId! };
 
-  const settings = await prisma.appSettings.findFirst({
-    where: { organizationId: orgId! },
-    select: {
-      contributionType: true,
-      globalFixedAmount: true,
-    },
-  });
-
-  const items = await prisma.unit.findMany({
-    where,
-    select: {
-      id: true,
-      lotNumber: true,
-      reference: true,
-      type: true,
-      surface: true,
-      floor: true,
-      overrideStart: true,
-      startYear: true,
-      startMonth: true,
-      buildingId: true,
-      building: {
-        select: { id: true, name: true },
+    const settings = await prisma.appSettings.findFirst({
+      where: { organizationId: orgId! },
+      select: {
+        contributionType: true,
+        globalFixedAmount: true,
       },
-      ownerships: {
-        where: { endDate: null, organizationId: orgId! },
-        take: 1,
-        orderBy: { startDate: "desc" },
-        select: {
-          id: true,
-          startDate: true,
-          owner: {
-            select: { id: true, firstName: true, name: true },
+    });
+
+    const items = await prisma.unit.findMany({
+      where,
+      select: {
+        id: true,
+        lotNumber: true,
+        reference: true,
+        type: true,
+        surface: true,
+        floor: true,
+        overrideStart: true,
+        startYear: true,
+        startMonth: true,
+        buildingId: true,
+        building: {
+          select: { id: true, name: true },
+        },
+        ownerships: {
+          where: { endDate: null, organizationId: orgId! },
+          take: 1,
+          orderBy: { startDate: "desc" },
+          select: {
+            id: true,
+            startDate: true,
+            owner: {
+              select: { id: true, firstName: true, name: true },
+            },
           },
         },
-      },
-      groupUnits: {
-        select: {
-          group: {
-            select: {
-              id: true,
-              name: true,
-              defaultAmount: true,
-              periods: {
-                orderBy: { startPeriod: "desc" },
-                select: { id: true, startPeriod: true, endPeriod: true, amount: true },
+        groupUnits: {
+          select: {
+            group: {
+              select: {
+                id: true,
+                name: true,
+                defaultAmount: true,
+                periods: {
+                  orderBy: { startPeriod: "desc" },
+                  select: { id: true, startPeriod: true, endPeriod: true, amount: true },
+                },
               },
             },
           },
         },
+        contributionPeriods: {
+          orderBy: { startPeriod: "desc" },
+          select: { id: true, startPeriod: true, endPeriod: true, amount: true },
+        },
       },
-      contributionPeriods: {
-        orderBy: { startPeriod: "desc" },
-        select: { id: true, startPeriod: true, endPeriod: true, amount: true },
-      },
-    },
-  });
-
-  const globalPeriods = await prisma.contributionPeriod.findMany({
-    where: {
-      organizationId: orgId!,
-      contributionType: "GLOBAL_FIXED",
-      groupId: null,
-      unitId: null,
-    },
-    orderBy: { startPeriod: "desc" },
-  });
-
-  const checkDate = new Date();
-  const contributionType = settings?.contributionType ?? "GLOBAL_FIXED";
-
-  items.sort((a: SortableUnit, b: SortableUnit) => {
-    const aLot = sortLotNumber(a.lotNumber);
-    const bLot = sortLotNumber(b.lotNumber);
-
-    if (aLot !== bLot) return aLot - bLot;
-
-    const buildingCompare = (a.building?.name ?? "ZZZZZZ").localeCompare(b.building?.name ?? "ZZZZZZ", "fr", {
-      sensitivity: "base",
     });
 
-    if (buildingCompare !== 0) return buildingCompare;
-
-    const aRef = a.reference ?? "";
-    const bRef = b.reference ?? "";
-
-    return aRef.localeCompare(bRef, "fr", {
-      numeric: true,
-      sensitivity: "base",
+    const globalPeriods = await prisma.contributionPeriod.findMany({
+      where: {
+        organizationId: orgId!,
+        contributionType: "GLOBAL_FIXED",
+        groupId: null,
+        unitId: null,
+      },
+      orderBy: { startPeriod: "desc" },
     });
-  });
 
-  const enrichedItems = items.map((item) => {
-    let contributionAmount: number | null = null;
+    const checkDate = new Date();
+    const contributionType = settings?.contributionType ?? "GLOBAL_FIXED";
 
-    if (contributionType === "GLOBAL_FIXED") {
-      contributionAmount =
-        getApplicablePeriod(globalPeriods, checkDate) ??
-        (settings?.globalFixedAmount !== null && settings?.globalFixedAmount !== undefined
-          ? Number(settings.globalFixedAmount)
-          : null);
-    } else if (contributionType === "GROUP_FIXED") {
-      // Prioritize explicit periods on groups, then fallback to group defaultAmount
-      if (item.groupUnits && Array.isArray(item.groupUnits)) {
-        for (const groupUnit of item.groupUnits) {
-          if (!groupUnit.group) continue;
-          
-          const amount = groupUnit.group.periods ? getApplicablePeriod(groupUnit.group.periods, checkDate) : null;
-          if (amount !== null) {
-            contributionAmount = amount;
-            break;
+    items.sort((a: any, b: any) => {
+      const aLot = sortLotNumber(a.lotNumber);
+      const bLot = sortLotNumber(b.lotNumber);
+      if (aLot !== bLot) return aLot - bLot;
+      const buildingCompare = (a.building?.name ?? "ZZZZZZ").localeCompare(b.building?.name ?? "ZZZZZZ", "fr", {
+        sensitivity: "base",
+      });
+      if (buildingCompare !== 0) return buildingCompare;
+      return (a.reference ?? "").localeCompare(b.reference ?? "", "fr", { numeric: true, sensitivity: "base" });
+    });
+
+    const enrichedItems = items.map((item: any) => {
+      let contributionAmount: number | null = null;
+      try {
+        if (contributionType === "GLOBAL_FIXED") {
+          contributionAmount =
+            getApplicablePeriod(globalPeriods, checkDate) ??
+            (settings?.globalFixedAmount !== null && settings?.globalFixedAmount !== undefined
+              ? Number(settings.globalFixedAmount)
+              : null);
+        } else if (contributionType === "GROUP_FIXED") {
+          if (item.groupUnits) {
+            for (const gu of item.groupUnits) {
+              const amount = gu.group?.periods ? getApplicablePeriod(gu.group.periods, checkDate) : null;
+              if (amount !== null) {
+                contributionAmount = amount;
+                break;
+              }
+              if (gu.group?.defaultAmount) {
+                contributionAmount = Number(gu.group.defaultAmount);
+                break;
+              }
+            }
           }
-
-          // Fallback to group-level defaultAmount
-          if (groupUnit.group.defaultAmount !== null && groupUnit.group.defaultAmount !== undefined) {
-             contributionAmount = Number(groupUnit.group.defaultAmount);
-             break;
+        } else if (contributionType === "SURFACE") {
+          const amountPerSquareMeter = item.contributionPeriods ? getApplicablePeriod(item.contributionPeriods, checkDate) : null;
+          if (amountPerSquareMeter !== null && item.surface) {
+            contributionAmount = Number(item.surface) * amountPerSquareMeter;
           }
         }
+      } catch (e) {
+        console.error("Mapping error for unit", item.id, e);
       }
-    } else if (contributionType === "SURFACE") {
-      const amountPerSquareMeter = (item.contributionPeriods && Array.isArray(item.contributionPeriods)) 
-        ? getApplicablePeriod(item.contributionPeriods, checkDate) 
-        : null;
-      if (amountPerSquareMeter !== null && item.surface) {
-        contributionAmount = Number(item.surface) * amountPerSquareMeter;
-      }
-    }
 
-    return {
-      ...item,
-      contributionAmount,
-      activeOwnership: item.ownerships[0] ?? null,
-    };
-  });
+      // Final serialization cleanup for Decimal objects
+      return JSON.parse(JSON.stringify({
+        ...item,
+        surface: item.surface ? Number(item.surface) : null,
+        contributionAmount,
+        activeOwnership: item.ownerships?.[0] ?? null,
+      }, (key, value) => (typeof value === 'object' && value && value.constructor?.name === 'Decimal') ? Number(value) : value));
+    });
 
-  return NextResponse.json(enrichedItems);
+    return NextResponse.json(enrichedItems);
+  } catch (error: any) {
+    console.error("CRITICAL API ERROR /api/units:", error);
+    return NextResponse.json({ error: error.message, stack: error.stack }, { status: 500 });
+  }
 }
 
 export async function POST(req: Request) {
