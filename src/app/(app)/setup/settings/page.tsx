@@ -60,6 +60,7 @@ type ContributionType = "GLOBAL_FIXED" | "GROUP_FIXED" | "SURFACE";
 type Group = {
   id: string;
   name: string;
+  defaultAmount: number | null;
   units: Array<{
     id: string;
     unit: {
@@ -159,6 +160,7 @@ export default function SettingsPage() {
   const [simLoading, setSimLoading] = useState(false);
   const [contributionType, setContributionType] = useState<ContributionType>("GLOBAL_FIXED");
   const [globalFixedAmount, setGlobalFixedAmount] = useState<number | null>(null);
+  const [groupAmount, setGroupAmount] = useState("");
 
   const [deleteTarget, setDeleteTarget] = useState<{ id: string, name: string, type: "bank" | "sector" } | null>(null);
   const [isDeleting, setIsDeleting] = useState(false);
@@ -325,11 +327,13 @@ export default function SettingsPage() {
         body: JSON.stringify({
           name: groupName.trim(),
           unitIds: selectedUnitIds,
+          defaultAmount: Number(groupAmount) || null,
         }),
       });
       if (!res.ok) throw new Error();
       setShowGroupModal(false);
       setGroupName("");
+      setGroupAmount("");
       setSelectedUnitIds([]);
       await loadContributions();
       showStatus("success", "Groupe créé.");
@@ -1101,7 +1105,14 @@ export default function SettingsPage() {
                 {groups.map((group) => (
                   <div key={group.id} className="rounded-md border border-zinc-200 p-4 hover:border-indigo-200 transition bg-zinc-50/50">
                     <div className="flex items-center justify-between mb-3">
-                      <h3 className="font-semibold text-zinc-900">{group.name}</h3>
+                      <div>
+                        <h3 className="font-semibold text-zinc-900">{group.name}</h3>
+                        {group.defaultAmount && (
+                          <div className="text-[11px] font-bold text-indigo-600 mt-0.5">
+                            {group.defaultAmount} DH / Mois
+                          </div>
+                        )}
+                      </div>
                       <button onClick={() =>deleteGroup(group.id)} className="text-zinc-400 hover:text-red-500 transition"> <Trash2 className="h-4 w-4" /></button>
                     </div>
                     <div className="flex flex-wrap gap-1.5">

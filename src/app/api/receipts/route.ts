@@ -6,6 +6,7 @@ import { getOrgIdFromRequest } from "@/lib/org-utils";
 import { getMonthlyContributionAmount } from "@/lib/contribution-amounts";
 import { buildContributionStartPeriod } from "@/lib/contribution-start";
 import { reallocateUnitContributions } from "@/lib/allocation";
+import { getApplicableContribution } from "@/lib/contribution-engine";
 
 function firstDayOfMonth(d: Date) {
   return new Date(Date.UTC(d.getUTCFullYear(), d.getUTCMonth(), 1));
@@ -334,28 +335,34 @@ export async function POST(req: Request) {
       const unit = unitId
         ? await tx.unit.findFirst({
             where: { id: unitId, organizationId: orgId! },
-            select: {
-              organizationId: true,
-              id: true,
-              lotNumber: true,
-              buildingId: true,
-              reference: true,
-              overrideStart: true,
-              startYear: true,
-              startMonth: true,
+            include: {
+              groupUnits: {
+                include: {
+                  group: {
+                    include: {
+                      defaultAmount: true,
+                      periods: { orderBy: { startPeriod: "desc" } },
+                    },
+                  },
+                },
+              },
+              contributionPeriods: { orderBy: { startPeriod: "desc" } },
             },
           })
         : await tx.unit.findFirst({
             where: { lotNumber, organizationId: orgId! },
-            select: {
-              organizationId: true,
-              id: true,
-              lotNumber: true,
-              buildingId: true,
-              reference: true,
-              overrideStart: true,
-              startYear: true,
-              startMonth: true,
+            include: {
+              groupUnits: {
+                include: {
+                  group: {
+                    include: {
+                      defaultAmount: true,
+                      periods: { orderBy: { startPeriod: "desc" } },
+                    },
+                  },
+                },
+              },
+              contributionPeriods: { orderBy: { startPeriod: "desc" } },
             },
           });
 
@@ -442,12 +449,16 @@ await tx.fiscalYear.upsert({
   },
 });
 
-      // TODO: Utiliser le nouveau système de contributions pour auto-créer les cotisations
-      const fee = getMonthlyContributionAmount(
-        settings?.globalFixedAmount !== null && settings?.globalFixedAmount !== undefined
-          ? Number(settings.globalFixedAmount)
-          : 0,
-      );
+      const globalPeriods = await tx.contributionPeriod.findMany({
+        where: {
+          organizationId: orgId!,
+          contributionType: "GLOBAL_FIXED",
+          groupId: null,
+          unitId: null,
+        },
+        orderBy: { startPeriod: "asc" },
+      });
+
       const MAX_FUTURE_MONTHS = 240;
 
       const receipt = await tx.receipt.create({
@@ -473,7 +484,13 @@ await tx.fiscalYear.upsert({
       });
 
       async function ensureDue(period: Date) {
-        if (!fee || fee <= 0) return;
+        const { amount } = getApplicableContribution(
+          unit as any,
+          period,
+          settings as any,
+          globalPeriods
+        );
+        if (!amount || amount <= 0) return;
 
         await tx.monthlyDue.createMany({
           data: [
@@ -481,7 +498,7 @@ await tx.fiscalYear.upsert({
               organizationId: orgId!,
               unitId: ensuredUnit.id,
               period,
-              amountDue: fee,
+              amountDue: amount,
               paidAmount: 0,
               status: DueStatus.UNPAID,
             },
@@ -490,12 +507,10 @@ await tx.fiscalYear.upsert({
         });
       }
 
-      if (fee && fee > 0) {
-        let cursor = startPeriod;
-        while (cursor.getTime() <= receiptPeriod.getTime()) {
-          await ensureDue(cursor);
-          cursor = addMonthsUTC(cursor, 1);
-        }
+      let cursor = startPeriod;
+      while (cursor.getTime() <= receiptPeriod.getTime()) {
+        await ensureDue(cursor);
+        cursor = addMonthsUTC(cursor, 1);
       }
 
       let remaining = amount;
