@@ -8,8 +8,8 @@
   "main": "index.js",
   "scripts": {
     "dev": "next dev --turbo",
-    "build": "prisma generate && prisma db push && next build",
-    "start": "next start",
+    "build": "prisma generate && next build",
+    "start": "prisma db push && next start",
     "lint": "eslint",
     "seed": "prisma db seed",
     "prisma:migrate": "prisma migrate dev",
