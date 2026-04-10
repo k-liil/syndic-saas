@@ -47,7 +47,7 @@ export function MaintenanceContent({ initialLogging }: { initialLogging: boolean
     try {
       const res = await getFiscalYearsAudit();
       if (res.ok) {
-        setFiscalAudit(res.data);
+        setFiscalAudit(res.data || []);
       }
     } finally {
       setLoadingAudit(false);
