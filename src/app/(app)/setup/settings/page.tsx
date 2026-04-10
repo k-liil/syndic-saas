@@ -146,6 +146,7 @@ export default function SettingsPage() {
   const [units, setUnits] = useState<Unit[]>([]);
   const [periods, setPeriods] = useState<Period[]>([]);
   const [showGroupModal, setShowGroupModal] = useState(false);
+  const [editingGroupId, setEditingGroupId] = useState<string | null>(null);
   const [groupName, setGroupName] = useState("");
   const [selectedUnitIds, setSelectedUnitIds] = useState<string[]>([]);
   const [showPeriodModal, setShowPeriodModal] = useState(false);
@@ -316,13 +317,16 @@ export default function SettingsPage() {
     }
   }
 
-  async function createGroup() {
+  async function saveGroup() {
     if (!groupName.trim()) return;
     setSavingSettings(true);
-    showStatus("saving", "CrÃ©ation du groupe...");
+    showStatus("saving", editingGroupId ? "Mise Ã  jour du groupe..." : "CrÃ©ation du groupe...");
     try {
-      const res = await fetch(apiUrl("/api/contribution-groups"), {
-        method: "POST",
+      const url = editingGroupId ? apiUrl(`/api/contribution-groups/${editingGroupId}`) : apiUrl("/api/contribution-groups");
+      const method = editingGroupId ? "PATCH" : "POST";
+      
+      const res = await fetch(url, {
+        method,
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({
           name: groupName.trim(),
@@ -332,16 +336,25 @@ export default function SettingsPage() {
       });
       if (!res.ok) throw new Error();
       setShowGroupModal(false);
+      setEditingGroupId(null);
       setGroupName("");
       setGroupAmount("");
       setSelectedUnitIds([]);
       await loadContributions();
-      showStatus("success", "Groupe crÃ©Ã©.");
+      showStatus("success", editingGroupId ? "Groupe mis Ã  jour." : "Groupe crÃ©Ã©.");
     } catch {
-      showStatus("error", "Erreur lors de la crÃ©ation");
+      showStatus("error", "Erreur lors de l'enregistrement");
     } finally {
       setSavingSettings(false);
     }
+  }
+
+  function openEditGroup(group: Group) {
+    setEditingGroupId(group.id);
+    setGroupName(group.name);
+    setGroupAmount(group.defaultAmount?.toString() ?? "");
+    setSelectedUnitIds(group.units.map(u => u.unit.id));
+    setShowGroupModal(true);
   }
 
   async function deleteGroup(groupId: string) {
@@ -1031,12 +1044,11 @@ export default function SettingsPage() {
             </div>
           </div>
         ) : null}
-
         {tab === "contributions" ? (
           <div className="space-y-8 animate-in fade-in slide-in-from-bottom-2 duration-300">
             {/* Mode de cotisation */}
             <div className="rounded-3xl border border-zinc-200 bg-white p-6 shadow-sm">
-              <h2 className="text-lg font-semibold text-zinc-900 mb-4">Mode de calcul par dÃ©faut</h2>
+              <h2 className="text-lg font-semibold text-zinc-900 mb-4">Mode de calcul par défaut</h2>
               <div className="space-y-4">
                 <div className="flex flex-wrap gap-6">
                   <label className="flex items-center gap-2 cursor-pointer">
@@ -1085,7 +1097,7 @@ export default function SettingsPage() {
                 )}
                 
                 <p className="text-xs text-zinc-500 italic">
-                  Note: Les rÃ©glages spÃ©cifiques (pÃ©riodes) priment sur ce rÃ©glage par dÃ©faut.
+                  Note: Les réglages spécifiques (périodes) priment sur ce réglage par défaut.
                 </p>
               </div>
             </div>
@@ -1098,7 +1110,15 @@ export default function SettingsPage() {
                   <p className="text-sm text-zinc-500">Regroupez des lots pour leur appliquer un montant commun.</p>
                 </div>
                 <button
-                  onClick={() =>setShowGroupModal(true)} className="inline-flex gap-3 h-10 items-center gap-2 rounded-md bg-indigo-50 px-4 text-sm font-medium text-indigo-700 hover:bg-indigo-100 transition" > <Plus className="h-4 w-4" /> Nouveau groupe</button>
+                  onClick={() => {
+                    setEditingGroupId(null);
+                    setGroupName("");
+                    setGroupAmount("");
+                    setSelectedUnitIds([]);
+                    setShowGroupModal(true);
+                  }} 
+                  className="inline-flex gap-3 h-10 items-center gap-2 rounded-md bg-indigo-50 px-4 text-sm font-medium text-indigo-700 hover:bg-indigo-100 transition" 
+                > <Plus className="h-4 w-4" /> Nouveau groupe</button>
               </div>
 
               <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
@@ -1113,7 +1133,10 @@ export default function SettingsPage() {
                           </div>
                         )}
                       </div>
-                      <button onClick={() =>deleteGroup(group.id)} className="text-zinc-400 hover:text-red-500 transition"> <Trash2 className="h-4 w-4" /></button>
+                      <div className="flex items-center gap-2">
+                        <button onClick={() => openEditGroup(group)} className="text-zinc-400 hover:text-indigo-600 transition p-1"> <Pencil className="h-4 w-4" /></button>
+                        <button onClick={() =>deleteGroup(group.id)} className="text-zinc-400 hover:text-red-500 transition p-1"> <Trash2 className="h-4 w-4" /></button>
+                      </div>
                     </div>
                     <div className="flex flex-wrap gap-1.5">
                       {group.units.map((u) => (
@@ -1126,21 +1149,21 @@ export default function SettingsPage() {
                 ))}
                 {groups.length === 0 && (
                   <div className="col-span-full py-8 text-center text-zinc-400 border-2 border-dashed border-zinc-100 rounded-md">
-                    Aucun groupe crÃ©Ã©
+                    Aucun groupe créé
                   </div>
                 )}
               </div>
             </div>
 
-            {/* PÃ©riodes spÃ©cifiques */}
+            {/* Périodes spécifiques */}
             <div className="rounded-3xl border border-zinc-200 bg-white p-6 shadow-sm">
               <div className="flex items-center justify-between mb-6">
                 <div>
-                  <h2 className="text-lg font-semibold text-zinc-900">Exceptions et PÃ©riodes</h2>
-                  <p className="text-sm text-zinc-500">Configurez des montants spÃ©cifiques pour des pÃ©riodes donnÃ©es.</p>
+                  <h2 className="text-lg font-semibold text-zinc-900">Exceptions et Périodes</h2>
+                  <p className="text-sm text-zinc-500">Configurez des montants spécifiques pour des périodes données.</p>
                 </div>
                 <button
-                  onClick={() =>setShowPeriodModal(true)} className="inline-flex gap-3 h-10 items-center gap-2 rounded-md bg-indigo-50 px-4 text-sm font-medium text-indigo-700 hover:bg-indigo-100 transition" > <Plus className="h-4 w-4" /> Ajouter une pÃ©riode</button>
+                  onClick={() =>setShowPeriodModal(true)} className="inline-flex gap-3 h-10 items-center gap-2 rounded-md bg-indigo-50 px-4 text-sm font-medium text-indigo-700 hover:bg-indigo-100 transition" > <Plus className="h-4 w-4" /> Ajouter une période</button>
               </div>
 
               <div className="overflow-hidden rounded-md border border-zinc-200">
@@ -1149,7 +1172,7 @@ export default function SettingsPage() {
                     <tr>
                       <th className="px-4 py-3">Cible</th>
                       <th className="px-4 py-3">Type</th>
-                      <th className="px-4 py-3">DÃ©but</th>
+                      <th className="px-4 py-3">Début</th>
                       <th className="px-4 py-3">Fin</th>
                       <th className="px-4 py-3 text-right">Montant (DH)</th>
                       <th className="px-4 py-3"></th>
@@ -1169,7 +1192,7 @@ export default function SettingsPage() {
                           </span>
                         </td>
                         <td className="px-4 py-3">{formatPeriod(p.startPeriod)}</td>
-                        <td className="px-4 py-3">{p.endPeriod ? formatPeriod(p.endPeriod) : "IndÃ©terminÃ©e"}</td>
+                        <td className="px-4 py-3">{p.endPeriod ? formatPeriod(p.endPeriod) : "Indéterminée"}</td>
                         <td className="px-4 py-3 text-right font-semibold">{p.amount.toLocaleString()} DH</td>
                         <td className="px-4 py-3 text-right">
                           <button onClick={() =>deletePeriod(p.id)} className="text-zinc-400 hover:text-red-500 transition p-1"> <Trash2 className="h-4 w-4" /></button>
@@ -1179,7 +1202,7 @@ export default function SettingsPage() {
                     {periods.length === 0 && (
                       <tr>
                         <td colSpan={6} className="px-4 py-8 text-center text-zinc-400 italic">
-                          Aucune pÃ©riode spÃ©cifique configurÃ©e
+                          Aucune période spécifique configurée
                         </td>
                       </tr>
                     )}
@@ -1192,7 +1215,7 @@ export default function SettingsPage() {
             <div className="rounded-3xl border border-zinc-200 bg-white p-6 shadow-sm overflow-hidden">
                <div className="mb-6">
                   <h2 className="text-lg font-semibold text-zinc-900">Simulateur de calcul</h2>
-                  <p className="text-sm text-zinc-500 font-medium mt-1">VÃ©rifiez les montants qui seront gÃ©nÃ©rÃ©s pour une date donnÃ©e.</p>
+                  <p className="text-sm text-zinc-500 font-medium mt-1">Vérifiez les montants qui seront générés pour une date donnée.</p>
                 </div>
               
               <div className="flex items-center gap-3 p-4 bg-indigo-50/50 rounded-md mb-6">
@@ -1214,7 +1237,7 @@ export default function SettingsPage() {
                 <div className="space-y-6 animate-in slide-in-from-top-4 duration-500">
                   <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
                     <div className="p-4 rounded-md bg-emerald-50 border border-emerald-100">
-                      <div className="text-emerald-600 text-xs font-bold uppercase tracking-wider mb-1">Total calculÃ©</div>
+                      <div className="text-emerald-600 text-xs font-bold uppercase tracking-wider mb-1">Total calculé</div>
                       <div className="text-2xl font-bold text-emerald-900">{simulationResult.totalConfigured.toLocaleString()} DH</div>
                     </div>
                     <div className="p-4 rounded-md bg-zinc-50 border border-zinc-200">
@@ -1224,13 +1247,13 @@ export default function SettingsPage() {
                   </div>
 
                   <div className="border border-zinc-200 rounded-md overflow-hidden shadow-sm bg-white">
-                    <div className="bg-zinc-50 px-4 py-3 border-b border-zinc-200 font-semibold text-zinc-800 text-sm">DÃ©tails des calculs</div>
+                    <div className="bg-zinc-50 px-4 py-3 border-b border-zinc-200 font-semibold text-zinc-800 text-sm">Détails des calculs</div>
                     <div className="max-h-96 overflow-auto">
                       <table className="w-full text-left text-sm">
                         <thead className="bg-zinc-50/50 text-zinc-500 sticky top-0 backdrop-blur-md z-10">
                           <tr>
-                            <th className="px-4 py-2 font-medium border-b border-zinc-200 text-[11px]">NÂ° Lot</th>
-                            <th className="px-4 py-2 font-medium border-b border-zinc-200 text-[11px]">MÃ©thode appliquÃ©e</th>
+                            <th className="px-4 py-2 font-medium border-b border-zinc-200 text-[11px]">N° Lot</th>
+                            <th className="px-4 py-2 font-medium border-b border-zinc-200 text-[11px]">Méthode appliquée</th>
                             <th className="px-4 py-2 font-medium border-b border-zinc-200 text-[11px] text-right">Montant</th>
                           </tr>
                         </thead>
@@ -1239,7 +1262,7 @@ export default function SettingsPage() {
                             <tr key={item.unitId} className="hover:bg-zinc-50/50">
                               <td className="px-4 py-2 font-medium text-zinc-900 font-mono text-xs">Lot {item.lotNumber || item.reference}</td>
                               <td className="px-4 py-2 text-zinc-500 text-[11px]">
-                                {item.method === "PERIOD" ? <span className="text-indigo-600 font-medium">RÃ¨gle spÃ©cifique</span> : "RÃ©glage par dÃ©faut"}
+                                {item.method === "PERIOD" ? <span className="text-indigo-600 font-medium">Règle spécifique</span> : "Réglage par défaut"}
                               </td>
                               <td className="px-4 py-2 text-right font-bold text-zinc-900">{item.calculatedAmount?.toLocaleString()} DH</td>
                             </tr>
@@ -1247,7 +1270,7 @@ export default function SettingsPage() {
                           {simulationResult.unconfigured.map((item) => (
                             <tr key={item.unitId} className="bg-red-50/30">
                               <td className="px-4 py-2 font-medium text-red-900 font-mono text-xs">Lot {item.lotNumber || item.reference}</td>
-                              <td className="px-4 py-2 text-red-500 text-[11px]">Non configurÃ©</td>
+                              <td className="px-4 py-2 text-red-500 text-[11px]">Non configuré</td>
                               <td className="px-4 py-2 text-right font-bold text-red-600">0 DH</td>
                             </tr>
                           ))}
@@ -1269,7 +1292,7 @@ export default function SettingsPage() {
               {deleteTarget.type === "bank" ? "Supprimer la banque ?" : "Supprimer le secteur ?"}
             </h3>
             <p className="mt-2 text-sm text-slate-500">
-              Souhaitez-vous vraiment supprimer <strong>{deleteTarget.name}</strong> ? Cette action est dÃ©finitive.
+              Souhaitez-vous vraiment supprimer <strong>{deleteTarget.name}</strong> ? Cette action est définitive.
             </p>
             <div className="mt-6 flex justify-end gap-3">
               <button
@@ -1293,8 +1316,14 @@ export default function SettingsPage() {
       {/* Group Modal */}
       <Modal
         open={showGroupModal}
-        onClose={() => setShowGroupModal(false)}
-        title="Nouveau groupe de lots"
+        onClose={() => {
+          setShowGroupModal(false);
+          setEditingGroupId(null);
+          setGroupName("");
+          setGroupAmount("");
+          setSelectedUnitIds([]);
+        }}
+        title={editingGroupId ? "Modifier le groupe de lots" : "Nouveau groupe de lots"}
       >
         <div className="p-4 space-y-4">
           <div className="grid grid-cols-2 gap-4">
@@ -1308,7 +1337,7 @@ export default function SettingsPage() {
               />
             </div>
             <div>
-              <label className="block text-sm font-medium text-zinc-700 mb-1">Montant par dÃ©faut (DH)</label>
+              <label className="block text-sm font-medium text-zinc-700 mb-1">Montant par défaut (DH)</label>
               <input
                 type="number"
                 className="h-10 w-full rounded-md border border-zinc-200 px-3 text-sm focus:ring-2 focus:ring-indigo-500 outline-none"
@@ -1320,7 +1349,7 @@ export default function SettingsPage() {
           </div>
           <div>
             <div className="flex items-center justify-between mb-2">
-              <label className="block text-sm font-medium text-zinc-700">Lots Ã  inclure</label>
+              <label className="block text-sm font-medium text-zinc-700">Lots à inclure</label>
               <button
                 type="button"
                 onClick={() => {
@@ -1329,7 +1358,7 @@ export default function SettingsPage() {
                 }}
                 className="text-[11px] font-bold text-indigo-600 hover:underline"
               >
-                Tout sÃ©lectionner
+                Tout sélectionner
               </button>
             </div>
             <div className="max-h-60 overflow-auto border border-zinc-200 rounded-md p-2 bg-zinc-50/50">
@@ -1339,7 +1368,7 @@ export default function SettingsPage() {
                   const isSelected = selectedUnitIds.includes(u.id);
                   return (
                     <label key={u.id} className={`flex items-center gap-3 p-2 rounded-lg border transition cursor-pointer ${
-                      isSelected ? "border-indigo-200 bg-indigo-50" : 
+                      isSelected ? "border-indigo-300 bg-indigo-50" : 
                       isInGroup ? "opacity-50 border-zinc-100 bg-zinc-100 cursor-not-allowed" : "border-zinc-200 bg-white hover:border-zinc-300"
                     }`}>
                       <input
@@ -1352,7 +1381,10 @@ export default function SettingsPage() {
                         }}
                         className="h-4 w-4 rounded text-indigo-600 focus:ring-indigo-500"
                       />
-                      <span className="text-xs font-semibold text-zinc-800">Lot {u.lotNumber || u.reference}</span>
+                      <span className="text-xs font-semibold text-zinc-800">
+                        Lot {u.lotNumber || u.reference} 
+                        {isInGroup && !isSelected && <span className="ml-1 text-[9px] text-zinc-400">(Déjà groupé)</span>}
+                      </span>
                     </label>
                   );
                 })}
@@ -1361,16 +1393,22 @@ export default function SettingsPage() {
           </div>
           <div className="flex justify-end gap-3 pt-4 pt-2">
             <button
-              onClick={() => setShowGroupModal(false)}
+              onClick={() => {
+                setShowGroupModal(false);
+                setEditingGroupId(null);
+                setGroupName("");
+                setGroupAmount("");
+                setSelectedUnitIds([]);
+              }}
               className="px-4 py-2 text-sm font-medium text-zinc-600 hover:bg-zinc-100 rounded-md"
             >
               Annuler
             </button>
-            <button onClick={createGroup}
+            <button onClick={saveGroup}
               disabled={!groupName.trim() || selectedUnitIds.length === 0}
               className="flex items-center gap-2 btn-brand rounded-md px-6 py-2 text-sm font-semibold disabled:opacity-50"
             >
-              CrÃ©er le groupe
+              {editingGroupId ? "Mettre à jour" : "Créer le groupe"}
             </button>
           </div>
         </div>
@@ -1380,7 +1418,7 @@ export default function SettingsPage() {
       <Modal
         open={showPeriodModal}
         onClose={() => setShowPeriodModal(false)}
-        title="Ajouter une pÃ©riode spÃ©cifique"
+        title="Ajouter une période spécifique"
       >
         <div className="p-4 space-y-4">
           <div className="grid grid-cols-2 gap-4">
@@ -1392,8 +1430,8 @@ export default function SettingsPage() {
                 onChange={(e) => setPeriodType(e.target.value as ContributionType)}
               >
                 <option value="GLOBAL_FIXED">Tous les lots</option>
-                <option value="GROUP_FIXED">Un groupe spÃ©cifique</option>
-                <option value="SURFACE">Un lot spÃ©cifique (prorata surface)</option>
+                <option value="GROUP_FIXED">Un groupe spécifique</option>
+                <option value="SURFACE">Un lot spécifique (prorata surface)</option>
               </select>
             </div>
 
@@ -1405,7 +1443,7 @@ export default function SettingsPage() {
                   value={periodGroupId}
                   onChange={(e) => setPeriodGroupId(e.target.value)}
                 >
-                  <option value="">SÃ©lectionner un groupe</option>
+                  <option value="">Sélectionner un groupe</option>
                   {groups.map(g => (
                     <option key={g.id} value={g.id}>{g.name}</option>
                   ))}
@@ -1421,7 +1459,7 @@ export default function SettingsPage() {
                   value={periodUnitId}
                   onChange={(e) => setPeriodUnitId(e.target.value)}
                 >
-                  <option value="">SÃ©lectionner un lot</option>
+                  <option value="">Sélectionner un lot</option>
                   {units.map(u => (
                     <option key={u.id} value={u.id}>Lot {u.lotNumber || u.reference}</option>
                   ))}
@@ -1430,7 +1468,7 @@ export default function SettingsPage() {
             )}
 
             <div>
-              <label className="block text-sm font-medium text-zinc-700 mb-1">Mois dÃ©but</label>
+              <label className="block text-sm font-medium text-zinc-700 mb-1">Mois début</label>
               <input
                 type="month"
                 className="h-10 w-full rounded-md border border-zinc-200 px-3 text-sm"
@@ -1449,7 +1487,7 @@ export default function SettingsPage() {
             </div>
             <div className="col-span-full">
               <label className="block text-sm font-medium text-zinc-700 mb-1">
-                {periodType === "SURFACE" ? "Montant par mÂ² annuel (DH)" : "Montant annuel fixe (DH)"}
+                {periodType === "SURFACE" ? "Montant par m² annuel (DH)" : "Montant annuel fixe (DH)"}
               </label>
               <input
                 type="number"
