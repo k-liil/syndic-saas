@@ -146,7 +146,7 @@ export async function GET(req: Request) {
     })));
   } catch (error: any) {
     console.error("CRITICAL API ERROR /api/units:", error);
-    return NextResponse.json({ error: "Internal Server Error" }, { status: 500 });
+    return NextResponse.json({ error: error.message, stack: error.stack }, { status: 500 });
   }
 }
 
