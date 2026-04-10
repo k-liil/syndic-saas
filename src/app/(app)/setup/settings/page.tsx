@@ -1044,11 +1044,12 @@ export default function SettingsPage() {
             </div>
           </div>
         ) : null}
+
         {tab === "contributions" ? (
           <div className="space-y-8 animate-in fade-in slide-in-from-bottom-2 duration-300">
             {/* Mode de cotisation */}
             <div className="rounded-3xl border border-zinc-200 bg-white p-6 shadow-sm">
-              <h2 className="text-lg font-semibold text-zinc-900 mb-4">Mode de calcul par défaut</h2>
+              <h2 className="text-lg font-semibold text-zinc-900 mb-4">Mode de calcul par dÃ©faut</h2>
               <div className="space-y-4">
                 <div className="flex flex-wrap gap-6">
                   <label className="flex items-center gap-2 cursor-pointer">
@@ -1097,7 +1098,7 @@ export default function SettingsPage() {
                 )}
                 
                 <p className="text-xs text-zinc-500 italic">
-                  Note: Les réglages spécifiques (périodes) priment sur ce réglage par défaut.
+                  Note: Les rÃ©glages spÃ©cifiques (pÃ©riodes) priment sur ce rÃ©glage par dÃ©faut.
                 </p>
               </div>
             </div>
@@ -1149,21 +1150,21 @@ export default function SettingsPage() {
                 ))}
                 {groups.length === 0 && (
                   <div className="col-span-full py-8 text-center text-zinc-400 border-2 border-dashed border-zinc-100 rounded-md">
-                    Aucun groupe créé
+                    Aucun groupe crÃ©Ã©
                   </div>
                 )}
               </div>
             </div>
 
-            {/* Périodes spécifiques */}
+            {/* PÃ©riodes spÃ©cifiques */}
             <div className="rounded-3xl border border-zinc-200 bg-white p-6 shadow-sm">
               <div className="flex items-center justify-between mb-6">
                 <div>
-                  <h2 className="text-lg font-semibold text-zinc-900">Exceptions et Périodes</h2>
-                  <p className="text-sm text-zinc-500">Configurez des montants spécifiques pour des périodes données.</p>
+                  <h2 className="text-lg font-semibold text-zinc-900">Exceptions et PÃ©riodes</h2>
+                  <p className="text-sm text-zinc-500">Configurez des montants spÃ©cifiques pour des pÃ©riodes donnÃ©es.</p>
                 </div>
                 <button
-                  onClick={() =>setShowPeriodModal(true)} className="inline-flex gap-3 h-10 items-center gap-2 rounded-md bg-indigo-50 px-4 text-sm font-medium text-indigo-700 hover:bg-indigo-100 transition" > <Plus className="h-4 w-4" /> Ajouter une période</button>
+                  onClick={() =>setShowPeriodModal(true)} className="inline-flex gap-3 h-10 items-center gap-2 rounded-md bg-indigo-50 px-4 text-sm font-medium text-indigo-700 hover:bg-indigo-100 transition" > <Plus className="h-4 w-4" /> Ajouter une pÃ©riode</button>
               </div>
 
               <div className="overflow-hidden rounded-md border border-zinc-200">
@@ -1172,7 +1173,7 @@ export default function SettingsPage() {
                     <tr>
                       <th className="px-4 py-3">Cible</th>
                       <th className="px-4 py-3">Type</th>
-                      <th className="px-4 py-3">Début</th>
+                      <th className="px-4 py-3">DÃ©but</th>
                       <th className="px-4 py-3">Fin</th>
                       <th className="px-4 py-3 text-right">Montant (DH)</th>
                       <th className="px-4 py-3"></th>
@@ -1192,7 +1193,7 @@ export default function SettingsPage() {
                           </span>
                         </td>
                         <td className="px-4 py-3">{formatPeriod(p.startPeriod)}</td>
-                        <td className="px-4 py-3">{p.endPeriod ? formatPeriod(p.endPeriod) : "Indéterminée"}</td>
+                        <td className="px-4 py-3">{p.endPeriod ? formatPeriod(p.endPeriod) : "IndÃ©terminÃ©e"}</td>
                         <td className="px-4 py-3 text-right font-semibold">{p.amount.toLocaleString()} DH</td>
                         <td className="px-4 py-3 text-right">
                           <button onClick={() =>deletePeriod(p.id)} className="text-zinc-400 hover:text-red-500 transition p-1"> <Trash2 className="h-4 w-4" /></button>
@@ -1202,7 +1203,7 @@ export default function SettingsPage() {
                     {periods.length === 0 && (
                       <tr>
                         <td colSpan={6} className="px-4 py-8 text-center text-zinc-400 italic">
-                          Aucune période spécifique configurée
+                          Aucune pÃ©riode spÃ©cifique configurÃ©e
                         </td>
                       </tr>
                     )}
@@ -1215,7 +1216,7 @@ export default function SettingsPage() {
             <div className="rounded-3xl border border-zinc-200 bg-white p-6 shadow-sm overflow-hidden">
                <div className="mb-6">
                   <h2 className="text-lg font-semibold text-zinc-900">Simulateur de calcul</h2>
-                  <p className="text-sm text-zinc-500 font-medium mt-1">Vérifiez les montants qui seront générés pour une date donnée.</p>
+                  <p className="text-sm text-zinc-500 font-medium mt-1">VÃ©rifiez les montants qui seront gÃ©nÃ©rÃ©s pour une date donnÃ©e.</p>
                 </div>
               
               <div className="flex items-center gap-3 p-4 bg-indigo-50/50 rounded-md mb-6">
@@ -1237,7 +1238,7 @@ export default function SettingsPage() {
                 <div className="space-y-6 animate-in slide-in-from-top-4 duration-500">
                   <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
                     <div className="p-4 rounded-md bg-emerald-50 border border-emerald-100">
-                      <div className="text-emerald-600 text-xs font-bold uppercase tracking-wider mb-1">Total calculé</div>
+                      <div className="text-emerald-600 text-xs font-bold uppercase tracking-wider mb-1">Total calculÃ©</div>
                       <div className="text-2xl font-bold text-emerald-900">{simulationResult.totalConfigured.toLocaleString()} DH</div>
                     </div>
                     <div className="p-4 rounded-md bg-zinc-50 border border-zinc-200">
@@ -1247,13 +1248,13 @@ export default function SettingsPage() {
                   </div>
 
                   <div className="border border-zinc-200 rounded-md overflow-hidden shadow-sm bg-white">
-                    <div className="bg-zinc-50 px-4 py-3 border-b border-zinc-200 font-semibold text-zinc-800 text-sm">Détails des calculs</div>
+                    <div className="bg-zinc-50 px-4 py-3 border-b border-zinc-200 font-semibold text-zinc-800 text-sm">DÃ©tails des calculs</div>
                     <div className="max-h-96 overflow-auto">
                       <table className="w-full text-left text-sm">
                         <thead className="bg-zinc-50/50 text-zinc-500 sticky top-0 backdrop-blur-md z-10">
                           <tr>
-                            <th className="px-4 py-2 font-medium border-b border-zinc-200 text-[11px]">N° Lot</th>
-                            <th className="px-4 py-2 font-medium border-b border-zinc-200 text-[11px]">Méthode appliquée</th>
+                            <th className="px-4 py-2 font-medium border-b border-zinc-200 text-[11px]">NÂ° Lot</th>
+                            <th className="px-4 py-2 font-medium border-b border-zinc-200 text-[11px]">MÃ©thode appliquÃ©e</th>
                             <th className="px-4 py-2 font-medium border-b border-zinc-200 text-[11px] text-right">Montant</th>
                           </tr>
                         </thead>
@@ -1262,7 +1263,7 @@ export default function SettingsPage() {
                             <tr key={item.unitId} className="hover:bg-zinc-50/50">
                               <td className="px-4 py-2 font-medium text-zinc-900 font-mono text-xs">Lot {item.lotNumber || item.reference}</td>
                               <td className="px-4 py-2 text-zinc-500 text-[11px]">
-                                {item.method === "PERIOD" ? <span className="text-indigo-600 font-medium">Règle spécifique</span> : "Réglage par défaut"}
+                                {item.method === "PERIOD" ? <span className="text-indigo-600 font-medium">RÃ¨gle spÃ©cifique</span> : "RÃ©glage par dÃ©faut"}
                               </td>
                               <td className="px-4 py-2 text-right font-bold text-zinc-900">{item.calculatedAmount?.toLocaleString()} DH</td>
                             </tr>
@@ -1270,7 +1271,7 @@ export default function SettingsPage() {
                           {simulationResult.unconfigured.map((item) => (
                             <tr key={item.unitId} className="bg-red-50/30">
                               <td className="px-4 py-2 font-medium text-red-900 font-mono text-xs">Lot {item.lotNumber || item.reference}</td>
-                              <td className="px-4 py-2 text-red-500 text-[11px]">Non configuré</td>
+                              <td className="px-4 py-2 text-red-500 text-[11px]">Non configurÃ©</td>
                               <td className="px-4 py-2 text-right font-bold text-red-600">0 DH</td>
                             </tr>
                           ))}
@@ -1292,7 +1293,7 @@ export default function SettingsPage() {
               {deleteTarget.type === "bank" ? "Supprimer la banque ?" : "Supprimer le secteur ?"}
             </h3>
             <p className="mt-2 text-sm text-slate-500">
-              Souhaitez-vous vraiment supprimer <strong>{deleteTarget.name}</strong> ? Cette action est définitive.
+              Souhaitez-vous vraiment supprimer <strong>{deleteTarget.name}</strong> ? Cette action est dÃ©finitive.
             </p>
             <div className="mt-6 flex justify-end gap-3">
               <button
@@ -1337,7 +1338,7 @@ export default function SettingsPage() {
               />
             </div>
             <div>
-              <label className="block text-sm font-medium text-zinc-700 mb-1">Montant par défaut (DH)</label>
+              <label className="block text-sm font-medium text-zinc-700 mb-1">Montant par dÃ©faut (DH)</label>
               <input
                 type="number"
                 className="h-10 w-full rounded-md border border-zinc-200 px-3 text-sm focus:ring-2 focus:ring-indigo-500 outline-none"
@@ -1349,7 +1350,7 @@ export default function SettingsPage() {
           </div>
           <div>
             <div className="flex items-center justify-between mb-2">
-              <label className="block text-sm font-medium text-zinc-700">Lots à inclure</label>
+              <label className="block text-sm font-medium text-zinc-700">Lots Ã  inclure</label>
               <button
                 type="button"
                 onClick={() => {
@@ -1358,7 +1359,7 @@ export default function SettingsPage() {
                 }}
                 className="text-[11px] font-bold text-indigo-600 hover:underline"
               >
-                Tout sélectionner
+                Tout sÃ©lectionner
               </button>
             </div>
             <div className="max-h-60 overflow-auto border border-zinc-200 rounded-md p-2 bg-zinc-50/50">
@@ -1368,7 +1369,7 @@ export default function SettingsPage() {
                   const isSelected = selectedUnitIds.includes(u.id);
                   return (
                     <label key={u.id} className={`flex items-center gap-3 p-2 rounded-lg border transition cursor-pointer ${
-                      isSelected ? "border-indigo-300 bg-indigo-50" : 
+                      isSelected ? "border-indigo-200 bg-indigo-50" : 
                       isInGroup ? "opacity-50 border-zinc-100 bg-zinc-100 cursor-not-allowed" : "border-zinc-200 bg-white hover:border-zinc-300"
                     }`}>
                       <input
@@ -1381,10 +1382,7 @@ export default function SettingsPage() {
                         }}
                         className="h-4 w-4 rounded text-indigo-600 focus:ring-indigo-500"
                       />
-                      <span className="text-xs font-semibold text-zinc-800">
-                        Lot {u.lotNumber || u.reference} 
-                        {isInGroup && !isSelected && <span className="ml-1 text-[9px] text-zinc-400">(Déjà groupé)</span>}
-                      </span>
+                      <span className="text-xs font-semibold text-zinc-800">Lot {u.lotNumber || u.reference}</span>
                     </label>
                   );
                 })}
@@ -1408,7 +1406,7 @@ export default function SettingsPage() {
               disabled={!groupName.trim() || selectedUnitIds.length === 0}
               className="flex items-center gap-2 btn-brand rounded-md px-6 py-2 text-sm font-semibold disabled:opacity-50"
             >
-              {editingGroupId ? "Mettre à jour" : "Créer le groupe"}
+              {editingGroupId ? "Mettre Ã  jour" : "CrÃ©er le groupe"}
             </button>
           </div>
         </div>
@@ -1418,7 +1416,7 @@ export default function SettingsPage() {
       <Modal
         open={showPeriodModal}
         onClose={() => setShowPeriodModal(false)}
-        title="Ajouter une période spécifique"
+        title="Ajouter une pÃ©riode spÃ©cifique"
       >
         <div className="p-4 space-y-4">
           <div className="grid grid-cols-2 gap-4">
@@ -1430,8 +1428,8 @@ export default function SettingsPage() {
                 onChange={(e) => setPeriodType(e.target.value as ContributionType)}
               >
                 <option value="GLOBAL_FIXED">Tous les lots</option>
-                <option value="GROUP_FIXED">Un groupe spécifique</option>
-                <option value="SURFACE">Un lot spécifique (prorata surface)</option>
+                <option value="GROUP_FIXED">Un groupe spÃ©cifique</option>
+                <option value="SURFACE">Un lot spÃ©cifique (prorata surface)</option>
               </select>
             </div>
 
@@ -1443,7 +1441,7 @@ export default function SettingsPage() {
                   value={periodGroupId}
                   onChange={(e) => setPeriodGroupId(e.target.value)}
                 >
-                  <option value="">Sélectionner un groupe</option>
+                  <option value="">SÃ©lectionner un groupe</option>
                   {groups.map(g => (
                     <option key={g.id} value={g.id}>{g.name}</option>
                   ))}
@@ -1459,7 +1457,7 @@ export default function SettingsPage() {
                   value={periodUnitId}
                   onChange={(e) => setPeriodUnitId(e.target.value)}
                 >
-                  <option value="">Sélectionner un lot</option>
+                  <option value="">SÃ©lectionner un lot</option>
                   {units.map(u => (
                     <option key={u.id} value={u.id}>Lot {u.lotNumber || u.reference}</option>
                   ))}
@@ -1468,7 +1466,7 @@ export default function SettingsPage() {
             )}
 
             <div>
-              <label className="block text-sm font-medium text-zinc-700 mb-1">Mois début</label>
+              <label className="block text-sm font-medium text-zinc-700 mb-1">Mois dÃ©but</label>
               <input
                 type="month"
                 className="h-10 w-full rounded-md border border-zinc-200 px-3 text-sm"
@@ -1487,7 +1485,7 @@ export default function SettingsPage() {
             </div>
             <div className="col-span-full">
               <label className="block text-sm font-medium text-zinc-700 mb-1">
-                {periodType === "SURFACE" ? "Montant par m² annuel (DH)" : "Montant annuel fixe (DH)"}
+                {periodType === "SURFACE" ? "Montant par mÂ² annuel (DH)" : "Montant annuel fixe (DH)"}
               </label>
               <input
                 type="number"
