@@ -124,6 +124,7 @@ export default function LotsPage() {
   const [startMonth, setStartMonth] = useState("");
 
   const [loading, setLoading] = useState(false);
+  const [fetchError, setFetchError] = useState<any>(null);
 
   const lotNumberValue = useMemo(() => {
     const raw = lotNumber.trim();
@@ -148,30 +149,44 @@ export default function LotsPage() {
   }, [editMode, lotNumberValue, buildingId, type]);
 
   async function loadAll() {
-    const [uRes, bRes, oRes] = await Promise.all([
-      fetch(apiUrl("/api/units"), { cache: "no-store" }),
-      fetch(apiUrl("/api/buildings"), { cache: "no-store" }),
-      fetch(apiUrl("/api/owners"), { cache: "no-store" }),
-    ]);
+    setLoading(true);
+    setFetchError(null);
+    try {
+      const [uRes, bRes, oRes] = await Promise.all([
+        fetch(apiUrl("/api/units"), { cache: "no-store" }),
+        fetch(apiUrl("/api/buildings"), { cache: "no-store" }),
+        fetch(apiUrl("/api/owners"), { cache: "no-store" }),
+      ]);
 
-    const u = await uRes.json();
-    const b = await bRes.json();
-    const o = await oRes.json();
+      if (!uRes.ok) {
+        const uErr = await uRes.json().catch(() => ({ error: "Impossible de lire la réponse" }));
+        setFetchError(uErr);
+      } else {
+        const u = await uRes.json();
+        const units = Array.isArray(u) ? u : [];
+        units.sort((a: Unit, b: Unit) => {
+          const aLot = lotNumberSortValue(a.lotNumber);
+          const bLot = lotNumberSortValue(b.lotNumber);
+          if (aLot !== bLot) return aLot - bLot;
+          return (a.reference ?? "").localeCompare(b.reference ?? "", "fr");
+        });
+        setLots(units);
+      }
 
-    const units = Array.isArray(u) ? u : [];
-    units.sort((a: Unit, b: Unit) => {
-      const aLot = lotNumberSortValue(a.lotNumber);
-      const bLot = lotNumberSortValue(b.lotNumber);
-      if (aLot !== bLot) return aLot - bLot;
-      return (a.reference ?? "").localeCompare(b.reference ?? "", "fr");
-    });
+      const b = await bRes.json().catch(() => []);
+      const o = await oRes.json().catch(() => []);
 
-    setLots(units);
-    setBuildings(Array.isArray(b) ? b : []);
-    setOwners(Array.isArray(o) ? o : []);
+      setBuildings(Array.isArray(b) ? b : []);
+      setOwners(Array.isArray(o) ? o : []);
 
-    if (!buildingId && Array.isArray(b) && b.length > 0) {
-      setBuildingId(b[0].id);
+      if (!buildingId && Array.isArray(b) && b.length > 0) {
+        setBuildingId(b[0].id);
+      }
+    } catch (err: any) {
+      console.error("Fetch error:", err);
+      setFetchError({ error: err.message, stack: err.stack });
+    } finally {
+      setLoading(false);
     }
   }
 
@@ -902,6 +917,40 @@ export default function LotsPage() {
           </div>
         </Modal>
       ) : null}
+
+      {fetchError && (
+        <div className="mt-8 rounded-lg border border-red-200 bg-red-50 p-6">
+          <h2 className="text-lg font-bold text-red-800 mb-2 flex items-center gap-2">
+            ⚠️ Diagnostic de l&apos;erreur (DEBUG)
+          </h2>
+          <div className="space-y-4">
+            <div>
+              <p className="text-sm font-semibold text-red-900">Message :</p>
+              <p className="text-sm text-red-700 italic bg-white/50 p-2 rounded border border-red-100 mt-1">
+                {fetchError.error || "Erreur inconnue"}
+              </p>
+            </div>
+            
+            {fetchError.stack && (
+              <div>
+                <p className="text-sm font-semibold text-red-900">Emplacement de l&apos;erreur (Stack Trace) :</p>
+                <pre className="mt-1 max-h-60 overflow-auto rounded bg-red-900 p-3 text-[10px] text-red-100 font-mono leading-relaxed">
+                  {fetchError.stack}
+                </pre>
+              </div>
+            )}
+            
+            <div className="pt-2">
+              <button 
+                onClick={() => loadAll()}
+                className="rounded-md bg-red-600 px-4 py-2 text-sm font-semibold text-white hover:bg-red-700 transition-colors"
+              >
+                Réessayer le diagnostic
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
     </div>
   );
 }

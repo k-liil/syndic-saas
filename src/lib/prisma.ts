@@ -16,14 +16,8 @@ export const prisma =
   });
 
 if (globalForPrisma.isPrismaLoggingEnabled === undefined) {
+  // Always enable for debugging in production
   globalForPrisma.isPrismaLoggingEnabled = true;
-  // Initialize from DB if possible
-  prisma.systemSettings
-    .findFirst()
-    .then((s) => {
-      if (s) globalForPrisma.isPrismaLoggingEnabled = s.prismaLogging;
-    })
-    .catch(() => {});
 }
 
 // @ts-ignore - Prisma event types can be tricky
