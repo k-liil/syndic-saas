@@ -115,7 +115,8 @@ export async function GET(req: Request) {
           for (const gu of (item.groupUnits || [])) {
             const amount = gu.group?.periods ? getApplicablePeriod(gu.group.periods, checkDate) : null;
             if (amount !== null) { contributionAmount = amount; break; }
-            if (gu.group?.defaultAmount) { contributionAmount = Number(gu.group.defaultAmount); break; }
+            
+            // Temporary removed defaultAmount check to restore site
           }
         } else if (contributionType === "SURFACE") {
           const amountPerSquareMeter = item.contributionPeriods ? getApplicablePeriod(item.contributionPeriods, checkDate) : null;
