@@ -39,18 +39,23 @@ export async function GET(req: Request) {
 
     let orgId = await getOrgIdFromRequest(req, gate);
     
+    console.log(`[DEBUG_API_UNITS] Initial orgId detected: ${orgId}`);
+    console.log(`[DEBUG_API_UNITS] User role: ${gate.session?.user?.role}, isSuperAdmin: ${gate.isSuperAdmin}`);
+
     // Fallback: if orgId is missing but we have a gate orgId, use it
     if (!orgId && gate.organizationId) {
       orgId = gate.organizationId;
+      console.log(`[DEBUG_API_UNITS] Using Gate fallback orgId: ${orgId}`);
     }
 
     if (!orgId) {
-      console.warn("API Units: OrgId not found even with fallback");
-      return NextResponse.json([]);
+      console.warn("[DEBUG_API_UNITS] OrgId not found even with fallback");
+      return NextResponse.json({ _debug: "OrgId missing", gateOrgId: gate.organizationId, isSuperAdmin: gate.isSuperAdmin });
     }
 
     const { searchParams } = new URL(req.url);
     const type = searchParams.get("type");
+    console.log(`[DEBUG_API_UNITS] Final orgId: ${orgId}, SearchParams type: ${type}`);
 
     const where: any = { organizationId: orgId };
     if (type && ["APARTMENT", "GARAGE", "COMMERCIAL"].includes(type)) {

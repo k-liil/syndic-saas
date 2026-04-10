@@ -158,6 +158,9 @@ export default function LotsPage() {
     const b = await bRes.json();
     const o = await oRes.json();
 
+    console.log("[DEBUG_UNITS_PAGE] API Units response:", u);
+    console.log("[DEBUG_UNITS_PAGE] API Buildings response:", b);
+
     const units = Array.isArray(u) ? u : [];
     units.sort((a: Unit, b: Unit) => {
       const aLot = lotNumberSortValue(a.lotNumber);
