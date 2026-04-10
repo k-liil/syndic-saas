@@ -2,10 +2,9 @@ import { prisma } from "@/lib/prisma";
 import { AuthGateSuccess, getOrganizationIdsForRole } from "@/lib/authz";
 
 export async function getOrgId(gate: AuthGateSuccess): Promise<string | undefined> {
-  if (gate.isSuperAdmin) {
-    return undefined;
-  }
-
+  // If it's a super admin, we can fallback to the first accessible org if needed
+  // but usually they should pass an orgId param.
+  
   return (
     getOrganizationIdsForRole(gate, "MANAGER")[0] ??
     gate.organizationId ??
