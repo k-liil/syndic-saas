@@ -264,20 +264,20 @@ export function MaintenanceContent({ initialLogging }: { initialLogging: boolean
                   </td>
                   <td className="px-4 py-3 text-right">
                     {fy.isDeletable ? (
-                      <button
-                        onClick={() => handleDeleteFy(fy.id, fy.year)}
-                        disabled={deletingFy === fy.id}
-                        className="p-1.5 rounded-lg text-slate-400 hover:bg-rose-50 hover:text-rose-600 transition-all active:scale-95"
-                        title="Supprimer cet exercice"
-                      >
-                        <Trash2 className="h-4 w-4" />
-                      </button>
+                      <span title="Supprimer cet exercice">
+                        <button
+                          onClick={() => handleDeleteFy(fy.id, fy.year)}
+                          disabled={deletingFy === fy.id}
+                          className="p-1.5 rounded-lg text-slate-400 hover:bg-rose-50 hover:text-rose-600 transition-all active:scale-95"
+                        >
+                          <Trash2 className="h-4 w-4" />
+                        </button>
+                      </span>
                     ) : (
                       <div className="flex justify-end pr-1.5">
-                        <AlertTriangle 
-                          className="h-4 w-4 text-amber-400 cursor-help" 
-                          title={fy.isStartYear ? "Impossible de supprimer l'année de démarrage." : "Contient des données comptables."} 
-                        />
+                        <span title={fy.isStartYear ? "Impossible de supprimer l'année de démarrage." : "Contient des données comptables."}>
+                          <AlertTriangle className="h-4 w-4 text-amber-400 cursor-help" />
+                        </span>
                       </div>
                     )}
                   </td>
