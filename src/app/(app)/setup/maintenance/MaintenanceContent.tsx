@@ -1,8 +1,25 @@
 "use client";
 
-import { togglePrismaLogging, searchUnitsInOrg, reallocateUnitsFIFO } from "./actions";
+import { 
+  togglePrismaLogging, 
+  searchUnitsInOrg, 
+  reallocateUnitsFIFO, 
+  getFiscalYearsAudit, 
+  deleteFiscalYearSafe 
+} from "./actions";
 import { useState, useEffect } from "react";
-import { Search, X, RefreshCcw, Landmark, LayoutGrid } from "lucide-react";
+import { 
+  Search, 
+  X, 
+  RefreshCcw, 
+  Landmark, 
+  LayoutGrid, 
+  Calendar, 
+  Trash2, 
+  AlertTriangle, 
+  CheckCircle2,
+  Info
+} from "lucide-react";
 import { useOrgId } from "@/lib/org-context";
 import Link from "next/link";
 
@@ -19,6 +36,27 @@ export function MaintenanceContent({ initialLogging }: { initialLogging: boolean
   const [searchResults, setSearchResults] = useState<any[]>([]);
   const [selectedUnits, setSelectedUnits] = useState<any[]>([]);
   const [searching, setSearching] = useState(false);
+
+  // Fiscal Year Audit State
+  const [fiscalAudit, setFiscalAudit] = useState<any[]>([]);
+  const [loadingAudit, setLoadingAudit] = useState(false);
+  const [deletingFy, setDeletingFy] = useState<string | null>(null);
+
+  const fetchFiscalAudit = async () => {
+    setLoadingAudit(true);
+    try {
+      const res = await getFiscalYearsAudit();
+      if (res.ok) {
+        setFiscalAudit(res.data);
+      }
+    } finally {
+      setLoadingAudit(false);
+    }
+  };
+
+  useEffect(() => {
+    fetchFiscalAudit();
+  }, []);
 
   useEffect(() => {
     if (search.length < 2 || !orgId) {
@@ -67,6 +105,23 @@ export function MaintenanceContent({ initialLogging }: { initialLogging: boolean
     }
   };
 
+  const handleDeleteFy = async (fyId: string, year: number) => {
+    if (!confirm(`Voulez-vous vraiment supprimer l'exercice ${year} ? Cette action supprimera également toutes les échéances (MonthlyDue) de cette période.`)) return;
+    
+    setDeletingFy(fyId);
+    try {
+      const res = await deleteFiscalYearSafe(fyId);
+      if (res.ok) {
+        alert(`L'exercice ${year} a été supprimé ainsi que ses échéances.`);
+        fetchFiscalAudit();
+      } else {
+        alert("Erreur : " + res.error);
+      }
+    } finally {
+      setDeletingFy(null);
+    }
+  };
+
   const handleToggle = async (val: boolean) => {
     setLoading(true);
     try {
@@ -80,7 +135,8 @@ export function MaintenanceContent({ initialLogging }: { initialLogging: boolean
   };
 
   return (
-    <div className="space-y-6">
+    <div className="space-y-6 pb-20">
+      {/* SECTION: DB LOGS */}
       <div className="rounded-md border border-slate-200 bg-white shadow-sm overflow-hidden">
         <div className="p-4 border-b border-slate-100 bg-slate-50/50">
           <h3 className="text-sm font-semibold text-slate-800">Logs de la base de données</h3>
@@ -107,6 +163,7 @@ export function MaintenanceContent({ initialLogging }: { initialLogging: boolean
         </div>
       </div>
 
+      {/* SECTION: DEBTS REPAIR */}
       <div className="rounded-md border border-amber-200 bg-white shadow-sm overflow-hidden">
         <div className="p-4 border-b border-amber-100 bg-amber-50/50 flex items-center justify-between">
           <h3 className="text-sm font-semibold text-amber-900">Intégrité des Données</h3>
@@ -153,6 +210,98 @@ export function MaintenanceContent({ initialLogging }: { initialLogging: boolean
         </div>
       </div>
 
+      {/* SECTION: FISCAL YEARS MANAGEMENT */}
+      <div className="rounded-md border border-slate-200 bg-white shadow-sm overflow-hidden">
+        <div className="p-4 border-b border-slate-100 bg-slate-50/50 flex items-center justify-between">
+          <div className="flex items-center gap-2">
+            <Calendar className="h-4 w-4 text-indigo-600" />
+            <h3 className="text-sm font-semibold text-slate-800">Gestion des Exercices Fiscaux</h3>
+          </div>
+          <button 
+            onClick={fetchFiscalAudit}
+            disabled={loadingAudit}
+            className="text-slate-400 hover:text-indigo-600 transition-colors"
+          >
+            <RefreshCcw className={`h-4 w-4 ${loadingAudit ? 'animate-spin' : ''}`} />
+          </button>
+        </div>
+        <div className="p-0 overflow-x-auto">
+          <table className="w-full text-left text-xs">
+            <thead className="bg-slate-50 border-b border-slate-100 text-slate-500 uppercase tracking-tighter font-bold">
+              <tr>
+                <th className="px-4 py-3">Organisation</th>
+                <th className="px-4 py-3">Année</th>
+                <th className="px-4 py-3 text-center">Échéances</th>
+                <th className="px-4 py-3 text-center">Reçus / Paiements</th>
+                <th className="px-4 py-3 text-right">Action</th>
+              </tr>
+            </thead>
+            <tbody className="divide-y divide-slate-50 text-slate-700">
+              {fiscalAudit.map((fy) => (
+                <tr key={fy.id} className="hover:bg-slate-50/30 transition-colors">
+                  <td className="px-4 py-3 font-medium">{fy.orgName}</td>
+                  <td className="px-4 py-3">
+                    <div className="flex items-center gap-2">
+                      <span className="font-bold text-slate-900">{fy.year}</span>
+                      {fy.isStartYear && (
+                        <span className="inline-flex items-center rounded-md bg-indigo-50 px-1.5 py-0.5 text-[10px] font-bold text-indigo-700 uppercase ring-1 ring-inset ring-indigo-700/10">
+                          Démarrage
+                        </span>
+                      )}
+                    </div>
+                  </td>
+                  <td className="px-4 py-3 text-center font-mono">{fy.dueCount}</td>
+                  <td className="px-4 py-3 text-center">
+                    <div className="flex items-center justify-center gap-2">
+                      <span title="Reçus Contribution" className={fy.receiptCount > 0 ? "text-amber-600 font-bold" : "text-slate-300"}>
+                        {fy.receiptCount}R
+                      </span>
+                      <span className="text-slate-200">/</span>
+                      <span title="Paiements Fournisseurs" className={fy.paymentCount > 0 ? "text-rose-600 font-bold" : "text-slate-300"}>
+                        {fy.paymentCount}P
+                      </span>
+                    </div>
+                  </td>
+                  <td className="px-4 py-3 text-right">
+                    {fy.isDeletable ? (
+                      <button
+                        onClick={() => handleDeleteFy(fy.id, fy.year)}
+                        disabled={deletingFy === fy.id}
+                        className="p-1.5 rounded-lg text-slate-400 hover:bg-rose-50 hover:text-rose-600 transition-all active:scale-95"
+                        title="Supprimer cet exercice"
+                      >
+                        <Trash2 className="h-4 w-4" />
+                      </button>
+                    ) : (
+                      <div className="flex justify-end pr-1.5">
+                        <AlertTriangle 
+                          className="h-4 w-4 text-amber-400 cursor-help" 
+                          title={fy.isStartYear ? "Impossible de supprimer l'année de démarrage." : "Contient des données comptables."} 
+                        />
+                      </div>
+                    )}
+                  </td>
+                </tr>
+              ))}
+              {fiscalAudit.length === 0 && !loadingAudit && (
+                <tr>
+                  <td colSpan={5} className="px-4 py-10 text-center text-slate-400 italic">
+                    Aucun exercice fiscal identifié.
+                  </td>
+                </tr>
+              )}
+            </tbody>
+          </table>
+        </div>
+        <div className="p-3 bg-slate-50/50 border-t border-slate-100 flex items-center gap-2">
+          <Info className="h-3.5 w-3.5 text-indigo-500" />
+          <p className="text-[10px] text-slate-500 italic">
+            Note: Un exercice ne peut être supprimé que s'il est vide de tout encaissement ou paiement fournisseur.
+          </p>
+        </div>
+      </div>
+
+      {/* SECTION: GRANULAR FIFO RECALCULATE */}
       <div className="rounded-md border border-sky-200 bg-white shadow-sm">
         <div className="p-4 border-b border-sky-100 bg-sky-50/50 flex items-center justify-between rounded-t-xl">
           <div className="flex items-center gap-2">

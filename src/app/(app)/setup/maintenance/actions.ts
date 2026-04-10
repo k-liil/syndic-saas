@@ -170,3 +170,131 @@ export async function reallocateUnitsFIFO(unitIds: string[]) {
     return { ok: false, error: String(error) };
   }
 }
+
+export async function getFiscalYearsAudit() {
+  try {
+    const gate = await requireSuperAdmin();
+    if (!gate.ok) return { ok: false, error: "Non autorisé" };
+
+    const orgs = await prisma.organization.findMany({
+      select: {
+        id: true,
+        name: true,
+        settings: {
+          select: { startYear: true }
+        },
+        fiscalYears: {
+          orderBy: { year: "desc" }
+        }
+      }
+    });
+
+    const auditData: any[] = [];
+
+    for (const org of orgs) {
+      const startYear = org.settings[0]?.startYear || 2026;
+      
+      for (const fy of org.fiscalYears) {
+        // Count dependencies for this year
+        const start = fy.startsAt;
+        const end = fy.endsAt;
+
+        const [receiptCount, otherReceiptCount, paymentCount, dueCount] = await Promise.all([
+          prisma.receipt.count({
+            where: { organizationId: org.id, date: { gte: start, lte: end } }
+          }),
+          prisma.otherReceipt.count({
+            where: { organizationId: org.id, date: { gte: start, lte: end } }
+          }),
+          prisma.payment.count({
+            where: { organizationId: org.id, date: { gte: start, lte: end } }
+          }),
+          prisma.monthlyDue.count({
+            where: { organizationId: org.id, period: { gte: start, lte: end } }
+          })
+        ]);
+
+        auditData.push({
+          id: fy.id,
+          orgId: org.id,
+          orgName: org.name,
+          year: fy.year,
+          isStartYear: fy.year === startYear,
+          receiptCount,
+          otherReceiptCount,
+          paymentCount,
+          dueCount,
+          isDeletable: receiptCount === 0 && otherReceiptCount === 0 && paymentCount === 0 && fy.year !== startYear
+        });
+      }
+    }
+
+    return { ok: true, data: auditData };
+  } catch (error) {
+    console.error("Fiscal year audit failed:", error);
+    return { ok: false, error: String(error) };
+  }
+}
+
+export async function deleteFiscalYearSafe(fyId: string) {
+  try {
+    const gate = await requireSuperAdmin();
+    if (!gate.ok) return { ok: false, error: "Non autorisé" };
+
+    const fy = await prisma.fiscalYear.findUnique({
+      where: { id: fyId },
+      include: {
+        organization: {
+          include: { settings: true }
+        }
+      }
+    });
+
+    if (!fy) return { ok: false, error: "Exercice introuvable" };
+
+    const startYear = fy.organization.settings[0]?.startYear || 2026;
+    if (fy.year === startYear) {
+      return { ok: false, error: "Impossible de supprimer l'exercice de démarrage de l'organisation." };
+    }
+
+    // Double check counts before deletion
+    const [receiptCount, otherReceiptCount, paymentCount] = await Promise.all([
+      prisma.receipt.count({
+        where: { organizationId: fy.organizationId, date: { gte: fy.startsAt, lte: fy.endsAt } }
+      }),
+      prisma.otherReceipt.count({
+        where: { organizationId: fy.organizationId, date: { gte: fy.startsAt, lte: fy.endsAt } }
+      }),
+      prisma.payment.count({
+        where: { organizationId: fy.organizationId, date: { gte: fy.startsAt, lte: fy.endsAt } }
+      })
+    ]);
+
+    if (receiptCount > 0 || otherReceiptCount > 0 || paymentCount > 0) {
+      return { ok: false, error: "Cet exercice contient des données comptables et ne peut pas être supprimé." };
+    }
+
+    console.log(`[MAINTENANCE] Deleting Fiscal Year ${fy.year} for ${fy.organization.name}`);
+
+    await prisma.$transaction(async (tx) => {
+      // Delete associated MonthlyDues
+      await tx.monthlyDue.deleteMany({
+        where: {
+          organizationId: fy.organizationId,
+          period: { gte: fy.startsAt, lte: fy.endsAt }
+        }
+      });
+
+      // Delete the fiscal year itself
+      await tx.fiscalYear.delete({
+        where: { id: fyId }
+      });
+    });
+
+    revalidatePath("/setup/maintenance");
+    return { ok: true };
+  } catch (error) {
+    console.error("Failed to delete fiscal year:", error);
+    return { ok: false, error: String(error) };
+  }
+}
