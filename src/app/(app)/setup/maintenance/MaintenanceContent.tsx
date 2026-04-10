@@ -4,6 +4,7 @@ import { togglePrismaLogging, searchUnitsInOrg, reallocateUnitsFIFO } from "./ac
 import { useState, useEffect } from "react";
 import { Search, X, RefreshCcw, Landmark, LayoutGrid } from "lucide-react";
 import { useOrgId } from "@/lib/org-context";
+import Link from "next/link";
 
 export function MaintenanceContent({ initialLogging }: { initialLogging: boolean }) {
   const [enabled, setEnabled] = useState(initialLogging);
@@ -103,12 +104,6 @@ export function MaintenanceContent({ initialLogging }: { initialLogging: boolean
               <div className="w-11 h-6 bg-slate-200 peer-focus:outline-none rounded-full peer peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:shadow-sm after:rounded-full after:h-5 after:w-5 after:transition-all peer-checked:bg-gradient-to-r peer-checked:from-cyan-500 peer-checked:to-blue-600"></div>
             </div>
           </label>
-          
-          {loading && (
-            <p className="mt-2 text-[10px] text-sky-600 font-medium animate-pulse">
-              Mise à jour en cours...
-            </p>
-          )}
         </div>
       </div>
 
@@ -157,6 +152,7 @@ export function MaintenanceContent({ initialLogging }: { initialLogging: boolean
           )}
         </div>
       </div>
+
       <div className="rounded-md border border-sky-200 bg-white shadow-sm">
         <div className="p-4 border-b border-sky-100 bg-sky-50/50 flex items-center justify-between rounded-t-xl">
           <div className="flex items-center gap-2">
@@ -164,14 +160,14 @@ export function MaintenanceContent({ initialLogging }: { initialLogging: boolean
             <h3 className="text-sm font-semibold text-sky-900">Recalcul Granulaire (FIFO)</h3>
           </div>
           <span className="inline-flex gap-3 items-center rounded-md bg-sky-100 px-2 py-0.5 text-xs font-medium text-sky-800">
-            Nouveau
+            Automatisé
           </span>
         </div>
         <div className="p-4 space-y-4">
           <div className="space-y-1">
             <span className="text-sm font-medium text-slate-700">Sélectionner les lots à recalculer</span>
             <p className="text-xs text-slate-500">
-              Recherchez des lots par numéro, copropriétaire ou copropriété pour forcer une réallocation FIFO.
+              Forcer une réallocation FIFO complète pour les lots sélectionnés.
             </p>
           </div>
 
@@ -201,17 +197,9 @@ export function MaintenanceContent({ initialLogging }: { initialLogging: boolean
                     <div className="flex flex-col">
                       <div className="flex items-center gap-2">
                         <span className="text-xs font-bold text-slate-800">Lot {u.lotNumber}</span>
-                        {u.reference && (
-                          <>
-                            <span className="text-[10px] text-slate-400">•</span>
-                            <span className="text-xs text-slate-600">{u.reference}</span>
-                          </>
-                        )}
+                        {u.reference && <span className="text-xs text-slate-600">{u.reference}</span>}
                       </div>
-                      <span className="text-[10px] text-slate-400 flex items-center gap-1 mt-0.5">
-                        <Landmark className="h-2.5 w-2.5" />
-                        {u.buildingName}
-                      </span>
+                      <span className="text-[10px] text-slate-400">{u.buildingName}</span>
                     </div>
                     <LayoutGrid className="h-3.5 w-3.5 text-slate-300 group-hover:text-sky-500" />
                   </button>
@@ -228,10 +216,7 @@ export function MaintenanceContent({ initialLogging }: { initialLogging: boolean
                   className="flex items-center gap-2 rounded-md border border-sky-100 bg-sky-50 px-3 py-1 text-xs font-medium text-sky-700 shadow-sm"
                 >
                   <span className="font-bold">Lot {u.lotNumber}</span>
-                  <button
-                    onClick={() => handleRemoveUnit(u.id)}
-                    className="hover:text-sky-900 transition-colors"
-                  >
+                  <button onClick={() => handleRemoveUnit(u.id)} className="hover:text-sky-900 transition-colors">
                     <X className="h-3 w-3" />
                   </button>
                 </div>
@@ -240,7 +225,8 @@ export function MaintenanceContent({ initialLogging }: { initialLogging: boolean
           )}
 
           <div className="pt-2">
-            <button onClick={handleRecalculate}
+            <button
+              onClick={handleRecalculate}
               disabled={recalculating || selectedUnits.length === 0}
               className="w-full flex items-center justify-center gap-2 rounded-lg bg-gradient-to-r from-sky-400 to-sky-600 px-4 py-3 text-xs font-bold text-white shadow-[0_10px_20px_rgba(14,165,233,0.2)] transition-all hover:scale-[1.01] active:scale-[0.98] disabled:opacity-50"
             >
@@ -256,6 +242,14 @@ export function MaintenanceContent({ initialLogging }: { initialLogging: boolean
                 </>
               )}
             </button>
+            <div className="mt-4 text-center">
+              <Link
+                href="/setup/allocations"
+                className="text-[11px] font-bold text-sky-600 hover:text-sky-800 uppercase tracking-widest hover:underline transition-all flex items-center justify-center gap-2"
+              >
+                Ouvrir l'audit détaillé & nettoyage →
+              </Link>
+            </div>
           </div>
         </div>
       </div>
@@ -263,16 +257,13 @@ export function MaintenanceContent({ initialLogging }: { initialLogging: boolean
       <div className="rounded-md border border-indigo-200 bg-white shadow-sm overflow-hidden">
         <div className="p-4 border-b border-indigo-100 bg-indigo-50/50 flex items-center justify-between">
           <h3 className="text-sm font-semibold text-indigo-900">Sauvegardes GitHub</h3>
-          <span className="inline-flex gap-3 items-center rounded-md bg-indigo-100 px-2 py-0.5 text-xs font-medium text-indigo-800">
-            Nouveau
-          </span>
         </div>
         <div className="p-4">
           <div className="flex items-center justify-between">
             <div className="space-y-0.5 max-w-[70%]">
-              <span className="text-sm font-medium text-slate-700">Gérer les sauvegardes</span>
+              <span className="text-sm font-medium text-slate-700">Historique des sauvegardes</span>
               <p className="text-xs text-slate-500">
-                Consulter l'historique des fichiers stockés sur GitHub et déclencher une sauvegarde manuelle immédiate.
+                Consulter les fichiers stockés sur GitHub et déclencher une sauvegarde manuelle.
               </p>
             </div>
             <button
