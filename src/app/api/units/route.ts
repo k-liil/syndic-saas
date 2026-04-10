@@ -34,8 +34,7 @@ export async function GET(req: Request) {
   try {
     const gate = await requireAuth();
     if (!gate.ok) {
-      console.log("[UNITS_DEBUG] requireAuth failed:", gate.error);
-      return NextResponse.json({ error: gate.error }, { status: gate.status });
+      return NextResponse.json({ error: gate.error, stack: "AUTH_FAILED" }, { status: gate.status });
     }
 
     let orgId = await getOrgIdFromRequest(req, gate);
@@ -46,11 +45,8 @@ export async function GET(req: Request) {
     }
 
     if (!orgId) {
-      console.log("[UNITS_DEBUG] orgId not found in request or session.");
       return NextResponse.json([]);
     }
-
-    console.log(`[UNITS_DEBUG] Processing request for org: ${orgId}`);
 
     const { searchParams } = new URL(req.url);
     const type = searchParams.get("type");
@@ -60,7 +56,6 @@ export async function GET(req: Request) {
       where.type = type;
     }
 
-    console.log("[UNITS_DEBUG] Fetching items from prisma...");
     const items = await prisma.unit.findMany({
       where,
       include: {
@@ -84,12 +79,9 @@ export async function GET(req: Request) {
       }
     });
 
-    console.log(`[UNITS_DEBUG] Found ${items.length} units.`);
-
     const settings = await prisma.appSettings.findFirst({
       where: { organizationId: orgId },
     });
-    console.log("[UNITS_DEBUG] Settings fetched:", settings ? "found" : "null");
 
     const globalPeriods = await prisma.contributionPeriod.findMany({
       where: {
@@ -100,31 +92,29 @@ export async function GET(req: Request) {
       },
       orderBy: { startPeriod: "desc" },
     });
-    console.log(`[UNITS_DEBUG] Global periods: ${globalPeriods.length}`);
 
     const checkDate = new Date();
     const contributionType = settings?.contributionType ?? "GLOBAL_FIXED";
 
-    // Sorting block
-    console.log("[UNITS_DEBUG] Starting sort item list...");
-    try {
-      items.sort((a: any, b: any) => {
-        const aLot = sortLotNumber(a.lotNumber);
-        const bLot = sortLotNumber(b.lotNumber);
-        if (aLot !== bLot) return aLot - bLot;
-        const buildingCompare = (a.building?.name ?? "ZZZZZZ").localeCompare(b.building?.name ?? "ZZZZZZ", "fr", { sensitivity: "base" });
-        if (buildingCompare !== 0) return buildingCompare;
-        return (a.reference ?? "").localeCompare(b.reference ?? "", "fr", { numeric: true, sensitivity: "base" });
-      });
-      console.log("[UNITS_DEBUG] Sorting check complete.");
-    } catch (sortErr) {
-      console.error("[UNITS_DEBUG] Error during item sort:", sortErr);
-      throw new Error("SORT_FAILED");
-    }
+    // HARDENING: Reliable sorting independent of locale packs
+    items.sort((a: any, b: any) => {
+      const aLot = sortLotNumber(a.lotNumber);
+      const bLot = sortLotNumber(b.lotNumber);
+      if (aLot !== bLot) return aLot - bLot;
+      
+      const aB = a.building?.name || "";
+      const bB = b.building?.name || "";
+      if (aB < bB) return -1;
+      if (aB > bB) return 1;
+      
+      const aR = a.reference || "";
+      const bR = b.reference || "";
+      if (aR < bR) return -1;
+      if (aR > bR) return 1;
+      return 0;
+    });
 
-    // Enrichment block
-    console.log("[UNITS_DEBUG] Mapping items for enrichment...");
-    const enrichedItems = items.map((item: any, idx) => {
+    const enrichedItems = items.map((item: any) => {
       let contributionAmount: number | null = null;
       try {
         if (contributionType === "GLOBAL_FIXED") {
@@ -142,35 +132,35 @@ export async function GET(req: Request) {
           }
         }
       } catch (e) {
-        console.warn(`[UNITS_DEBUG] Map failure unit[${idx}] / ID: ${item.id}:`, e);
+         console.warn("Contribution calc error:", e);
       }
 
+      // Convert Decimal fields explicitly
+      const raw = { ...item };
+      if (raw.surface && typeof raw.surface === 'object' && raw.surface.constructor?.name === 'Decimal') {
+          raw.surface = Number(raw.surface);
+      }
+      
       return {
-        ...item,
-        surface: item.surface ? Number(item.surface) : null,
+        ...raw,
+        surface: raw.surface ? Number(raw.surface) : null,
         contributionAmount,
         activeOwnership: item.ownerships?.[0] ?? null,
       };
     });
-    console.log("[UNITS_DEBUG] Enrichment complete.");
 
-    // Serialization block
-    console.log("[UNITS_DEBUG] Serializing result JSON...");
-    try {
-      const response = NextResponse.json(JSON.parse(JSON.stringify(enrichedItems, (key, value) => {
-        if (typeof value === 'object' && value && value.constructor?.name === 'Decimal') return Number(value);
-        return value;
-      })));
-      console.log("[UNITS_DEBUG] Response ready.");
-      return response;
-    } catch (serErr) {
-      console.error("[UNITS_DEBUG] Serialization CRASH:", serErr);
-      throw new Error("SERIALIZATION_FAILED");
-    }
-
+    // Final safety serialization
+    return NextResponse.json(JSON.parse(JSON.stringify(enrichedItems, (key, value) => {
+      if (typeof value === 'object' && value && (value.constructor?.name === 'Decimal' || value._isDecimal)) return Number(value);
+      return value;
+    })));
   } catch (error: any) {
     console.error("CRITICAL API ERROR /api/units:", error, error.stack);
-    return NextResponse.json({ error: error.message, stack: error.stack }, { status: 500 });
+    return NextResponse.json({ 
+      error: error.message || "INTERNAL_ERROR", 
+      stack: error.stack,
+      unitsCount: typeof items !== 'undefined' ? items.length : -1
+    }, { status: 500 });
   }
 }
 
