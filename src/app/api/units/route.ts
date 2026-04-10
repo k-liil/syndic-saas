@@ -37,80 +37,56 @@ export async function GET(req: Request) {
       return NextResponse.json({ error: gate.error }, { status: gate.status });
     }
 
-    const orgId = await getOrgIdFromRequest(req, gate);
+    let orgId = await getOrgIdFromRequest(req, gate);
+    
+    // Fallback: if orgId is missing but we have a gate orgId, use it
+    if (!orgId && gate.organizationId) {
+      orgId = gate.organizationId;
+    }
+
     if (!orgId) {
-      return NextResponse.json({ error: "Organization not found" }, { status: 400 });
+      console.warn("API Units: OrgId not found even with fallback");
+      return NextResponse.json([]);
     }
 
     const { searchParams } = new URL(req.url);
     const type = searchParams.get("type");
 
-    const where =
-      type && ["APARTMENT", "GARAGE", "COMMERCIAL"].includes(type)
-        ? { organizationId: orgId!, type: type as "APARTMENT" | "GARAGE" | "COMMERCIAL" }
-        : { organizationId: orgId! };
-
-    const settings = await prisma.appSettings.findFirst({
-      where: { organizationId: orgId! },
-      select: {
-        contributionType: true,
-        globalFixedAmount: true,
-      },
-    });
+    const where: any = { organizationId: orgId };
+    if (type && ["APARTMENT", "GARAGE", "COMMERCIAL"].includes(type)) {
+      where.type = type;
+    }
 
     const items = await prisma.unit.findMany({
       where,
-      select: {
-        id: true,
-        lotNumber: true,
-        reference: true,
-        type: true,
-        surface: true,
-        floor: true,
-        overrideStart: true,
-        startYear: true,
-        startMonth: true,
-        buildingId: true,
-        building: {
-          select: { id: true, name: true },
-        },
+      include: {
+        building: true,
         ownerships: {
-          where: { endDate: null, organizationId: orgId! },
+          where: { endDate: null, organizationId: orgId },
           take: 1,
           orderBy: { startDate: "desc" },
-          select: {
-            id: true,
-            startDate: true,
-            owner: {
-              select: { id: true, firstName: true, name: true },
-            },
-          },
+          include: { owner: true }
         },
         groupUnits: {
-          select: {
+          include: {
             group: {
-              select: {
-                id: true,
-                name: true,
-                defaultAmount: true,
-                periods: {
-                  orderBy: { startPeriod: "desc" },
-                  select: { id: true, startPeriod: true, endPeriod: true, amount: true },
-                },
-              },
-            },
-          },
+              include: {
+                periods: { orderBy: { startPeriod: "desc" } }
+              }
+            }
+          }
         },
-        contributionPeriods: {
-          orderBy: { startPeriod: "desc" },
-          select: { id: true, startPeriod: true, endPeriod: true, amount: true },
-        },
-      },
+        contributionPeriods: { orderBy: { startPeriod: "desc" } }
+      }
+    });
+
+    const settings = await prisma.appSettings.findFirst({
+      where: { organizationId: orgId },
     });
 
     const globalPeriods = await prisma.contributionPeriod.findMany({
       where: {
-        organizationId: orgId!,
+        organizationId: orgId,
         contributionType: "GLOBAL_FIXED",
         groupId: null,
         unitId: null,
@@ -121,13 +97,12 @@ export async function GET(req: Request) {
     const checkDate = new Date();
     const contributionType = settings?.contributionType ?? "GLOBAL_FIXED";
 
+    // Sorting logic preserved
     items.sort((a: any, b: any) => {
       const aLot = sortLotNumber(a.lotNumber);
       const bLot = sortLotNumber(b.lotNumber);
       if (aLot !== bLot) return aLot - bLot;
-      const buildingCompare = (a.building?.name ?? "ZZZZZZ").localeCompare(b.building?.name ?? "ZZZZZZ", "fr", {
-        sensitivity: "base",
-      });
+      const buildingCompare = (a.building?.name ?? "ZZZZZZ").localeCompare(b.building?.name ?? "ZZZZZZ", "fr", { sensitivity: "base" });
       if (buildingCompare !== 0) return buildingCompare;
       return (a.reference ?? "").localeCompare(b.reference ?? "", "fr", { numeric: true, sensitivity: "base" });
     });
@@ -136,24 +111,12 @@ export async function GET(req: Request) {
       let contributionAmount: number | null = null;
       try {
         if (contributionType === "GLOBAL_FIXED") {
-          contributionAmount =
-            getApplicablePeriod(globalPeriods, checkDate) ??
-            (settings?.globalFixedAmount !== null && settings?.globalFixedAmount !== undefined
-              ? Number(settings.globalFixedAmount)
-              : null);
+          contributionAmount = getApplicablePeriod(globalPeriods, checkDate) ?? (settings?.globalFixedAmount ? Number(settings.globalFixedAmount) : null);
         } else if (contributionType === "GROUP_FIXED") {
-          if (item.groupUnits) {
-            for (const gu of item.groupUnits) {
-              const amount = gu.group?.periods ? getApplicablePeriod(gu.group.periods, checkDate) : null;
-              if (amount !== null) {
-                contributionAmount = amount;
-                break;
-              }
-              if (gu.group?.defaultAmount) {
-                contributionAmount = Number(gu.group.defaultAmount);
-                break;
-              }
-            }
+          for (const gu of (item.groupUnits || [])) {
+            const amount = gu.group?.periods ? getApplicablePeriod(gu.group.periods, checkDate) : null;
+            if (amount !== null) { contributionAmount = amount; break; }
+            if (gu.group?.defaultAmount) { contributionAmount = Number(gu.group.defaultAmount); break; }
           }
         } else if (contributionType === "SURFACE") {
           const amountPerSquareMeter = item.contributionPeriods ? getApplicablePeriod(item.contributionPeriods, checkDate) : null;
@@ -161,23 +124,24 @@ export async function GET(req: Request) {
             contributionAmount = Number(item.surface) * amountPerSquareMeter;
           }
         }
-      } catch (e) {
-        console.error("Mapping error for unit", item.id, e);
-      }
+      } catch (e) {}
 
-      // Final serialization cleanup for Decimal objects
-      return JSON.parse(JSON.stringify({
+      return {
         ...item,
         surface: item.surface ? Number(item.surface) : null,
         contributionAmount,
         activeOwnership: item.ownerships?.[0] ?? null,
-      }, (key, value) => (typeof value === 'object' && value && value.constructor?.name === 'Decimal') ? Number(value) : value));
+      };
     });
 
-    return NextResponse.json(enrichedItems);
+    // Safe serialization for Decimal and Date
+    return NextResponse.json(JSON.parse(JSON.stringify(enrichedItems, (key, value) => {
+      if (typeof value === 'object' && value && value.constructor?.name === 'Decimal') return Number(value);
+      return value;
+    })));
   } catch (error: any) {
     console.error("CRITICAL API ERROR /api/units:", error);
-    return NextResponse.json({ error: error.message, stack: error.stack }, { status: 500 });
+    return NextResponse.json({ error: "Internal Server Error" }, { status: 500 });
   }
 }
 
