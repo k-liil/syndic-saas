@@ -5,8 +5,10 @@ export async function getOrgId(gate: AuthGateSuccess): Promise<string | undefine
   // If it's a super admin, we can fallback to the first accessible org if needed
   // but usually they should pass an orgId param.
   
+  const accessibleOrgs = await getOrganizationIdsForRole(gate, "MANAGER");
+  
   return (
-    getOrganizationIdsForRole(gate, "MANAGER")[0] ??
+    accessibleOrgs[0] ??
     gate.organizationId ??
     undefined
   );
@@ -29,7 +31,7 @@ export async function getOrgIdFromRequest(
       return organization?.id;
     }
 
-    const accessibleOrgIds = getOrganizationIdsForRole(gate, "MANAGER");
+    const accessibleOrgIds = await getOrganizationIdsForRole(gate, "MANAGER");
     return accessibleOrgIds.includes(orgIdParam) ? orgIdParam : undefined;
   }
 

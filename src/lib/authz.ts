@@ -124,12 +124,13 @@ export async function requireRole(minimumRole: AppRole) {
   };
 }
 
-export function getOrganizationIdsForRole(
+export async function getOrganizationIdsForRole(
   gate: AuthGateSuccess,
   minimumRole: Exclude<AppRole, "SUPER_ADMIN"> = "MANAGER"
 ) {
   if (gate.isSuperAdmin) {
-    return [];
+    const allOrgs = await prisma.organization.findMany({ select: { id: true } });
+    return allOrgs.map((o) => o.id);
   }
 
   const orgIds = (gate.userOrganizations ?? [])
