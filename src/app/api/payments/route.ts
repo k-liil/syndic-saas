@@ -246,42 +246,50 @@ export async function POST(req: Request) {
 }
 
 export async function DELETE(req: Request) {
-  const gate = await requireManager();
-  if (!gate.ok) {
-    return NextResponse.json({ error: gate.error }, { status: gate.status });
-  }
+  try {
+    const gate = await requireManager();
+    if (!gate.ok) {
+      return NextResponse.json({ error: gate.error }, { status: gate.status });
+    }
 
-  const orgId = await getOrgIdFromRequest(req, gate);
-  if (!orgId) {
-    return NextResponse.json({ error: "No organization" }, { status: 400 });
-  }
+    const orgId = await getOrgIdFromRequest(req, gate);
+    if (!orgId) {
+      return NextResponse.json({ error: "No organization" }, { status: 400 });
+    }
 
-  const body = await req.json();
+    const body = await req.json();
 
-  const id =
-    typeof body.id === "string" && body.id.trim()
-      ? body.id
-      : null;
+    const id =
+      typeof body.id === "string" && body.id.trim()
+        ? body.id
+        : null;
 
-  if (!id) {
+    if (!id) {
+      return NextResponse.json(
+        { error: "PAYMENT_ID_REQUIRED" },
+        { status: 400 }
+      );
+    }
+
+    const existing = await prisma.payment.findFirst({
+      where: { id, organizationId: orgId! },
+      select: { id: true },
+    });
+
+    if (!existing) {
+      return NextResponse.json({ error: "PAYMENT_NOT_FOUND" }, { status: 404 });
+    }
+
+    await prisma.payment.delete({ where: { id } });
+
+    return NextResponse.json({ ok: true });
+  } catch (e) {
+    console.error("DELETE /api/payments failed:", e);
     return NextResponse.json(
-      { error: "PAYMENT_ID_REQUIRED" },
-      { status: 400 }
+      { error: "DELETE_FAILED", detail: getErrorDetail(e) },
+      { status: 500 }
     );
   }
-
-  const existing = await prisma.payment.findFirst({
-    where: { id, organizationId: orgId! },
-    select: { id: true },
-  });
-
-  if (!existing) {
-    return NextResponse.json({ error: "PAYMENT_NOT_FOUND" }, { status: 404 });
-  }
-
-  await prisma.payment.delete({ where: { id } });
-
-  return NextResponse.json({ ok: true });
 }
 
 export async function PUT(req: Request) {

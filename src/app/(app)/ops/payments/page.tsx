@@ -1,7 +1,7 @@
 "use client";
 
 import { Suspense, useCallback, useEffect, useRef, useState } from "react";
-import { Eye, Paperclip, Pencil, Trash2, PlusCircle, Upload } from "lucide-react";
+import { Eye, Paperclip, Pencil, Trash2, PlusCircle, Upload, Loader2 } from "lucide-react";
 import { useSession } from "next-auth/react";
 import { useSearchParams } from "next/navigation";
 import { canManage } from "@/lib/roles";
@@ -196,6 +196,7 @@ function PaymentsPageContent() {
   const toastTimeoutRef = useRef<ReturnType<typeof setTimeout> | null>(null);
 
   const [submitting, setSubmitting] = useState(false);
+  const [submittingDelete, setSubmittingDelete] = useState(false);
   const [selectedPayment, setSelectedPayment] = useState<Payment | null>(null);
   const [editingPayment, setEditingPayment] = useState<Payment | null>(null);
   const [paymentToDelete, setPaymentToDelete] = useState<Payment | null>(null);
@@ -352,29 +353,36 @@ async function importPayments() {
 
 async function deleteSelected() {
   if (selectedPayments.length === 0) return;
+  if (!confirm(`Voulez-vous vraiment supprimer les ${selectedPayments.length} dépenses sélectionnées ?`)) return;
 
-  const results = await Promise.all(
-    selectedPayments.map((id) =>
-      fetch(apiUrl(`/api/payments?year=${year}`), {
-        method: "DELETE",
-        headers: {
-          "Content-Type": "application/json",
-        },
-        body: JSON.stringify({ id }),
-      })
-    )
-  );
+  setSubmittingDelete(true);
+  try {
+    const results = await Promise.all(
+      selectedPayments.map((id) =>
+        fetch(apiUrl(`/api/payments`), {
+          method: "DELETE",
+          headers: {
+            "Content-Type": "application/json",
+          },
+          body: JSON.stringify({ id }),
+        })
+      )
+    );
 
-  const hasError = results.some((r) => !r.ok);
+    const hasError = results.some((r) => !r.ok);
 
-  if (hasError) {
-    showToast("Erreur suppression");
-    return;
+    if (hasError) {
+      showToast("Certaines suppressions ont échoué");
+    } else {
+      showToast("Dépenses supprimées");
+      setSelectedPayments([]);
+      await load();
+    }
+  } catch (error) {
+    showToast("Erreur lors de la suppression groupée");
+  } finally {
+    setSubmittingDelete(false);
   }
-
-  setSelectedPayments([]);
-  await load();
-  showToast("Dépenses supprimées");
 }
 
 function toggleSelectAll() {
@@ -536,28 +544,36 @@ function toggleSelect(id: string) {
   async function deletePayment() {
     if (!paymentToDelete) return;
 
-    const res = await fetch(apiUrl("/api/payments"), {
-      method: "DELETE",
-      headers: {
-        "Content-Type": "application/json",
-      },
-      body: JSON.stringify({
-        id: paymentToDelete.id,
-      }),
-    });
+    setSubmittingDelete(true);
+    try {
+      const res = await fetch(apiUrl("/api/payments"), {
+        method: "DELETE",
+        headers: {
+          "Content-Type": "application/json",
+        },
+        body: JSON.stringify({
+          id: paymentToDelete.id,
+        }),
+      });
 
-    if (!res.ok) {
-      showToast("Impossible de supprimer la dépense");
-      return;
+      if (!res.ok) {
+        const json = await res.json().catch(() => ({}));
+        showToast(json?.error === "DELETE_FAILED" ? `Échec: ${json.detail}` : "Impossible de supprimer la dépense");
+        return;
+      }
+
+      if (selectedPayment?.id === paymentToDelete.id) {
+        setSelectedPayment(null);
+      }
+
+      setPaymentToDelete(null);
+      await load();
+      showToast("Dépense supprimée");
+    } catch (error) {
+      showToast("Erreur de connexion lors de la suppression");
+    } finally {
+      setSubmittingDelete(false);
     }
-
-    if (selectedPayment?.id === paymentToDelete.id) {
-      setSelectedPayment(null);
-    }
-
-    setPaymentToDelete(null);
-    await load();
-    showToast("Dépense supprimée");
   }
 
   const filteredPayments = payments.filter((p) => {
@@ -682,9 +698,14 @@ function toggleSelect(id: string) {
       {selectedPayments.length} dépense(s) sélectionnée(s)
     </div>
 
-    <button onClick={deleteSelected}
-      className="flex items-center gap-2 rounded-md bg-red-600 px-4 py-2 text-sm text-white"
-    ><Trash2 className="h-4 w-4" /> Supprimer</button>
+    <button 
+      onClick={deleteSelected}
+      disabled={submittingDelete}
+      className="flex items-center gap-2 rounded-md bg-red-600 px-4 py-2 text-sm text-white disabled:opacity-50 transition-all"
+    >
+      {submittingDelete ? <Loader2 className="h-4 w-4 animate-spin" /> : <Trash2 className="h-4 w-4" />}
+      {submittingDelete ? "Suppression..." : "Supprimer"}
+    </button>
   </div>
 )}
 
@@ -1355,15 +1376,20 @@ function toggleSelect(id: string) {
                 <button
                   type="button"
                   onClick={() => setPaymentToDelete(null)}
-                  className="rounded-md border border-zinc-200 bg-white px-5 py-3 text-sm font-semibold text-zinc-700 shadow-sm"
+                  disabled={submittingDelete}
+                  className="rounded-md border border-zinc-200 bg-white px-5 py-3 text-sm font-semibold text-zinc-700 shadow-sm disabled:opacity-50"
                 >
                   Annuler
                 </button>
 
                 <button type="button"
                   onClick={deletePayment}
-                  className="flex items-center gap-2 rounded-md bg-red-600 px-5 py-3 text-sm font-semibold text-white shadow-sm hover:bg-red-700"
-                ><Trash2 className="h-4 w-4" /> Supprimer</button>
+                  disabled={submittingDelete}
+                  className="flex items-center gap-2 rounded-md bg-red-600 px-5 py-3 text-sm font-semibold text-white shadow-sm hover:bg-red-700 disabled:opacity-50 transition-all"
+                >
+                  {submittingDelete ? <Loader2 className="h-4 w-4 animate-spin" /> : <Trash2 className="h-4 w-4" />}
+                  {submittingDelete ? "Suppression..." : "Supprimer"}
+                </button>
               </div>
             </div>
           </div>
