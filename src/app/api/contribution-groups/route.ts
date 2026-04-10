@@ -10,7 +10,13 @@ export async function GET(req: Request) {
       return NextResponse.json({ error: gate.error }, { status: gate.status });
     }
 
-    const orgId = await getOrgIdFromRequest(req, gate);
+    let orgId = await getOrgIdFromRequest(req, gate);
+    
+    // Fallback: if orgId is missing but we have a gate orgId, use it
+    if (!orgId && gate.organizationId) {
+      orgId = gate.organizationId;
+    }
+
     if (!orgId) {
       return NextResponse.json({ error: "Organization not found" }, { status: 400 });
     }
