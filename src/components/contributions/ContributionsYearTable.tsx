@@ -44,11 +44,23 @@ type RowData = {
 };
 
 function StatusBadge({ value }: { value: MonthData }) {
+  const getAmountDisplay = (amount: number, colorLabel: string) => {
+    if (amount > 0) {
+      return (
+        <span className="flex items-baseline">
+          {amount}
+          <span className="ml-[2px] text-[9px] opacity-70">DH</span>
+        </span>
+      );
+    }
+    return colorLabel;
+  };
+
   if (value.status === "PAID") {
     return (
-      <div className="flex h-[54px] w-full items-center justify-center">
-        <span className="inline-flex items-center justify-center rounded-md bg-emerald-50 px-2.5 py-1 text-xs font-medium text-emerald-700 ring-1 ring-inset ring-emerald-600/20">
-          {value.paidAmount > 0 ? `${value.paidAmount} DH` : "PAID"}
+      <div className="flex h-10 w-full items-center justify-center">
+        <span className="inline-flex items-center justify-center rounded-md bg-emerald-50 px-2 py-0.5 text-[11px] font-medium text-emerald-700 ring-1 ring-inset ring-emerald-600/20">
+          {getAmountDisplay(value.paidAmount, "PAYE")}
         </span>
       </div>
     );
@@ -56,9 +68,9 @@ function StatusBadge({ value }: { value: MonthData }) {
 
   if (value.status === "PARTIAL") {
     return (
-      <div className="flex h-[54px] w-full items-center justify-center">
-        <span className="inline-flex items-center justify-center rounded-md bg-amber-50 px-2.5 py-1 text-xs font-medium text-amber-700 ring-1 ring-inset ring-amber-600/20">
-          {value.paidAmount > 0 ? `${value.paidAmount} DH` : "PARTIAL"}
+      <div className="flex h-10 w-full items-center justify-center">
+        <span className="inline-flex items-center justify-center rounded-md bg-amber-50 px-2 py-0.5 text-[11px] font-medium text-amber-700 ring-1 ring-inset ring-amber-600/20">
+          {getAmountDisplay(value.paidAmount, "PARTIEL")}
         </span>
       </div>
     );
@@ -66,9 +78,9 @@ function StatusBadge({ value }: { value: MonthData }) {
 
   if (value.status === "UNPAID") {
     return (
-      <div className="flex h-[54px] w-full items-center justify-center">
-        <span className="inline-flex items-center justify-center rounded-md bg-rose-50 px-2.5 py-1 text-xs font-medium text-rose-700 ring-1 ring-inset ring-rose-600/20">
-          {value.paidAmount > 0 ? `${value.paidAmount} DH` : "-"}
+      <div className="flex h-10 w-full items-center justify-center">
+        <span className="inline-flex items-center justify-center rounded-md bg-rose-50 px-2 py-0.5 text-[11px] font-medium text-rose-700 ring-1 ring-inset ring-rose-600/20">
+          {getAmountDisplay(value.paidAmount, "RETARD")}
         </span>
       </div>
     );
@@ -76,17 +88,17 @@ function StatusBadge({ value }: { value: MonthData }) {
 
   if (value.status === "ADVANCE") {
     return (
-      <div className="flex h-[54px] w-full items-center justify-center">
-        <span className="inline-flex items-center justify-center rounded-md bg-sky-50 px-2.5 py-1 text-xs font-medium text-sky-700 ring-1 ring-inset ring-sky-600/20">
-          {value.paidAmount > 0 ? `${value.paidAmount} DH` : "ADVANCE"}
+      <div className="flex h-10 w-full items-center justify-center">
+        <span className="inline-flex items-center justify-center rounded-md bg-sky-50 px-2 py-0.5 text-[11px] font-medium text-sky-700 ring-1 ring-inset ring-sky-600/20">
+          {getAmountDisplay(value.paidAmount, "AVANCE")}
         </span>
       </div>
     );
   }
 
   return (
-    <div className="flex h-[54px] w-full items-center justify-center">
-      <span className="inline-flex items-center justify-center rounded-md bg-zinc-50 px-2.5 py-1 text-xs font-medium text-zinc-600 ring-1 ring-inset ring-zinc-500/10">
+    <div className="flex h-10 w-full items-center justify-center">
+      <span className="inline-flex items-center justify-center rounded-md bg-zinc-50 px-2.5 py-0.5 text-[11px] font-medium text-zinc-600 ring-1 ring-inset ring-zinc-500/10">
         -
       </span>
     </div>
@@ -98,14 +110,16 @@ const columns: ColumnDef<RowData>[] = [
     accessorKey: "lot",
     header: "Lot",
     cell: ({ row }) => (
-      <div className="font-semibold text-zinc-900">{row.original.lot}</div>
+      <div className="font-semibold text-zinc-900 text-sm">
+        {row.original.lot}
+      </div>
     ),
   },
   {
     accessorKey: "owner",
     header: "Coproprietaire",
     cell: ({ row }) => (
-      <div className="min-w-[240px] text-sm text-zinc-800">
+      <div className="min-w-[240px] text-xs text-zinc-800">
         {row.original.owner}
       </div>
     ),
@@ -225,7 +239,7 @@ export function ContributionsYearTable({ data }: { data: RowData[] }) {
                   <TableHead
                     key={header.id}
                     className={[
-                      "h-14 whitespace-nowrap border-b border-zinc-200 text-[11px] font-bold uppercase tracking-[0.12em] text-zinc-500",
+                      "h-10 whitespace-nowrap border-b border-zinc-200 text-[10px] font-bold uppercase tracking-[0.12em] text-zinc-500",
                       index === 0 ? "sticky left-0 z-30 bg-zinc-50" : "",
                       index === 1 ? "sticky left-[132px] z-30 bg-zinc-50" : "",
                       index >= 2 ? "px-0 text-center" : "",
@@ -265,7 +279,7 @@ export function ContributionsYearTable({ data }: { data: RowData[] }) {
                     <TableCell
                       key={cell.id}
                       className={[
-                        "h-[54px] align-middle border-b border-zinc-100 py-2",
+                        "h-10 align-middle border-b border-zinc-100 py-1",
                         index === 0 ? "sticky left-0 z-20 bg-inherit pl-4" : "",
                         index === 1
                           ? "sticky left-[132px] z-20 bg-inherit pl-4"
