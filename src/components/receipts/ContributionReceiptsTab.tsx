@@ -642,15 +642,12 @@ export function ContributionReceiptsTab({
       return;
     }
 
-    setEditMode(false);
-    setDetail({
-      ...detail,
-      method: editMethod,
-      date: editDate,
-      amount: Number(editAmount),
-      bankName: editBank,
-      bankRef: editCheck,
+    const updatedDataRes = await fetch(apiUrl(`/api/receipts/${detail.id}`), {
+      cache: "no-store",
     });
+    const updatedData = await updatedDataRes.json();
+    setDetail(updatedData);
+    setEditMode(false);
 
     setToast({
       type: "success",
