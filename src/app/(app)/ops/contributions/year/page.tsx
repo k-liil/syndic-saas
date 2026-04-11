@@ -53,8 +53,8 @@ type RowData = {
   oct: MonthData;
   nov: MonthData;
   dec: MonthData;
+  isFullyPaid: boolean;
 };
-
 
 function ContributionsYearPageContent() {
   const searchParams = useSearchParams();
@@ -79,7 +79,9 @@ function ContributionsYearPageContent() {
   }, [apiUrl, buildingId, year]);
 
   const loadBuildings = useCallback(async () => {
-    const res = await fetch(apiUrl("/api/buildings/options"), { cache: "no-store" });
+    const res = await fetch(apiUrl("/api/buildings/options"), {
+      cache: "no-store",
+    });
     const json = await res.json();
 
     setBuildings(Array.isArray(json) ? json : []);
@@ -105,17 +107,28 @@ function ContributionsYearPageContent() {
 
       u.dues.forEach((d) => {
         const m = new Date(d.period).getUTCMonth();
-        months.set(m, { status: d.status, paidAmount: (d as any).paidAmount || 0 });
+        months.set(m, {
+          status: d.status,
+          paidAmount: (d as any).paidAmount || 0,
+        });
       });
 
       const get = (m: number): MonthData => {
         return months.get(m) ?? { status: "UNPAID", paidAmount: 0 };
       };
 
+      const duesList = Array.from(months.values());
+      const isFullyPaid =
+        duesList.length > 0 &&
+        duesList.every((d) => d.status === "PAID" || d.status === "ADVANCE");
+
       return {
         id: u.id,
         lot: u.lotNumber || u.reference || "",
-        owner: [u.ownerships?.[0]?.owner?.firstName, u.ownerships?.[0]?.owner?.name]
+        owner: [
+          u.ownerships?.[0]?.owner?.firstName,
+          u.ownerships?.[0]?.owner?.name,
+        ]
           .filter(Boolean)
           .join(" "),
         jan: get(0),
@@ -130,6 +143,7 @@ function ContributionsYearPageContent() {
         oct: get(9),
         nov: get(10),
         dec: get(11),
+        isFullyPaid,
       };
     });
   }
@@ -138,7 +152,9 @@ function ContributionsYearPageContent() {
     return (
       <div className="flex h-[40vh] items-center justify-center">
         <div className="rounded-md border border-zinc-200 bg-white p-8 text-center shadow-sm">
-          <div className="text-lg font-semibold text-zinc-800">Aucun exercice selectionne</div>
+          <div className="text-lg font-semibold text-zinc-800">
+            Aucun exercice selectionne
+          </div>
           <div className="mt-2 text-sm text-zinc-500">
             Selectionne un exercice fiscal en haut de la page.
           </div>
@@ -200,36 +216,89 @@ function ContributionsYearPageContent() {
 
             <div className="grid gap-3 sm:grid-cols-3 xl:grid-cols-4">
               <div className="rounded-md border border-zinc-200 bg-white p-4 shadow-sm">
-                <div className="text-xs uppercase tracking-wide text-zinc-400">Lots</div>
-                <div className="mt-2 text-xl font-bold text-zinc-900">{rows.length}</div>
+                <div className="text-xs uppercase tracking-wide text-zinc-400">
+                  Lots
+                </div>
+                <div className="mt-2 text-xl font-bold text-zinc-900">
+                  {rows.length}
+                </div>
               </div>
 
               <div className="rounded-md border border-zinc-200 bg-white p-4 shadow-sm">
-                <div className="text-xs uppercase tracking-wide text-zinc-400">Mois payes</div>
+                <div className="text-xs uppercase tracking-wide text-zinc-400">
+                  Mois payes
+                </div>
                 <div className="mt-2 text-xl font-bold text-emerald-600">
                   {rows.reduce((sum, row) => {
-                    const vals = [row.jan, row.feb, row.mar, row.apr, row.may, row.jun, row.jul, row.aug, row.sep, row.oct, row.nov, row.dec];
+                    const vals = [
+                      row.jan,
+                      row.feb,
+                      row.mar,
+                      row.apr,
+                      row.may,
+                      row.jun,
+                      row.jul,
+                      row.aug,
+                      row.sep,
+                      row.oct,
+                      row.nov,
+                      row.dec,
+                    ];
                     return sum + vals.filter((v) => v.status === "PAID").length;
                   }, 0)}
                 </div>
               </div>
 
               <div className="rounded-md border border-zinc-200 bg-white p-4 shadow-sm">
-                <div className="text-xs uppercase tracking-wide text-zinc-400">Retards</div>
+                <div className="text-xs uppercase tracking-wide text-zinc-400">
+                  Retards
+                </div>
                 <div className="mt-2 text-xl font-bold text-rose-600">
                   {rows.reduce((sum, row) => {
-                    const vals = [row.jan, row.feb, row.mar, row.apr, row.may, row.jun, row.jul, row.aug, row.sep, row.oct, row.nov, row.dec];
-                    return sum + vals.filter((v) => v.status === "UNPAID").length;
+                    const vals = [
+                      row.jan,
+                      row.feb,
+                      row.mar,
+                      row.apr,
+                      row.may,
+                      row.jun,
+                      row.jul,
+                      row.aug,
+                      row.sep,
+                      row.oct,
+                      row.nov,
+                      row.dec,
+                    ];
+                    return (
+                      sum + vals.filter((v) => v.status === "UNPAID").length
+                    );
                   }, 0)}
                 </div>
               </div>
 
               <div className="rounded-md border border-zinc-200 bg-white p-4 shadow-sm">
-                <div className="text-xs uppercase tracking-wide text-zinc-400">Partiels</div>
+                <div className="text-xs uppercase tracking-wide text-zinc-400">
+                  Partiels
+                </div>
                 <div className="mt-2 text-xl font-bold text-amber-600">
                   {rows.reduce((sum, row) => {
-                    const vals = [row.jan, row.feb, row.mar, row.apr, row.may, row.jun, row.jul, row.aug, row.sep, row.oct, row.nov, row.dec];
-                    return sum + vals.filter((v) => v.status === "PARTIAL").length;
+                    const vals = [
+                      row.jan,
+                      row.feb,
+                      row.mar,
+                      row.apr,
+                      row.may,
+                      row.jun,
+                      row.jul,
+                      row.aug,
+                      row.sep,
+                      row.oct,
+                      row.nov,
+                      row.dec,
+                    ];
+                    return (
+                      sum + vals.filter((v) => v.status === "PARTIAL").length
+                    );
                   }, 0)}
                 </div>
               </div>

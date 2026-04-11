@@ -41,6 +41,7 @@ type RowData = {
   oct: MonthData;
   nov: MonthData;
   dec: MonthData;
+  isFullyPaid: boolean;
 };
 
 function StatusBadge({
@@ -140,7 +141,9 @@ const columns: ColumnDef<RowData>[] = [
     accessorKey: "lot",
     header: "Lot",
     cell: ({ row }) => (
-      <div className="font-semibold text-zinc-900 text-sm">
+      <div
+        className={`font-semibold text-sm ${row.original.isFullyPaid ? "text-emerald-700" : "text-zinc-900"}`}
+      >
         {row.original.lot}
       </div>
     ),
@@ -149,7 +152,9 @@ const columns: ColumnDef<RowData>[] = [
     accessorKey: "owner",
     header: "Coproprietaire",
     cell: ({ row }) => (
-      <div className="min-w-[240px] text-xs text-zinc-800">
+      <div
+        className={`min-w-[240px] text-xs ${row.original.isFullyPaid ? "text-emerald-600 font-medium" : "text-zinc-800"}`}
+      >
         {row.original.owner}
       </div>
     ),
@@ -300,9 +305,11 @@ export function ContributionsYearTable({ data }: { data: RowData[] }) {
                 <TableRow
                   key={row.id}
                   className={
-                    rowIndex % 2 === 0
-                      ? "bg-white hover:bg-zinc-50"
-                      : "bg-zinc-50/40 hover:bg-zinc-50"
+                    row.original.isFullyPaid
+                      ? "bg-emerald-50/40 hover:bg-emerald-50/70"
+                      : rowIndex % 2 === 0
+                        ? "bg-white hover:bg-zinc-50"
+                        : "bg-zinc-50/40 hover:bg-zinc-50"
                   }
                 >
                   {row.getVisibleCells().map((cell, index) => (
