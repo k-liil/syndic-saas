@@ -9,52 +9,61 @@ import { ReceiptType, DueStatus } from "@prisma/client";
 export async function getUnitAuditData(orgId: string, unitId: string) {
   try {
     const gate = await requireManager();
-    if (!gate.ok || !orgId || !unitId) return { ok: false, error: "Non autorisé" };
+    if (!gate.ok || !orgId || !unitId)
+      return { ok: false, error: "Non autorisé" };
 
     const [unit, dues, receipts, allocations] = await Promise.all([
       prisma.unit.findUnique({
         where: { id: unitId },
-        include: { building: true }
+        include: { building: true },
       }),
       prisma.monthlyDue.findMany({
         where: { unitId, organizationId: orgId },
-        orderBy: { period: "asc" }
+        orderBy: { period: "asc" },
       }),
       prisma.receipt.findMany({
-        where: { unitId, organizationId: orgId, type: ReceiptType.CONTRIBUTION },
-        orderBy: [{ date: "asc" }, { receiptNumber: "asc" }]
+        where: {
+          unitId,
+          organizationId: orgId,
+          type: ReceiptType.CONTRIBUTION,
+        },
+        orderBy: [{ date: "asc" }, { receiptNumber: "asc" }],
       }),
       prisma.receiptAllocation.findMany({
         where: {
-          receipt: { unitId, organizationId: orgId, type: ReceiptType.CONTRIBUTION }
+          receipt: {
+            unitId,
+            organizationId: orgId,
+            type: ReceiptType.CONTRIBUTION,
+          },
         },
         include: {
           receipt: {
-            select: { receiptNumber: true, date: true, amount: true }
-          }
-        }
-      })
+            select: { receiptNumber: true, date: true, amount: true },
+          },
+        },
+      }),
     ]);
 
     return {
       ok: true,
       data: {
         unit,
-        dues: dues.map(d => ({
+        dues: dues.map((d) => ({
           ...d,
           amountDue: Number(d.amountDue),
-          paidAmount: Number(d.paidAmount)
+          paidAmount: Number(d.paidAmount),
         })),
-        receipts: receipts.map(r => ({
+        receipts: receipts.map((r) => ({
           ...r,
           amount: Number(r.amount),
-          unallocatedAmount: Number(r.unallocatedAmount)
+          unallocatedAmount: Number(r.unallocatedAmount),
         })),
-        allocations: allocations.map(a => ({
+        allocations: allocations.map((a) => ({
           ...a,
-          amount: Number(a.amount)
-        }))
-      }
+          amount: Number(a.amount),
+        })),
+      },
     };
   } catch (error) {
     console.error("Audit fetch failed:", error);
@@ -64,7 +73,8 @@ export async function getUnitAuditData(orgId: string, unitId: string) {
 
 export async function deleteReceiptAndReallocate(receiptId: string) {
   const logs: string[] = [];
-  const log = (msg: string) => logs.push(`[${new Date().toISOString()}] ${msg}`);
+  const log = (msg: string) =>
+    logs.push(`[${new Date().toISOString()}] ${msg}`);
 
   try {
     const gate = await requireManager();
@@ -72,7 +82,7 @@ export async function deleteReceiptAndReallocate(receiptId: string) {
 
     const receipt = await prisma.receipt.findUnique({
       where: { id: receiptId },
-      select: { unitId: true, organizationId: true, receiptNumber: true }
+      select: { unitId: true, organizationId: true, receiptNumber: true },
     });
 
     if (!receipt || !receipt.unitId) {
@@ -81,26 +91,30 @@ export async function deleteReceiptAndReallocate(receiptId: string) {
     }
 
     const unitId = receipt.unitId;
-    log(`Demande de suppression du Reçu #${receipt.receiptNumber} pour l'unité ${unitId}`);
+    log(
+      `Demande de suppression du Reçu #${receipt.receiptNumber} pour l'unité ${unitId}`,
+    );
 
     await prisma.$transaction(async (tx) => {
-      // Deleting receipt cascades to allocations in schema? 
+      // Deleting receipt cascades to allocations in schema?
       // Let's check schema again. Cascade is on Organization, not necessarily on Receipt -> Allocation.
       // In schema: receipt Receipt @relation(fields: [receiptId], references: [id])
       // No explicit onDelete: Cascade in schema for ReceiptAllocation. Let's delete manually to be safe.
-      
+
       const deletedAllocations = await tx.receiptAllocation.deleteMany({
-        where: { receiptId }
+        where: { receiptId },
       });
-      log(`Suppression de ${deletedAllocations.count} allocations existantes pour ce reçu...`);
+      log(
+        `Suppression de ${deletedAllocations.count} allocations existantes pour ce reçu...`,
+      );
 
-      log(`Suppression du reçu lui-même...`);
-      await tx.receipt.delete({
-        where: { id: receiptId }
-      });
-
-      log(`Lancement de l'allocation FIFO...`);
-      await reallocateUnitContributions(tx, unitId, receipt.organizationId, logs);
+      log(`Lancement de l'allocation FIFO (le reçu est conservé)...`);
+      await reallocateUnitContributions(
+        tx,
+        unitId,
+        receipt.organizationId,
+        logs,
+      );
     });
 
     log(`Action terminée.`);
@@ -115,7 +129,8 @@ export async function deleteReceiptAndReallocate(receiptId: string) {
 
 export async function forceRecalculateUnit(unitId: string, orgId: string) {
   const logs: string[] = [];
-  const log = (msg: string) => logs.push(`[${new Date().toISOString()}] ${msg}`);
+  const log = (msg: string) =>
+    logs.push(`[${new Date().toISOString()}] ${msg}`);
 
   try {
     const gate = await requireManager();

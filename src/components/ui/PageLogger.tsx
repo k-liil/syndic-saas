@@ -2,6 +2,7 @@
 
 import { useState, useCallback, useRef, useEffect } from "react";
 import { Terminal, X, ChevronDown, ChevronUp } from "lucide-react";
+import { useSession } from "next-auth/react";
 
 export type LogMessage = {
   id: string;
@@ -61,6 +62,9 @@ export function PageLoggerToggle({
   isLogActive: boolean;
   setIsLogActive: (v: boolean) => void;
 }) {
+  const { data: session } = useSession();
+  if (session?.user?.role !== "SUPER_ADMIN") return null;
+
   return (
     <div className="flex items-center gap-2">
       <button
@@ -87,6 +91,7 @@ export function PageLoggerPanel({
   isLogActive: boolean;
   clearLogs: () => void;
 }) {
+  const { data: session } = useSession();
   const [expanded, setExpanded] = useState(true);
   const endRef = useRef<HTMLDivElement>(null);
 
@@ -97,6 +102,7 @@ export function PageLoggerPanel({
   }, [logs, expanded]);
 
   if (!isLogActive) return null;
+  if (session?.user?.role !== "SUPER_ADMIN") return null;
 
   return (
     <div className="fixed bottom-0 left-0 right-0 z-50 flex flex-col items-center pointer-events-none">

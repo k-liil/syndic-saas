@@ -31,6 +31,29 @@ export async function reallocateUnitContributions(
   });
   log(`Suppression des anciennes allocations terminées.`);
 
+  // 1.5 Update MonthlyDue amounts if group changed
+  const unitGroup = await tx.contributionGroupUnit.findFirst({
+    where: { unitId },
+    include: { group: true },
+  });
+
+  if (unitGroup?.group?.defaultAmount) {
+    const expectedAmount = Number(unitGroup.group.defaultAmount);
+    const updateRes = await tx.monthlyDue.updateMany({
+      where: {
+        unitId,
+        organizationId,
+        amountDue: { not: expectedAmount },
+      },
+      data: { amountDue: expectedAmount },
+    });
+    if (updateRes.count > 0) {
+      log(
+        `Mise à jour de ${updateRes.count} dettes mensuelles au nouveau tarif du groupe (${expectedAmount} DH).`,
+      );
+    }
+  }
+
   // 2. Fetch all Dues (Obligations) and Receipts (Payments) chronologically
   const [dues, receipts] = await Promise.all([
     tx.monthlyDue.findMany({
