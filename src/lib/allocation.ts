@@ -129,7 +129,6 @@ export async function reallocateUnitContributions(
     cursor.setUTCMonth(cursor.getUTCMonth() + 1);
   }
   log(`Généré ${createdCount} dettes mensuelles manquantes.`);
-  }
 
   // 1.5 Fetch current dues and receipts for reallocation
 
