@@ -20,62 +20,75 @@ import { ReceiptsDetailModal } from "./ReceiptsDetailModal";
 import { Receipt as ReceiptIcon } from "lucide-react";
 import { useSearchParams } from "next/navigation";
 
-type MonthStatus = "PAID" | "PARTIAL" | "UNPAID" | "ADVANCE" | null;
+type MonthData = {
+  status: "PAID" | "PARTIAL" | "UNPAID" | "ADVANCE" | null;
+  paidAmount: number;
+};
 
 type RowData = {
   id: string;
   lot: string;
   owner: string;
-  jan: MonthStatus;
-  feb: MonthStatus;
-  mar: MonthStatus;
-  apr: MonthStatus;
-  may: MonthStatus;
-  jun: MonthStatus;
-  jul: MonthStatus;
-  aug: MonthStatus;
-  sep: MonthStatus;
-  oct: MonthStatus;
-  nov: MonthStatus;
-  dec: MonthStatus;
+  jan: MonthData;
+  feb: MonthData;
+  mar: MonthData;
+  apr: MonthData;
+  may: MonthData;
+  jun: MonthData;
+  jul: MonthData;
+  aug: MonthData;
+  sep: MonthData;
+  oct: MonthData;
+  nov: MonthData;
+  dec: MonthData;
 };
 
-function StatusBadge({ value }: { value: MonthStatus }) {
-  if (value === "PAID") {
+function StatusBadge({ value }: { value: MonthData }) {
+  if (value.status === "PAID") {
     return (
       <div className="flex h-[54px] w-full items-center justify-center">
-        <span className="h-3 w-3 rounded-md bg-emerald-500" />
+        <span className="inline-flex items-center justify-center rounded-md bg-emerald-50 px-2.5 py-1 text-xs font-medium text-emerald-700 ring-1 ring-inset ring-emerald-600/20">
+          {value.paidAmount > 0 ? `${value.paidAmount} DH` : "PAID"}
+        </span>
       </div>
     );
   }
 
-  if (value === "PARTIAL") {
+  if (value.status === "PARTIAL") {
     return (
       <div className="flex h-[54px] w-full items-center justify-center">
-        <span className="h-3 w-3 rounded-md bg-amber-500" />
+        <span className="inline-flex items-center justify-center rounded-md bg-amber-50 px-2.5 py-1 text-xs font-medium text-amber-700 ring-1 ring-inset ring-amber-600/20">
+          {value.paidAmount > 0 ? `${value.paidAmount} DH` : "PARTIAL"}
+        </span>
       </div>
     );
   }
 
-  if (value === "UNPAID") {
+  if (value.status === "UNPAID") {
     return (
       <div className="flex h-[54px] w-full items-center justify-center">
-        <span className="h-3 w-3 rounded-md bg-rose-500" />
+        <span className="inline-flex items-center justify-center rounded-md bg-rose-50 px-2.5 py-1 text-xs font-medium text-rose-700 ring-1 ring-inset ring-rose-600/20">
+          {value.paidAmount > 0 ? `${value.paidAmount} DH` : "-"}
+        </span>
       </div>
     );
   }
 
-  if (value === "ADVANCE") {
+  if (value.status === "ADVANCE") {
     return (
       <div className="flex h-[54px] w-full items-center justify-center">
-        <span className="h-3 w-3 rounded-md bg-sky-500" />
+        <span className="inline-flex items-center justify-center rounded-md bg-sky-50 px-2.5 py-1 text-xs font-medium text-sky-700 ring-1 ring-inset ring-sky-600/20">
+          {value.paidAmount > 0 ? `${value.paidAmount} DH` : "ADVANCE"}
+        </span>
       </div>
     );
   }
 
   return (
     <div className="flex h-[54px] w-full items-center justify-center">
-      <span className="h-2.5 w-2.5 rounded-md bg-zinc-200" />
+      <span className="inline-flex items-center justify-center rounded-md bg-zinc-50 px-2.5 py-1 text-xs font-medium text-zinc-600 ring-1 ring-inset ring-zinc-500/10">
+        -
+      </span>
     </div>
   );
 }
@@ -92,47 +105,105 @@ const columns: ColumnDef<RowData>[] = [
     accessorKey: "owner",
     header: "Coproprietaire",
     cell: ({ row }) => (
-      <div className="min-w-[240px] text-sm text-zinc-800">{row.original.owner}</div>
+      <div className="min-w-[240px] text-sm text-zinc-800">
+        {row.original.owner}
+      </div>
     ),
   },
-  { accessorKey: "jan", header: "Jan", cell: ({ row }) => <StatusBadge value={row.original.jan} /> },
-  { accessorKey: "feb", header: "Fev", cell: ({ row }) => <StatusBadge value={row.original.feb} /> },
-  { accessorKey: "mar", header: "Mar", cell: ({ row }) => <StatusBadge value={row.original.mar} /> },
-  { accessorKey: "apr", header: "Avr", cell: ({ row }) => <StatusBadge value={row.original.apr} /> },
-  { accessorKey: "may", header: "Mai", cell: ({ row }) => <StatusBadge value={row.original.may} /> },
-  { accessorKey: "jun", header: "Jun", cell: ({ row }) => <StatusBadge value={row.original.jun} /> },
-  { accessorKey: "jul", header: "Jul", cell: ({ row }) => <StatusBadge value={row.original.jul} /> },
-  { accessorKey: "aug", header: "Aou", cell: ({ row }) => <StatusBadge value={row.original.aug} /> },
-  { accessorKey: "sep", header: "Sep", cell: ({ row }) => <StatusBadge value={row.original.sep} /> },
-  { accessorKey: "oct", header: "Oct", cell: ({ row }) => <StatusBadge value={row.original.oct} /> },
-  { accessorKey: "nov", header: "Nov", cell: ({ row }) => <StatusBadge value={row.original.nov} /> },
-  { accessorKey: "dec", header: "Dec", cell: ({ row }) => <StatusBadge value={row.original.dec} /> },
+  {
+    accessorKey: "jan",
+    header: "Jan",
+    cell: ({ row }) => <StatusBadge value={row.original.jan} />,
+  },
+  {
+    accessorKey: "feb",
+    header: "Fev",
+    cell: ({ row }) => <StatusBadge value={row.original.feb} />,
+  },
+  {
+    accessorKey: "mar",
+    header: "Mar",
+    cell: ({ row }) => <StatusBadge value={row.original.mar} />,
+  },
+  {
+    accessorKey: "apr",
+    header: "Avr",
+    cell: ({ row }) => <StatusBadge value={row.original.apr} />,
+  },
+  {
+    accessorKey: "may",
+    header: "Mai",
+    cell: ({ row }) => <StatusBadge value={row.original.may} />,
+  },
+  {
+    accessorKey: "jun",
+    header: "Jun",
+    cell: ({ row }) => <StatusBadge value={row.original.jun} />,
+  },
+  {
+    accessorKey: "jul",
+    header: "Jul",
+    cell: ({ row }) => <StatusBadge value={row.original.jul} />,
+  },
+  {
+    accessorKey: "aug",
+    header: "Aou",
+    cell: ({ row }) => <StatusBadge value={row.original.aug} />,
+  },
+  {
+    accessorKey: "sep",
+    header: "Sep",
+    cell: ({ row }) => <StatusBadge value={row.original.sep} />,
+  },
+  {
+    accessorKey: "oct",
+    header: "Oct",
+    cell: ({ row }) => <StatusBadge value={row.original.oct} />,
+  },
+  {
+    accessorKey: "nov",
+    header: "Nov",
+    cell: ({ row }) => <StatusBadge value={row.original.nov} />,
+  },
+  {
+    accessorKey: "dec",
+    header: "Dec",
+    cell: ({ row }) => <StatusBadge value={row.original.dec} />,
+  },
 ];
 
 export function ContributionsYearTable({ data }: { data: RowData[] }) {
   const searchParams = useSearchParams();
   const year = Number(searchParams.get("year"));
-  
-  const [detailUnit, setDetailUnit] = useState<{id: string, name: string} | null>(null);
 
-  const tableColumns = React.useMemo<ColumnDef<RowData>[]>(() => [
-    ...columns,
-    {
-      id: "actions",
-      header: "",
-      cell: ({ row }) => (
-        <div className="flex justify-center px-2">
-          <button
-            onClick={() => setDetailUnit({ id: row.original.id, name: row.original.lot })}
-            className="flex h-8 w-8 items-center justify-center rounded-lg text-zinc-400 hover:bg-sky-50 hover:text-sky-600 transition-all border border-transparent hover:border-sky-100"
-            title="Détail des reçus"
-          >
-            <ReceiptIcon className="h-4.5 w-4.5" />
-          </button>
-        </div>
-      ),
-    }
-  ], []);
+  const [detailUnit, setDetailUnit] = useState<{
+    id: string;
+    name: string;
+  } | null>(null);
+
+  const tableColumns = React.useMemo<ColumnDef<RowData>[]>(
+    () => [
+      ...columns,
+      {
+        id: "actions",
+        header: "",
+        cell: ({ row }) => (
+          <div className="flex justify-center px-2">
+            <button
+              onClick={() =>
+                setDetailUnit({ id: row.original.id, name: row.original.lot })
+              }
+              className="flex h-8 w-8 items-center justify-center rounded-lg text-zinc-400 hover:bg-sky-50 hover:text-sky-600 transition-all border border-transparent hover:border-sky-100"
+              title="Détail des reçus"
+            >
+              <ReceiptIcon className="h-4.5 w-4.5" />
+            </button>
+          </div>
+        ),
+      },
+    ],
+    [],
+  );
 
   const table = useReactTable({
     data,
@@ -146,7 +217,10 @@ export function ContributionsYearTable({ data }: { data: RowData[] }) {
         <Table className="mx-auto min-w-[1260px] max-w-[85vw]">
           <TableHeader className="bg-zinc-50">
             {table.getHeaderGroups().map((headerGroup) => (
-              <TableRow key={headerGroup.id} className="border-b border-zinc-200 hover:bg-zinc-50">
+              <TableRow
+                key={headerGroup.id}
+                className="border-b border-zinc-200 hover:bg-zinc-50"
+              >
                 {headerGroup.headers.map((header, index) => (
                   <TableHead
                     key={header.id}
@@ -166,7 +240,10 @@ export function ContributionsYearTable({ data }: { data: RowData[] }) {
                   >
                     {header.isPlaceholder
                       ? null
-                      : flexRender(header.column.columnDef.header, header.getContext())}
+                      : flexRender(
+                          header.column.columnDef.header,
+                          header.getContext(),
+                        )}
                   </TableHead>
                 ))}
               </TableRow>
@@ -178,7 +255,11 @@ export function ContributionsYearTable({ data }: { data: RowData[] }) {
               table.getRowModel().rows.map((row, rowIndex) => (
                 <TableRow
                   key={row.id}
-                  className={rowIndex % 2 === 0 ? "bg-white hover:bg-zinc-50" : "bg-zinc-50/40 hover:bg-zinc-50"}
+                  className={
+                    rowIndex % 2 === 0
+                      ? "bg-white hover:bg-zinc-50"
+                      : "bg-zinc-50/40 hover:bg-zinc-50"
+                  }
                 >
                   {row.getVisibleCells().map((cell, index) => (
                     <TableCell
@@ -186,7 +267,9 @@ export function ContributionsYearTable({ data }: { data: RowData[] }) {
                       className={[
                         "h-[54px] align-middle border-b border-zinc-100 py-2",
                         index === 0 ? "sticky left-0 z-20 bg-inherit pl-4" : "",
-                        index === 1 ? "sticky left-[132px] z-20 bg-inherit pl-4" : "",
+                        index === 1
+                          ? "sticky left-[132px] z-20 bg-inherit pl-4"
+                          : "",
                         index >= 2 ? "p-0 text-center" : "",
                       ].join(" ")}
                       style={
@@ -194,19 +277,25 @@ export function ContributionsYearTable({ data }: { data: RowData[] }) {
                           ? { width: 132, minWidth: 132, maxWidth: 132 }
                           : index === 1
                             ? { width: 240, minWidth: 240, maxWidth: 240 }
-                            : index === 14 
+                            : index === 14
                               ? { width: 60, minWidth: 60, maxWidth: 60 }
                               : { width: 72, minWidth: 72, maxWidth: 72 }
                       }
                     >
-                      {flexRender(cell.column.columnDef.cell, cell.getContext())}
+                      {flexRender(
+                        cell.column.columnDef.cell,
+                        cell.getContext(),
+                      )}
                     </TableCell>
                   ))}
                 </TableRow>
               ))
             ) : (
               <TableRow>
-                <TableCell colSpan={15} className="h-28 text-center text-zinc-500">
+                <TableCell
+                  colSpan={15}
+                  className="h-28 text-center text-zinc-500"
+                >
                   Aucune donnee
                 </TableCell>
               </TableRow>

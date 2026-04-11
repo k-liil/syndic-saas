@@ -32,25 +32,29 @@ type BuildingOption = {
   name: string;
 };
 
-type MonthStatus = "PAID" | "PARTIAL" | "UNPAID" | "ADVANCE" | null;
+type MonthData = {
+  status: "PAID" | "PARTIAL" | "UNPAID" | "ADVANCE" | null;
+  paidAmount: number;
+};
 
 type RowData = {
   id: string;
   lot: string;
   owner: string;
-  jan: MonthStatus;
-  feb: MonthStatus;
-  mar: MonthStatus;
-  apr: MonthStatus;
-  may: MonthStatus;
-  jun: MonthStatus;
-  jul: MonthStatus;
-  aug: MonthStatus;
-  sep: MonthStatus;
-  oct: MonthStatus;
-  nov: MonthStatus;
-  dec: MonthStatus;
+  jan: MonthData;
+  feb: MonthData;
+  mar: MonthData;
+  apr: MonthData;
+  may: MonthData;
+  jun: MonthData;
+  jul: MonthData;
+  aug: MonthData;
+  sep: MonthData;
+  oct: MonthData;
+  nov: MonthData;
+  dec: MonthData;
 };
+
 
 function ContributionsYearPageContent() {
   const searchParams = useSearchParams();
@@ -97,15 +101,15 @@ function ContributionsYearPageContent() {
 
   function convertUnits(building: ApiBuilding): RowData[] {
     return building.units.map((u) => {
-      const months = new Map<number, MonthStatus>();
+      const months = new Map<number, MonthData>();
 
       u.dues.forEach((d) => {
         const m = new Date(d.period).getUTCMonth();
-        months.set(m, d.status);
+        months.set(m, { status: d.status, paidAmount: (d as any).paidAmount || 0 });
       });
 
-      const get = (m: number): MonthStatus => {
-        return months.get(m) ?? "UNPAID";
+      const get = (m: number): MonthData => {
+        return months.get(m) ?? { status: "UNPAID", paidAmount: 0 };
       };
 
       return {
@@ -204,7 +208,8 @@ function ContributionsYearPageContent() {
                 <div className="text-xs uppercase tracking-wide text-zinc-400">Mois payes</div>
                 <div className="mt-2 text-xl font-bold text-emerald-600">
                   {rows.reduce((sum, row) => {
-                    return sum + Object.values(row).filter((v) => v === "PAID").length;
+                    const vals = [row.jan, row.feb, row.mar, row.apr, row.may, row.jun, row.jul, row.aug, row.sep, row.oct, row.nov, row.dec];
+                    return sum + vals.filter((v) => v.status === "PAID").length;
                   }, 0)}
                 </div>
               </div>
@@ -213,7 +218,8 @@ function ContributionsYearPageContent() {
                 <div className="text-xs uppercase tracking-wide text-zinc-400">Retards</div>
                 <div className="mt-2 text-xl font-bold text-rose-600">
                   {rows.reduce((sum, row) => {
-                    return sum + Object.values(row).filter((v) => v === "UNPAID").length;
+                    const vals = [row.jan, row.feb, row.mar, row.apr, row.may, row.jun, row.jul, row.aug, row.sep, row.oct, row.nov, row.dec];
+                    return sum + vals.filter((v) => v.status === "UNPAID").length;
                   }, 0)}
                 </div>
               </div>
@@ -222,7 +228,8 @@ function ContributionsYearPageContent() {
                 <div className="text-xs uppercase tracking-wide text-zinc-400">Partiels</div>
                 <div className="mt-2 text-xl font-bold text-amber-600">
                   {rows.reduce((sum, row) => {
-                    return sum + Object.values(row).filter((v) => v === "PARTIAL").length;
+                    const vals = [row.jan, row.feb, row.mar, row.apr, row.may, row.jun, row.jul, row.aug, row.sep, row.oct, row.nov, row.dec];
+                    return sum + vals.filter((v) => v.status === "PARTIAL").length;
                   }, 0)}
                 </div>
               </div>

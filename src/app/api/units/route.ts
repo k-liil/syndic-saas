@@ -45,6 +45,8 @@ export async function GET(req: Request) {
       orgId = gate.organizationId;
     }
 
+    console.log("[API_UNITS] Request for OrgId:", orgId, "isSuperAdmin:", gate.isSuperAdmin);
+
     if (!orgId) {
       return NextResponse.json([]);
     }
@@ -79,6 +81,8 @@ export async function GET(req: Request) {
         contributionPeriods: { orderBy: { startPeriod: "desc" } }
       }
     });
+
+    console.log("[API_UNITS] Found units count:", items.length);
 
     const settings = await prisma.appSettings.findFirst({
       where: { organizationId: orgId },
