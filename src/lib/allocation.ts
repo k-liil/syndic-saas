@@ -1,4 +1,5 @@
-import { Prisma, PrismaClient, DueStatus, ReceiptType } from "@prisma/client";
+import { DueStatus, ReceiptType } from "@prisma/client";
+import { buildContributionStartPeriod, getApplicableContribution } from "./contribution-engine";
 
 /**
  * Completely recalculates all `ReceiptAllocation` for a given unit based on FIFO logic.
@@ -19,6 +20,105 @@ export async function reallocateUnitContributions(
 
   log(`--- Début du recalcul FIFO pour le lot ${unitId} ---`);
 
+  // 1. Fetch all dependencies for sync
+  const [unit, settings, globalPeriods] = await Promise.all([
+    tx.unit.findUnique({
+      where: { id: unitId },
+      include: {
+        groupUnits: {
+          include: {
+            group: {
+              include: {
+                periods: { orderBy: { startPeriod: "desc" } },
+              },
+            },
+          },
+        },
+        contributionPeriods: { orderBy: { startPeriod: "desc" } },
+      },
+    }),
+    tx.appSettings.findFirst({
+      where: { organizationId },
+    }),
+    tx.contributionPeriod.findMany({
+      where: {
+        organizationId,
+        contributionType: "GLOBAL_FIXED",
+        groupId: null,
+        unitId: null,
+      },
+      orderBy: { startPeriod: "asc" },
+    }),
+  ]);
+
+  if (!unit || !settings) {
+    log(`ERREUR: Lot ou paramètres introuvables.`);
+    return;
+  }
+
+  // 1.2 Determine valid period
+  const startPeriod = buildContributionStartPeriod(unit, settings);
+  const startPeriodISO = startPeriod.toISOString();
+  log(`Période de début effective : ${startPeriodISO.slice(0, 7)}`);
+
+  // 1.3 Cleanup invalid dues (before start date)
+  const deleteRes = await tx.monthlyDue.deleteMany({
+    where: {
+      unitId,
+      organizationId,
+      period: { lt: startPeriod },
+    },
+  });
+  if (deleteRes.count > 0) {
+    log(`Supprimé ${deleteRes.count} dettes hors-période (avant la date de début).`);
+  }
+
+  // 1.4 Generate missing dues if needed (up to last receipt or today)
+  const lastReceipt = await tx.receipt.findFirst({
+    where: { unitId, organizationId, type: ReceiptType.CONTRIBUTION },
+    orderBy: { date: "desc" },
+    select: { date: true },
+  });
+
+  const now = new Date();
+  const lastTargetDate =
+    lastReceipt?.date && lastReceipt.date > now ? lastReceipt.date : now;
+  // Ensure we go to the first of the month
+  const targetPeriod = new Date(
+    Date.UTC(lastTargetDate.getUTCFullYear(), lastTargetDate.getUTCMonth(), 1),
+  );
+
+  let cursor = new Date(startPeriod);
+  let createdCount = 0;
+  while (cursor <= targetPeriod) {
+    const { amount } = getApplicableContribution(
+      unit as any,
+      cursor,
+      settings as any,
+      globalPeriods,
+    );
+    if (amount > 0) {
+      const res = await tx.monthlyDue.createMany({
+        data: [
+          {
+            organizationId,
+            unitId,
+            period: new Date(cursor),
+            amountDue: amount,
+            paidAmount: 0,
+            status: DueStatus.UNPAID,
+          },
+        ],
+        skipDuplicates: true,
+      });
+      createdCount += res.count;
+    }
+    cursor.setUTCMonth(cursor.getUTCMonth() + 1);
+  }
+  if (createdCount > 0) {
+    log(`Généré ${createdCount} dettes mensuelles manquantes.`);
+  }
+
   // 1. Wipe existing allocations for this unit's contribution receipts
   await tx.receiptAllocation.deleteMany({
     where: {
@@ -31,30 +131,6 @@ export async function reallocateUnitContributions(
   });
   log(`Suppression des anciennes allocations terminées.`);
 
-  // 1.5 Update MonthlyDue amounts if group changed
-  const unitGroup = await tx.contributionGroupUnit.findFirst({
-    where: { unitId },
-    include: { group: true },
-  });
-
-  if (unitGroup?.group?.defaultAmount) {
-    const expectedAmount = Number(unitGroup.group.defaultAmount);
-    const updateRes = await tx.monthlyDue.updateMany({
-      where: {
-        unitId,
-        organizationId,
-        amountDue: { not: expectedAmount },
-      },
-      data: { amountDue: expectedAmount },
-    });
-    if (updateRes.count > 0) {
-      log(
-        `Mise à jour de ${updateRes.count} dettes mensuelles au nouveau tarif du groupe (${expectedAmount} DH).`,
-      );
-    }
-  }
-
-  // 2. Fetch all Dues (Obligations) and Receipts (Payments) chronologically
   const [dues, receipts] = await Promise.all([
     tx.monthlyDue.findMany({
       where: { unitId, organizationId },
