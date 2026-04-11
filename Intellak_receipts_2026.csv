@@ -18,3 +18,65 @@ Imm1.A15,130,CASH,03/03/2026,Cotisation Février 2026
 Imm1.A16,140,CASH,01/01/2026,Cotisation Janvier 2026
 Imm1.A16,140,CASH,01/02/2026,Cotisation Février 2026
 Imm1.A17,1680,CASH,02/01/2026,Cotisation Année 2026
+Imm2.A1,140,CASH,06/02/2026,Cotisation Janvier 2026
+Imm2.A4,280,CASH,15/03/2026,Cotisation Janvier et Fev 2026
+Imm2.A5,140,CASH,01/01/2026,Cotisation Janvier 2026
+Imm2.A5,140,CASH,04/03/2026,Cotisation Février 2026
+Imm2.A7,140,CASH,05/03/2026,Cotisation Janvier 2026
+Imm2.A7,280,CASH,17/03/2026,Cotisation Février et Mars 2026
+Imm2.A15,140,CASH,01/01/2026,Cotisation Janvier 2026
+Imm2.A15,140,CASH,02/03/2026,Cotisation Février 2026
+Imm3.A1,130,CASH,08/02/2026,Cotisation Janvier 2026
+Imm3.A2,560,CASH,29/01/2026,Cotisation Janvier à Avril 2026
+Imm3.A2,560,CASH,28/02/2026,Cotisation Mai à Aout 2026
+Imm3.A7,130,CASH,01/01/2026,Cotisation Janvier 2026
+Imm3.A7,130,CASH,01/02/2026,Cotisation Février 2026
+Imm3.A7,130,CASH,01/03/2026,Cotisation Mars 2026
+Imm3.A8,140,CASH,01/02/2026,Cotisation Février 2026
+Imm3.A8,140,CASH,01/03/2026,Cotisation Mars 2026
+Imm3.A10,1560,CASH,12/03/2026,Cotisation Année 2026
+Imm3.A13,260,CASH,14/03/2026,Cotisation Janvier et Fev 2026
+Imm3.A15,1560,CASH,12/03/2026,Cotisation Année 2026
+Imm3.A18,130,CASH,02/02/2026,Cotisation Janvier 2026
+Imm4.A3,140,CASH,01/01/2026,Cotisation Janvier 2026
+Imm4.A3,140,CASH,01/02/2026,Cotisation Février 2026
+Imm4.A3,140,CASH,01/03/2026,Cotisation Mars 2026
+Imm4.A6,420,CASH,12/01/2026,Cotisation Janvier 2026
+Imm4.A7,130,CASH,14/03/2026,Cotisation Janvier 2026
+Imm4.A8,140,CASH,31/01/2026,Cotisation Janvier 2026
+Imm4.A9,140,CASH,02/02/2026,Cotisation Janvier 2026
+Imm4.A9,140,CASH,02/03/2026,Cotisation Février 2026
+Imm4.A11,130,CASH,28/01/2026,Cotisation Janvier 2026
+Imm4.A11,130,CASH,01/02/2026,Cotisation Février 2026
+Imm4.A12,280,CASH,14/03/2026,Cotisation Janvier et Fev 2026
+Imm4.A13,1560,CASH,09/01/2026,Cotisation Année 2026
+Imm4.A14,140,CASH,01/01/2026,Cotisation Janvier 2026
+Imm4.A14,140,CASH,02/03/2026,Cotisation Février 2026
+Imm4.A15,130,CASH,28/02/2026,Cotisation Janvier 2026
+Imm4.A16,140,CASH,01/01/2026,Cotisation Janvier 2026
+Imm4.A16,140,CASH,01/02/2026,Cotisation Février 2026
+Imm4.A16,140,CASH,01/03/2026,Cotisation Mars 2026
+Imm4.A18,420,CASH,10/02/2026,Cotisation Jan + Fev + Mars 2026
+Imm4.A19,130,CASH,01/01/2026,Cotisation Janvier 2026
+Imm4.A19,130,CASH,01/02/2026,Cotisation Février 2026
+Imm5.A2,700,CASH,05/03/2026,Cotisation Janv à Mai 2026
+Imm5.A3,140,CASH,27/01/2026,Cotisation Janvier 2026
+Imm5.A3,140,CASH,16/03/2026,Cotisation Février 2026
+Imm5.A11,140,CASH,01/01/2026,Cotisation Janvier 2026
+Imm5.A11,140,CASH,01/02/2026,Cotisation Février 2026
+Imm5.A13,300,CASH,28/02/2026,Cotisation Jan + Fev 2026
+Imm5.A14,140,CASH,03/02/2026,Cotisation Janvier 2026
+Imm5.A14,140,CASH,04/03/2026,Cotisation Fev 2026
+Imm5.A15,140,CASH,27/02/2026,Cotisation Janvier 2026
+Imm5.A15,280,CASH,18/03/2026,Cotisation Fev + Mars 2026
+Imm5.A16,150,CASH,17/02/2026,Cotisation Janvier 2026
+Imm5.A17,900,CASH,27/02/2026,Cotisation Jan à Juin 2026
+Imm6.A3,140,CASH,28/02/2026,Cotisation Janvier 2026
+Imm6.A3,140,CASH,03/03/2026,Cotisation Février 2026
+Imm6.A4,280,CASH,21/02/2026,Cotisation Jan + Fev 2026
+Imm6.A6,140,CASH,22/02/2026,Cotisation Janvier 2026
+Imm6.A6,140,CASH,28/02/2026,Cotisation Février 2026
+Imm6.A7,140,CASH,01/01/2026,Cotisation Janvier 2026
+Imm6.A7,140,CASH,01/02/2026,Cotisation Février 2026
+Imm6.A11,420,CASH,18/01/2026,Cotisation Avr à Juin 2026
+Imm6.A16,300,CASH,08/03/2026,Cotisation Jan + Fev 2026

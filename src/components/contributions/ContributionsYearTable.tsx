@@ -43,13 +43,22 @@ type RowData = {
   dec: MonthData;
 };
 
-function StatusBadge({ value }: { value: MonthData }) {
+function StatusBadge({
+  value,
+  monthIndex,
+}: {
+  value: MonthData;
+  monthIndex: number;
+}) {
+  const searchParams = useSearchParams();
+  const year = Number(searchParams.get("year"));
+
   const getAmountDisplay = (amount: number, colorLabel: string) => {
     if (amount > 0) {
       return (
         <span className="flex items-baseline">
           {amount}
-          <span className="ml-[2px] text-[9px] opacity-70">DH</span>
+          <span className="ml-[2px] text-[8px] font-bold opacity-70">DH</span>
         </span>
       );
     }
@@ -77,13 +86,34 @@ function StatusBadge({ value }: { value: MonthData }) {
   }
 
   if (value.status === "UNPAID") {
-    return (
-      <div className="flex h-10 w-full items-center justify-center">
-        <span className="inline-flex items-center justify-center rounded-md bg-rose-50 px-2 py-0.5 text-[11px] font-medium text-rose-700 ring-1 ring-inset ring-rose-600/20">
-          {getAmountDisplay(value.paidAmount, "RETARD")}
-        </span>
-      </div>
-    );
+    const now = new Date();
+    const currentYear = now.getFullYear();
+    const currentMonth = now.getMonth();
+
+    let isLate = false;
+    if (year < currentYear) {
+      isLate = true;
+    } else if (year === currentYear) {
+      if (monthIndex < currentMonth) {
+        isLate = true;
+      }
+    }
+
+    if (isLate) {
+      return (
+        <div className="flex h-10 w-full items-center justify-center">
+          <span className="h-2 w-2 rounded-full bg-rose-500 shadow-sm" />
+        </div>
+      );
+    } else {
+      return (
+        <div className="flex h-10 w-full items-center justify-center">
+          <span className="inline-flex items-center justify-center rounded-md bg-zinc-50 px-2.5 py-0.5 text-[11px] font-medium text-zinc-600 ring-1 ring-inset ring-zinc-500/10">
+            -
+          </span>
+        </div>
+      );
+    }
   }
 
   if (value.status === "ADVANCE") {
@@ -127,62 +157,62 @@ const columns: ColumnDef<RowData>[] = [
   {
     accessorKey: "jan",
     header: "Jan",
-    cell: ({ row }) => <StatusBadge value={row.original.jan} />,
+    cell: ({ row }) => <StatusBadge monthIndex={0} value={row.original.jan} />,
   },
   {
     accessorKey: "feb",
     header: "Fev",
-    cell: ({ row }) => <StatusBadge value={row.original.feb} />,
+    cell: ({ row }) => <StatusBadge monthIndex={1} value={row.original.feb} />,
   },
   {
     accessorKey: "mar",
     header: "Mar",
-    cell: ({ row }) => <StatusBadge value={row.original.mar} />,
+    cell: ({ row }) => <StatusBadge monthIndex={2} value={row.original.mar} />,
   },
   {
     accessorKey: "apr",
     header: "Avr",
-    cell: ({ row }) => <StatusBadge value={row.original.apr} />,
+    cell: ({ row }) => <StatusBadge monthIndex={3} value={row.original.apr} />,
   },
   {
     accessorKey: "may",
     header: "Mai",
-    cell: ({ row }) => <StatusBadge value={row.original.may} />,
+    cell: ({ row }) => <StatusBadge monthIndex={4} value={row.original.may} />,
   },
   {
     accessorKey: "jun",
     header: "Jun",
-    cell: ({ row }) => <StatusBadge value={row.original.jun} />,
+    cell: ({ row }) => <StatusBadge monthIndex={5} value={row.original.jun} />,
   },
   {
     accessorKey: "jul",
     header: "Jul",
-    cell: ({ row }) => <StatusBadge value={row.original.jul} />,
+    cell: ({ row }) => <StatusBadge monthIndex={6} value={row.original.jul} />,
   },
   {
     accessorKey: "aug",
     header: "Aou",
-    cell: ({ row }) => <StatusBadge value={row.original.aug} />,
+    cell: ({ row }) => <StatusBadge monthIndex={7} value={row.original.aug} />,
   },
   {
     accessorKey: "sep",
     header: "Sep",
-    cell: ({ row }) => <StatusBadge value={row.original.sep} />,
+    cell: ({ row }) => <StatusBadge monthIndex={8} value={row.original.sep} />,
   },
   {
     accessorKey: "oct",
     header: "Oct",
-    cell: ({ row }) => <StatusBadge value={row.original.oct} />,
+    cell: ({ row }) => <StatusBadge monthIndex={9} value={row.original.oct} />,
   },
   {
     accessorKey: "nov",
     header: "Nov",
-    cell: ({ row }) => <StatusBadge value={row.original.nov} />,
+    cell: ({ row }) => <StatusBadge monthIndex={10} value={row.original.nov} />,
   },
   {
     accessorKey: "dec",
     header: "Dec",
-    cell: ({ row }) => <StatusBadge value={row.original.dec} />,
+    cell: ({ row }) => <StatusBadge monthIndex={11} value={row.original.dec} />,
   },
 ];
 
