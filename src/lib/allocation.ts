@@ -61,6 +61,19 @@ export async function reallocateUnitContributions(
   const startPeriodISO = startPeriod.toISOString();
   log(`Période de début effective : ${startPeriodISO.slice(0, 7)}`);
 
+  // 1. Wipe ALL existing allocations for this unit's contribution receipts
+  // This MUST happen before cleaning up monthly dues to avoid foreign key violations.
+  await tx.receiptAllocation.deleteMany({
+    where: {
+      receipt: {
+        unitId,
+        organizationId,
+        type: ReceiptType.CONTRIBUTION,
+      },
+    },
+  });
+  log(`Suppression des anciennes allocations terminées.`);
+
   // 1.3 Cleanup invalid dues (before start date)
   const deleteRes = await tx.monthlyDue.deleteMany({
     where: {
@@ -115,21 +128,10 @@ export async function reallocateUnitContributions(
     }
     cursor.setUTCMonth(cursor.getUTCMonth() + 1);
   }
-  if (createdCount > 0) {
-    log(`Généré ${createdCount} dettes mensuelles manquantes.`);
+  log(`Généré ${createdCount} dettes mensuelles manquantes.`);
   }
 
-  // 1. Wipe existing allocations for this unit's contribution receipts
-  await tx.receiptAllocation.deleteMany({
-    where: {
-      receipt: {
-        unitId,
-        organizationId,
-        type: ReceiptType.CONTRIBUTION,
-      },
-    },
-  });
-  log(`Suppression des anciennes allocations terminées.`);
+  // 1.5 Fetch current dues and receipts for reallocation
 
   const [dues, receipts] = await Promise.all([
     tx.monthlyDue.findMany({
