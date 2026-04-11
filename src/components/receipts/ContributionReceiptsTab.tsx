@@ -103,7 +103,7 @@ export function ContributionReceiptsTab({
 }: {
   monthFilter: number;
   onMonthFilterChange: (month: number) => void;
-  logger?: { append: (logs: string[]) => void };
+  logger?: { addLogs: (logs: string[]) => void };
 }) {
   const { data: session } = useSession();
   const { org } = useOrganization();
@@ -600,7 +600,7 @@ export function ContributionReceiptsTab({
     }
 
     if (data?.logs?.length) {
-      logger?.append(data.logs);
+      logger?.addLogs(data.logs);
     }
 
     setDeleteOpen(false);
@@ -648,7 +648,7 @@ export function ContributionReceiptsTab({
     }
 
     if (data?.logs?.length) {
-      logger?.append(data.logs);
+      logger?.addLogs(data.logs);
     }
 
     const updatedDataRes = await fetch(apiUrl(`/api/receipts/${detail.id}`), {
@@ -799,7 +799,7 @@ export function ContributionReceiptsTab({
       }
 
       if (data?.logs?.length) {
-        logger?.append(data.logs);
+        logger?.addLogs(data.logs);
       }
 
       if (isEdit) {
