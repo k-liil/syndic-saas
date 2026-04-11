@@ -66,17 +66,20 @@ export function PageLoggerToggle({
   if (session?.user?.role !== "SUPER_ADMIN") return null;
 
   return (
-    <div className="flex items-center gap-2">
+    <div className="flex items-center gap-2" title="Mode Débogage">
       <button
         onClick={() => setIsLogActive(!isLogActive)}
-        className={`flex items-center gap-2 px-3 py-1.5 text-xs font-semibold rounded-lg border transition-all ${
-          isLogActive
-            ? "bg-slate-800 text-white border-slate-800 hover:bg-slate-700"
-            : "bg-white text-slate-600 border-slate-200 hover:bg-slate-50"
+        role="switch"
+        aria-checked={isLogActive}
+        className={`relative inline-flex h-4 w-7 items-center rounded-full transition-colors ${
+          isLogActive ? "bg-red-500" : "bg-slate-300"
         }`}
       >
-        <Terminal className="h-4 w-4" />
-        {isLogActive ? "Désactiver le Log" : "Activer le Log"}
+        <span
+          className={`inline-block h-3 w-3 transform rounded-full bg-white transition-transform ${
+            isLogActive ? "translate-x-3.5" : "translate-x-0.5"
+          }`}
+        />
       </button>
     </div>
   );

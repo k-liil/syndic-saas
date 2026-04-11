@@ -4,10 +4,16 @@ import { Suspense, useState } from "react";
 import { ReceiptsTabs } from "@/components/receipts/ReceiptsTabs";
 import { ContributionReceiptsTab } from "@/components/receipts/ContributionReceiptsTab";
 import { OtherReceiptsTab } from "@/components/receipts/OtherReceiptsTab";
+import {
+  usePageLogger,
+  PageLoggerToggle,
+  PageLoggerPanel,
+} from "@/components/ui/PageLogger";
 
 export default function ReceiptsPage() {
   const [tab, setTab] = useState<"CONTRIBUTION" | "OTHER">("CONTRIBUTION");
   const [monthFilter, setMonthFilter] = useState(0);
+  const logger = usePageLogger();
 
   return (
     <div className="space-y-6">
@@ -44,6 +50,13 @@ export default function ReceiptsPage() {
               x
             </button>
           ) : null}
+
+          <div className="ml-4 pl-4 border-l border-zinc-200">
+            <PageLoggerToggle
+              isLogActive={logger.isLogActive}
+              setIsLogActive={logger.setIsLogActive}
+            />
+          </div>
         </div>
       </div>
 
@@ -60,10 +73,17 @@ export default function ReceiptsPage() {
           <ContributionReceiptsTab
             monthFilter={monthFilter}
             onMonthFilterChange={setMonthFilter}
+            logger={logger}
           />
         )}
         {tab === "OTHER" && <OtherReceiptsTab monthFilter={monthFilter} />}
       </Suspense>
+
+      <PageLoggerPanel
+        logs={logger.logs}
+        isLogActive={logger.isLogActive}
+        clearLogs={logger.clearLogs}
+      />
     </div>
   );
 }

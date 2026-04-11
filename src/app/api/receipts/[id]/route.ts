@@ -211,6 +211,7 @@ export async function PUT(
     const hasAmountChanged =
       amount !== undefined && Number(existing.amount) !== amount;
 
+    let logs: string[] = [];
     if (
       existing.unitId &&
       existing.type === "CONTRIBUTION" &&
@@ -222,12 +223,14 @@ export async function PUT(
         prisma,
         existing.unitId,
         gate.organizationId,
+        logs,
       );
     }
 
     return NextResponse.json({
       ok: true,
       receipt: updated,
+      logs,
     });
   } catch (e: any) {
     console.error(e);
@@ -247,6 +250,7 @@ export async function DELETE(
   const { id } = await params;
 
   try {
+    let logs: string[] = [];
     await prisma.$transaction(
       async (tx) => {
         const receipt = await tx.receipt.findFirst({
@@ -257,6 +261,10 @@ export async function DELETE(
         if (!receipt) {
           throw new Error("Receipt not found");
         }
+
+        await tx.receiptAllocation.deleteMany({
+          where: { receiptId: id },
+        });
 
         await tx.receipt.delete({
           where: { id },
@@ -271,13 +279,14 @@ export async function DELETE(
             tx,
             receipt.unitId,
             gate.organizationId,
+            logs,
           );
         }
       },
       { timeout: 30000, maxWait: 10000 },
     );
 
-    return NextResponse.json({ ok: true });
+    return NextResponse.json({ ok: true, logs });
   } catch (e: any) {
     console.error(e);
 
