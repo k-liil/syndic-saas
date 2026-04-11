@@ -180,7 +180,7 @@ export async function PUT(
 
     const existing = await prisma.receipt.findFirst({
       where: { id, organizationId: gate.organizationId ?? undefined },
-      select: { id: true, unitId: true, type: true, date: true, amount: true },
+      select: { id: true, unitId: true, type: true, date: true, amount: true, organizationId: true },
     });
 
     if (!existing) {
@@ -216,13 +216,13 @@ export async function PUT(
       existing.unitId &&
       existing.type === "CONTRIBUTION" &&
       (hasDateChanged || hasAmountChanged) &&
-      gate.organizationId
+      existing.organizationId
     ) {
       // Re-allocate if date or amount changed because FIFO order and distribution changed
       await reallocateUnitContributions(
         prisma,
         existing.unitId,
-        gate.organizationId,
+        existing.organizationId,
         logs,
       );
     }
@@ -255,7 +255,7 @@ export async function DELETE(
       async (tx) => {
         const receipt = await tx.receipt.findFirst({
           where: { id, organizationId: gate.organizationId ?? undefined },
-          select: { id: true, unitId: true, type: true },
+          select: { id: true, unitId: true, type: true, organizationId: true },
         });
 
         if (!receipt) {
@@ -273,12 +273,12 @@ export async function DELETE(
         if (
           receipt.unitId &&
           receipt.type === "CONTRIBUTION" &&
-          gate.organizationId
+          receipt.organizationId
         ) {
           await reallocateUnitContributions(
             tx,
             receipt.unitId,
-            gate.organizationId,
+            receipt.organizationId,
             logs,
           );
         }
