@@ -2,15 +2,22 @@ import { Prisma, PrismaClient, DueStatus, ReceiptType } from "@prisma/client";
 
 /**
  * Completely recalculates all `ReceiptAllocation` for a given unit based on FIFO logic.
- * This ensures that if a receipt is deleted or inserted out of order, 
+ * This ensures that if a receipt is deleted or inserted out of order,
  * the oldest unpaid dues are always satisfied first.
  */
 export async function reallocateUnitContributions(
-  tx: any, 
+  tx: any,
   unitId: string,
-  organizationId: string
+  organizationId: string,
+  logger?: string[],
 ) {
   if (!unitId || !organizationId) return;
+
+  const log = (msg: string) => {
+    if (logger) logger.push(`[${new Date().toISOString()}] ${msg}`);
+  };
+
+  log(`--- Début du recalcul FIFO pour le lot ${unitId} ---`);
 
   // 1. Wipe existing allocations for this unit's contribution receipts
   await tx.receiptAllocation.deleteMany({
@@ -22,6 +29,7 @@ export async function reallocateUnitContributions(
       },
     },
   });
+  log(`Suppression des anciennes allocations terminées.`);
 
   // 2. Fetch all Dues (Obligations) and Receipts (Payments) chronologically
   const [dues, receipts] = await Promise.all([
@@ -33,12 +41,20 @@ export async function reallocateUnitContributions(
     tx.receipt.findMany({
       where: { unitId, organizationId, type: ReceiptType.CONTRIBUTION },
       orderBy: [{ date: "asc" }, { receiptNumber: "asc" }],
-      select: { id: true, amount: true, unallocatedAmount: true },
+      select: {
+        id: true,
+        amount: true,
+        unallocatedAmount: true,
+        receiptNumber: true,
+      },
     }),
   ]);
 
-  const allocations: { receiptId: string; dueId: string; amount: number }[] = [];
-  
+  log(`Trouvé ${dues.length} dettes et ${receipts.length} reçus pour ce lot.`);
+
+  const allocations: { receiptId: string; dueId: string; amount: number }[] =
+    [];
+
   // Create a mutable working copy of due statuses starting from 0 (re-allocating everything)
   const workingDues = dues.map((d: any) => ({
     id: d.id,
@@ -53,6 +69,7 @@ export async function reallocateUnitContributions(
     amount: Number(r.amount),
     unallocatedAmount: 0,
     initialUnallocatedAmount: Number(r.unallocatedAmount),
+    receiptNumber: r.receiptNumber,
   }));
 
   // 3. FIFO Logic: apply each receipt to the earliest unpaid dues
@@ -74,21 +91,41 @@ export async function reallocateUnitContributions(
         dueId: d.id,
         amount: allocationAmount,
       });
+      log(
+        `Reçu #${wr.receiptNumber} alloue ${allocationAmount} DH à la dette de ${d.amountDue} DH (ID: ${d.id.slice(-6)}...). Restant dû: ${deficit - allocationAmount} DH.`,
+      );
     }
     wr.unallocatedAmount = remaining;
+    if (remaining > 0) {
+      log(
+        `Reçu #${wr.receiptNumber} a un solde non alloué (AVANCE) de ${remaining} DH.`,
+      );
+    }
   }
 
   // 4. Batch Updates for Dues (Only on changes)
   const dueUpdatesNeeded = workingDues.filter((d: any) => {
-    const currentStatus = d.paidAmount >= d.amountDue ? DueStatus.PAID : d.paidAmount > 0 ? DueStatus.PARTIAL : DueStatus.UNPAID;
-    return d.paidAmount !== d.initialPaidAmount || currentStatus !== d.initialStatus;
+    const currentStatus =
+      d.paidAmount >= d.amountDue
+        ? DueStatus.PAID
+        : d.paidAmount > 0
+          ? DueStatus.PARTIAL
+          : DueStatus.UNPAID;
+    return (
+      d.paidAmount !== d.initialPaidAmount || currentStatus !== d.initialStatus
+    );
   });
 
   // 5. Batch Updates for Receipts (Only on changes)
-  const receiptUpdatesNeeded = workingReceipts.filter((r: any) => r.unallocatedAmount !== r.initialUnallocatedAmount);
+  const receiptUpdatesNeeded = workingReceipts.filter(
+    (r: any) => r.unallocatedAmount !== r.initialUnallocatedAmount,
+  );
 
   console.time(`[ALLOCATION] DB Updates for ${unitId}`);
-  
+  log(
+    `Préparation des mises à jour: ${dueUpdatesNeeded.length} dettes modifiées, ${receiptUpdatesNeeded.length} reçus modifiés, ${allocations.length} nouvelles allocations à insérer.`,
+  );
+
   // 6. Execute all updates and create allocations
   const dbOps: Promise<any>[] = [];
 
@@ -98,19 +135,28 @@ export async function reallocateUnitContributions(
 
   // Collect Dues updates in parallel
   dueUpdatesNeeded.forEach((d: any) => {
-    const status = d.paidAmount >= d.amountDue ? DueStatus.PAID : d.paidAmount > 0 ? DueStatus.PARTIAL : DueStatus.UNPAID;
-    dbOps.push(tx.monthlyDue.update({
-      where: { id: d.id },
-      data: { paidAmount: d.paidAmount, status },
-    }));
+    const status =
+      d.paidAmount >= d.amountDue
+        ? DueStatus.PAID
+        : d.paidAmount > 0
+          ? DueStatus.PARTIAL
+          : DueStatus.UNPAID;
+    dbOps.push(
+      tx.monthlyDue.update({
+        where: { id: d.id },
+        data: { paidAmount: d.paidAmount, status },
+      }),
+    );
   });
 
   // Collect Receipts updates in parallel
   receiptUpdatesNeeded.forEach((r: any) => {
-    dbOps.push(tx.receipt.update({
-      where: { id: r.id },
-      data: { unallocatedAmount: r.unallocatedAmount },
-    }));
+    dbOps.push(
+      tx.receipt.update({
+        where: { id: r.id },
+        data: { unallocatedAmount: r.unallocatedAmount },
+      }),
+    );
   });
 
   // Run all DB operations in parallel within the same transaction
@@ -119,5 +165,5 @@ export async function reallocateUnitContributions(
   }
 
   console.timeEnd(`[ALLOCATION] DB Updates for ${unitId}`);
-  console.log(`[ALLOCATION] Recalculation complete for Unit ${unitId}. ${allocations.length} allocations, ${dueUpdatesNeeded.length} due updates, ${receiptUpdatesNeeded.length} receipt updates.`);
+  log(`--- Fin du recalcul FIFO avec succès ---`);
 }

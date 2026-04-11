@@ -63,6 +63,9 @@ export async function getUnitAuditData(orgId: string, unitId: string) {
 }
 
 export async function deleteReceiptAndReallocate(receiptId: string) {
+  const logs: string[] = [];
+  const log = (msg: string) => logs.push(`[${new Date().toISOString()}] ${msg}`);
+
   try {
     const gate = await requireManager();
     if (!gate.ok) return { ok: false, error: "Non autorisé" };
@@ -72,9 +75,13 @@ export async function deleteReceiptAndReallocate(receiptId: string) {
       select: { unitId: true, organizationId: true, receiptNumber: true }
     });
 
-    if (!receipt || !receipt.unitId) return { ok: false, error: "Reçu introuvable" };
+    if (!receipt || !receipt.unitId) {
+      log("ERREUR: Reçu introuvable");
+      return { ok: false, error: "Reçu introuvable", logs };
+    }
 
-    console.log(`[AUDIT] Deleting Receipt #${receipt.receiptNumber} and reallocating Unit ${receipt.unitId}`);
+    const unitId = receipt.unitId;
+    log(`Demande de suppression du Reçu #${receipt.receiptNumber} pour l'unité ${unitId}`);
 
     await prisma.$transaction(async (tx) => {
       // Deleting receipt cascades to allocations in schema? 
@@ -82,39 +89,49 @@ export async function deleteReceiptAndReallocate(receiptId: string) {
       // In schema: receipt Receipt @relation(fields: [receiptId], references: [id])
       // No explicit onDelete: Cascade in schema for ReceiptAllocation. Let's delete manually to be safe.
       
-      await tx.receiptAllocation.deleteMany({
+      const deletedAllocations = await tx.receiptAllocation.deleteMany({
         where: { receiptId }
       });
+      log(`Suppression de ${deletedAllocations.count} allocations existantes pour ce reçu...`);
 
+      log(`Suppression du reçu lui-même...`);
       await tx.receipt.delete({
         where: { id: receiptId }
       });
 
-      // Recalculate FIFO
-      await reallocateUnitContributions(tx, receipt.unitId!, receipt.organizationId);
+      log(`Lancement de l'allocation FIFO...`);
+      await reallocateUnitContributions(tx, unitId, receipt.organizationId, logs);
     });
 
+    log(`Action terminée.`);
     revalidatePath("/setup/allocations");
-    return { ok: true };
+    return { ok: true, logs };
   } catch (error) {
+    log(`ERREUR: ${String(error)}`);
     console.error("Delete & Reallocate failed:", error);
-    return { ok: false, error: String(error) };
+    return { ok: false, error: String(error), logs };
   }
 }
 
 export async function forceRecalculateUnit(unitId: string, orgId: string) {
+  const logs: string[] = [];
+  const log = (msg: string) => logs.push(`[${new Date().toISOString()}] ${msg}`);
+
   try {
     const gate = await requireManager();
     if (!gate.ok) return { ok: false, error: "Non autorisé" };
 
+    log(`Démarrage du forçage de recalcul pour le lot ${unitId}...`);
     await prisma.$transaction(async (tx) => {
-      await reallocateUnitContributions(tx, unitId, orgId);
+      await reallocateUnitContributions(tx, unitId, orgId, logs);
     });
 
+    log(`Action terminée.`);
     revalidatePath("/setup/allocations");
-    return { ok: true };
+    return { ok: true, logs };
   } catch (error) {
+    log(`ERREUR: ${String(error)}`);
     console.error("Force recalculate failed:", error);
-    return { ok: false, error: String(error) };
+    return { ok: false, error: String(error), logs };
   }
 }
