@@ -100,6 +100,7 @@ function fmtReceiptNumber(
 export function ContributionReceiptsTab({
   monthFilter,
   onMonthFilterChange,
+  logger,
 }: {
   monthFilter: number;
   onMonthFilterChange: (month: number) => void;
