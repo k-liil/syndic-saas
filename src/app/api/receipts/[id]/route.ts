@@ -7,7 +7,7 @@ import { getOrgIdFromRequest } from "@/lib/org-utils";
 
 export async function GET(
   req: Request,
-  { params }: { params: Promise<{ id: string }> }
+  { params }: { params: Promise<{ id: string }> },
 ) {
   const gate = await requireAuth();
   if (!gate.ok) {
@@ -58,7 +58,7 @@ export async function GET(
       LEFT JOIN "MonthlyDue" d ON ra."dueId" = d.id
       LEFT JOIN PrevSums ps ON ra."dueId" = ps."dueId"
       WHERE r.id = ${id} 
-        AND (${isSuperAdmin} OR r."organizationId" = ${orgId ?? ''})
+        AND (${isSuperAdmin} OR r."organizationId" = ${orgId ?? ""})
       ORDER BY d.period ASC NULLS LAST
     `;
 
@@ -79,24 +79,30 @@ export async function GET(
       bankName: first.r_bankName,
       bankRef: first.r_bankRef,
       unallocatedAmount: Number(first.r_unallocated),
-      owner: first.o_id ? {
-        id: first.o_id,
-        name: first.o_name,
-        cin: first.o_cin,
-        email: first.o_email,
-        phone: first.o_phone,
-      } : null,
-      building: first.b_id ? {
-        id: first.b_id,
-        name: first.b_name,
-      } : null,
-      unit: first.u_id ? {
-        id: first.u_id,
-        lotNumber: first.u_lotNumber,
-        reference: first.u_reference,
-        type: first.u_type,
-      } : null,
-      allocations: []
+      owner: first.o_id
+        ? {
+            id: first.o_id,
+            name: first.o_name,
+            cin: first.o_cin,
+            email: first.o_email,
+            phone: first.o_phone,
+          }
+        : null,
+      building: first.b_id
+        ? {
+            id: first.b_id,
+            name: first.b_name,
+          }
+        : null,
+      unit: first.u_id
+        ? {
+            id: first.u_id,
+            lotNumber: first.u_lotNumber,
+            reference: first.u_reference,
+            type: first.u_type,
+          }
+        : null,
+      allocations: [],
     };
 
     // Process all allocations including their previous balances
@@ -113,7 +119,7 @@ export async function GET(
             amountDue: Number(row.d_amountDue),
             paidAmount: Number(row.d_paidAmount),
             status: row.d_status,
-          }
+          },
         });
       }
     }
@@ -121,13 +127,16 @@ export async function GET(
     return NextResponse.json(receipt);
   } catch (error: any) {
     console.error(`[RECEIPT_DETAIL] Error:`, error);
-    return NextResponse.json({ error: "Internal Server Error", details: error.message }, { status: 500 });
+    return NextResponse.json(
+      { error: "Internal Server Error", details: error.message },
+      { status: 500 },
+    );
   }
 }
 
 export async function PUT(
   req: Request,
-  { params }: { params: Promise<{ id: string }> }
+  { params }: { params: Promise<{ id: string }> },
 ) {
   const gate = await requireManager();
   if (!gate.ok) {
@@ -141,43 +150,37 @@ export async function PUT(
 
     const method = typeof body.method === "string" ? body.method : "";
     const date = body.date ? new Date(body.date) : null;
+    const amount = body.amount ? Number(body.amount) : undefined;
     const bankName =
       typeof body.bankName === "string" ? body.bankName.trim() : "";
-    const bankRef =
-      typeof body.bankRef === "string" ? body.bankRef.trim() : "";
-const note =
-  typeof body.note === "string" ? body.note.trim() : "";
+    const bankRef = typeof body.bankRef === "string" ? body.bankRef.trim() : "";
+    const note = typeof body.note === "string" ? body.note.trim() : "";
     if (!["CASH", "TRANSFER", "CHECK"].includes(method)) {
-      return NextResponse.json(
-        { error: "Invalid method" },
-        { status: 400 }
-      );
+      return NextResponse.json({ error: "Invalid method" }, { status: 400 });
     }
 
     if (!date) {
-      return NextResponse.json(
-        { error: "Invalid date" },
-        { status: 400 }
-      );
+      return NextResponse.json({ error: "Invalid date" }, { status: 400 });
+    }
+
+    if (amount !== undefined && (isNaN(amount) || amount <= 0)) {
+      return NextResponse.json({ error: "Invalid amount" }, { status: 400 });
     }
 
     if ((method === "TRANSFER" || method === "CHECK") && !bankName) {
-      return NextResponse.json(
-        { error: "Bank required" },
-        { status: 400 }
-      );
+      return NextResponse.json({ error: "Bank required" }, { status: 400 });
     }
 
     if (method === "CHECK" && !bankRef) {
       return NextResponse.json(
         { error: "Check number required" },
-        { status: 400 }
+        { status: 400 },
       );
     }
 
     const existing = await prisma.receipt.findFirst({
       where: { id, organizationId: gate.organizationId ?? undefined },
-      select: { id: true, unitId: true, type: true, date: true },
+      select: { id: true, unitId: true, type: true, date: true, amount: true },
     });
 
     if (!existing) {
@@ -186,13 +189,14 @@ const note =
 
     const updated = await prisma.receipt.update({
       where: { id },
-data: {
-  method: method as any,
-  date,
-  bankName: bankName || null,
-  bankRef: bankRef || null,
-  note: note || null,
-},
+      data: {
+        method: method as any,
+        date,
+        ...(amount !== undefined ? { amount } : {}),
+        bankName: bankName || null,
+        bankRef: bankRef || null,
+        note: note || null,
+      },
       select: {
         id: true,
         receiptNumber: true,
@@ -203,28 +207,37 @@ data: {
       },
     });
 
-    if (existing.unitId && existing.type === "CONTRIBUTION" && existing.date.getTime() !== date.getTime() && gate.organizationId) {
-      // Re-allocate if date changed because FIFO order might have changed
-      await reallocateUnitContributions(prisma, existing.unitId, gate.organizationId);
+    const hasDateChanged = existing.date.getTime() !== date.getTime();
+    const hasAmountChanged =
+      amount !== undefined && Number(existing.amount) !== amount;
+
+    if (
+      existing.unitId &&
+      existing.type === "CONTRIBUTION" &&
+      (hasDateChanged || hasAmountChanged) &&
+      gate.organizationId
+    ) {
+      // Re-allocate if date or amount changed because FIFO order and distribution changed
+      await reallocateUnitContributions(
+        prisma,
+        existing.unitId,
+        gate.organizationId,
+      );
     }
 
     return NextResponse.json({
       ok: true,
       receipt: updated,
     });
-
   } catch (e: any) {
     console.error(e);
 
-    return NextResponse.json(
-      { error: "Update failed" },
-      { status: 500 }
-    );
+    return NextResponse.json({ error: "Update failed" }, { status: 500 });
   }
 }
 export async function DELETE(
   _req: Request,
-  { params }: { params: Promise<{ id: string }> }
+  { params }: { params: Promise<{ id: string }> },
 ) {
   const gate = await requireManager();
   if (!gate.ok) {
@@ -234,34 +247,40 @@ export async function DELETE(
   const { id } = await params;
 
   try {
-    await prisma.$transaction(async (tx) => {
-      const receipt = await tx.receipt.findFirst({
-        where: { id, organizationId: gate.organizationId ?? undefined },
-        select: { id: true, unitId: true, type: true },
-      });
+    await prisma.$transaction(
+      async (tx) => {
+        const receipt = await tx.receipt.findFirst({
+          where: { id, organizationId: gate.organizationId ?? undefined },
+          select: { id: true, unitId: true, type: true },
+        });
 
-      if (!receipt) {
-        throw new Error("Receipt not found");
-      }
+        if (!receipt) {
+          throw new Error("Receipt not found");
+        }
 
-      await tx.receipt.delete({
-        where: { id },
-      });
+        await tx.receipt.delete({
+          where: { id },
+        });
 
-      if (receipt.unitId && receipt.type === "CONTRIBUTION" && gate.organizationId) {
-        await reallocateUnitContributions(tx, receipt.unitId, gate.organizationId);
-      }
-    }, { timeout: 30000, maxWait: 10000 });
+        if (
+          receipt.unitId &&
+          receipt.type === "CONTRIBUTION" &&
+          gate.organizationId
+        ) {
+          await reallocateUnitContributions(
+            tx,
+            receipt.unitId,
+            gate.organizationId,
+          );
+        }
+      },
+      { timeout: 30000, maxWait: 10000 },
+    );
 
     return NextResponse.json({ ok: true });
-
   } catch (e: any) {
-
     console.error(e);
 
-    return NextResponse.json(
-      { error: "Delete failed" },
-      { status: 500 }
-    );
+    return NextResponse.json({ error: "Delete failed" }, { status: 500 });
   }
 }

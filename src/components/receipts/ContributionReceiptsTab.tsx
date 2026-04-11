@@ -29,7 +29,12 @@ type Receipt = {
   note: string | null;
   owner: { name: string; firstName?: string | null };
   building: { name: string };
-  unit: { id?: string; lotNumber?: string; reference: string; type: string } | null;
+  unit: {
+    id?: string;
+    lotNumber?: string;
+    reference: string;
+    type: string;
+  } | null;
   firstPeriod: string | null;
   lastPeriod: string | null;
   isPartial: boolean;
@@ -57,8 +62,15 @@ function fmtPeriodRange(first: string | null, last: string | null) {
   const end = new Date(last);
 
   if (start.getUTCFullYear() === end.getUTCFullYear()) {
-    const startMonth = start.toLocaleDateString("fr-FR", { month: "long", timeZone: "UTC" });
-    const endMonth = end.toLocaleDateString("fr-FR", { month: "long", year: "numeric", timeZone: "UTC" });
+    const startMonth = start.toLocaleDateString("fr-FR", {
+      month: "long",
+      timeZone: "UTC",
+    });
+    const endMonth = end.toLocaleDateString("fr-FR", {
+      month: "long",
+      year: "numeric",
+      timeZone: "UTC",
+    });
     return `${startMonth} à ${endMonth}`;
   }
 
@@ -76,7 +88,7 @@ function fmtElapsed(ms: number) {
 function fmtReceiptNumber(
   receiptNumber: number,
   usePrefix: boolean,
-  prefix: string
+  prefix: string,
 ) {
   if (usePrefix && prefix.trim()) {
     return `${prefix.trim()}${receiptNumber}`;
@@ -103,19 +115,18 @@ export function ContributionReceiptsTab({
   const [totalReceipts, setTotalReceipts] = useState(0);
   const [selectAllAcrossResults, setSelectAllAcrossResults] = useState(false);
 
-const [totals, setTotals] = useState({
-  all: 0,
-  cash: 0,
-  transfer: 0,
-  check: 0,
-});
+  const [totals, setTotals] = useState({
+    all: 0,
+    cash: 0,
+    transfer: 0,
+    check: 0,
+  });
 
   const [page, setPage] = useState(1);
-const [pageSize] = useState(50);
-const [totalPages, setTotalPages] = useState(1);
+  const [pageSize] = useState(50);
+  const [totalPages, setTotalPages] = useState(1);
   const [open, setOpen] = useState(false);
   const [busy, setBusy] = useState(false);
-
 
   const [methodFilter, setMethodFilter] = useState<
     "ALL" | "CASH" | "TRANSFER" | "CHECK"
@@ -125,12 +136,12 @@ const [totalPages, setTotalPages] = useState(1);
   const [lotFilter, setLotFilter] = useState("");
   const [sortDir, setSortDir] = useState<"asc" | "desc">("desc");
 
-const totalAll = totals.all;
-const totalCash = totals.cash;
-const totalTransfer = totals.transfer;
-const totalCheck = totals.check;
+  const totalAll = totals.all;
+  const totalCash = totals.cash;
+  const totalTransfer = totals.transfer;
+  const totalCheck = totals.check;
 
-const filteredReceipts = receipts;
+  const filteredReceipts = receipts;
 
   const [mode, setMode] = useState<"UNIT" | "OWNER">("UNIT");
   const [deleteOpen, setDeleteOpen] = useState(false);
@@ -143,16 +154,21 @@ const filteredReceipts = receipts;
   const [unitId, setUnitId] = useState("");
 
   const [importBusy, setImportBusy] = useState(false);
-const [importProgress, setImportProgress] = useState(0);
-const [importTotal, setImportTotal] = useState(0);
-const [importPercent, setImportPercent] = useState(0);
+  const [importProgress, setImportProgress] = useState(0);
+  const [importTotal, setImportTotal] = useState(0);
+  const [importPercent, setImportPercent] = useState(0);
   const [importStartedAt, setImportStartedAt] = useState<number | null>(null);
   const [importElapsedMs, setImportElapsedMs] = useState(0);
 
-  const [toast, setToast] = useState<null | { type: "success" | "error"; text: string }>(null);
+  const [toast, setToast] = useState<null | {
+    type: "success" | "error";
+    text: string;
+  }>(null);
   const [deleting, setDeleting] = useState(false);
   const [bulkDeleting, setBulkDeleting] = useState(false);
-  const [receiptToDeleteNumber, setReceiptToDeleteNumber] = useState<number | null>(null);
+  const [receiptToDeleteNumber, setReceiptToDeleteNumber] = useState<
+    number | null
+  >(null);
 
   const [amount, setAmount] = useState("");
   const [method, setMethod] = useState<Method>("CASH");
@@ -167,18 +183,21 @@ const [importPercent, setImportPercent] = useState(0);
   const [editMode, setEditMode] = useState(false);
   const [editMethod, setEditMethod] = useState<Method>("CASH");
   const [editDate, setEditDate] = useState("");
+  const [editAmount, setEditAmount] = useState("");
   const [editBank, setEditBank] = useState("");
   const [editCheck, setEditCheck] = useState("");
 
   const [importOpen, setImportOpen] = useState(false);
   const [importFile, setImportFile] = useState<File | null>(null);
-  const [importDateFormat, setImportDateFormat] = useState<"DMY" | "MDY">("DMY");
+  const [importDateFormat, setImportDateFormat] = useState<"DMY" | "MDY">(
+    "DMY",
+  );
   const [selectedReceipts, setSelectedReceipts] = useState<string[]>([]);
   const [importResult, setImportResult] = useState<null | {
-  imported: number;
-  errors: { row: number; error: string }[];
-  durationMs: number;
-}>(null);
+    imported: number;
+    errors: { row: number; error: string }[];
+    durationMs: number;
+  }>(null);
 
   const [success, setSuccess] = useState<null | {
     receiptNumber: number;
@@ -189,90 +208,126 @@ const [importPercent, setImportPercent] = useState(0);
     unallocatedAmount: number;
   }>(null);
 
-async function loadReceipts() {
-  if (!year) return;
+  async function loadReceipts() {
+    if (!year) return;
 
-  const params = new URLSearchParams({
-    page: String(page),
-    pageSize: String(pageSize),
-    type: "CONTRIBUTION",
-    year,
-    q: lotFilter,
-    sortDir,
-  });
+    const params = new URLSearchParams({
+      page: String(page),
+      pageSize: String(pageSize),
+      type: "CONTRIBUTION",
+      year,
+      q: lotFilter,
+      sortDir,
+    });
 
-  if (methodFilter !== "ALL") {
-    params.append("method", methodFilter);
+    if (methodFilter !== "ALL") {
+      params.append("method", methodFilter);
+    }
+
+    if (monthFilter > 0) {
+      params.append("month", String(monthFilter));
+    }
+
+    const res = await fetch(apiUrl(`/api/receipts?${params.toString()}`), {
+      cache: "no-store",
+    });
+
+    const data = await res.json();
+
+    setReceipts(Array.isArray(data?.items) ? data.items : []);
+    setTotalPages(Number(data?.pagination?.totalPages ?? 1));
+    setTotalReceipts(Number(data?.pagination?.total ?? 0));
+
+    setTotals({
+      all: Number(data?.totals?.all ?? 0),
+      cash: Number(data?.totals?.cash ?? 0),
+      transfer: Number(data?.totals?.transfer ?? 0),
+      check: Number(data?.totals?.check ?? 0),
+    });
   }
 
-  if (monthFilter > 0) {
-    params.append("month", String(monthFilter));
+  async function loadReceiptsTotalCount() {
+    if (!year) return 0;
+
+    const params = new URLSearchParams({
+      page: "1",
+      pageSize: "1",
+      type: "CONTRIBUTION",
+      year,
+      q: lotFilter,
+      sortDir,
+    });
+
+    if (methodFilter !== "ALL") {
+      params.append("method", methodFilter);
+    }
+
+    if (monthFilter > 0) {
+      params.append("month", String(monthFilter));
+    }
+
+    const res = await fetch(apiUrl(`/api/receipts?${params.toString()}`), {
+      cache: "no-store",
+    });
+
+    const data = await res.json().catch(() => null);
+    return Number(data?.pagination?.total ?? 0);
   }
 
-  const res = await fetch(apiUrl(`/api/receipts?${params.toString()}`), {
-    cache: "no-store",
-  });
+  async function deleteSelected() {
+    if (selectedReceipts.length === 0 && !selectAllAcrossResults) return;
 
-  const data = await res.json();
+    setBulkDeleting(true);
 
-setReceipts(Array.isArray(data?.items) ? data.items : []);
-setTotalPages(Number(data?.pagination?.totalPages ?? 1));
-setTotalReceipts(Number(data?.pagination?.total ?? 0));
+    if (selectAllAcrossResults) {
+      for (let attempt = 0; attempt < 5; attempt += 1) {
+        const res = await fetch(apiUrl("/api/receipts/bulk"), {
+          method: "DELETE",
+          headers: {
+            "Content-Type": "application/json",
+          },
+          body: JSON.stringify({
+            deleteAll: true,
+            type: "CONTRIBUTION",
+            year,
+            month: monthFilter > 0 ? monthFilter : undefined,
+            method: methodFilter === "ALL" ? undefined : methodFilter,
+          }),
+        });
 
-setTotals({
-  all: Number(data?.totals?.all ?? 0),
-  cash: Number(data?.totals?.cash ?? 0),
-  transfer: Number(data?.totals?.transfer ?? 0),
-  check: Number(data?.totals?.check ?? 0),
-});
-}
+        const data = await res.json().catch(() => null);
 
-async function loadReceiptsTotalCount() {
-  if (!year) return 0;
+        if (!res.ok) {
+          setToast({
+            type: "error",
+            text: data?.error ?? "Erreur suppression",
+          });
+          setBulkDeleting(false);
+          return;
+        }
 
-  const params = new URLSearchParams({
-    page: "1",
-    pageSize: "1",
-    type: "CONTRIBUTION",
-    year,
-    q: lotFilter,
-    sortDir,
-  });
+        const remaining = await loadReceiptsTotalCount();
+        if (remaining === 0) {
+          break;
+        }
 
-  if (methodFilter !== "ALL") {
-    params.append("method", methodFilter);
-  }
-
-  if (monthFilter > 0) {
-    params.append("month", String(monthFilter));
-  }
-
-  const res = await fetch(apiUrl(`/api/receipts?${params.toString()}`), {
-    cache: "no-store",
-  });
-
-  const data = await res.json().catch(() => null);
-  return Number(data?.pagination?.total ?? 0);
-}
-
-async function deleteSelected() {
-  if (selectedReceipts.length === 0 && !selectAllAcrossResults) return;
-
-  setBulkDeleting(true);
-
-  if (selectAllAcrossResults) {
-    for (let attempt = 0; attempt < 5; attempt += 1) {
+        if (attempt === 4) {
+          setToast({
+            type: "error",
+            text: `Suppression partielle : ${remaining} ligne(s) restante(s)`,
+          });
+          setBulkDeleting(false);
+          return;
+        }
+      }
+    } else {
       const res = await fetch(apiUrl("/api/receipts/bulk"), {
         method: "DELETE",
         headers: {
           "Content-Type": "application/json",
         },
         body: JSON.stringify({
-          deleteAll: true,
-          type: "CONTRIBUTION",
-          year,
-          month: monthFilter > 0 ? monthFilter : undefined,
-          method: methodFilter === "ALL" ? undefined : methodFilter,
+          ids: selectedReceipts,
         }),
       });
 
@@ -286,216 +341,185 @@ async function deleteSelected() {
         setBulkDeleting(false);
         return;
       }
-
-      const remaining = await loadReceiptsTotalCount();
-      if (remaining === 0) {
-        break;
-      }
-
-      if (attempt === 4) {
-        setToast({
-          type: "error",
-          text: `Suppression partielle : ${remaining} ligne(s) restante(s)`,
-        });
-        setBulkDeleting(false);
-        return;
-      }
     }
-  } else {
-    const res = await fetch(apiUrl("/api/receipts/bulk"), {
-      method: "DELETE",
-      headers: {
-        "Content-Type": "application/json",
-      },
-      body: JSON.stringify({
-        ids: selectedReceipts,
-      }),
-    });
 
-    const data = await res.json().catch(() => null);
-
-    if (!res.ok) {
-      setToast({
-        type: "error",
-        text: data?.error ?? "Erreur suppression",
-      });
-      setBulkDeleting(false);
-      return;
-    }
-  }
-
-  setSelectedReceipts([]);
-  setSelectAllAcrossResults(false);
-  setPage(1);
-
-  await loadReceipts();
-  setBulkDeleting(false);
-
-  setToast({
-    type: "success",
-    text: "Encaissements supprimés",
-  });
-
-  setTimeout(() => setToast(null), 2500);
-}
-
-function toggleSelectAll() {
-  if (selectedReceipts.length === receipts.length && !selectAllAcrossResults) {
     setSelectedReceipts([]);
     setSelectAllAcrossResults(false);
-  } else {
-    setSelectedReceipts(receipts.map((r) => r.id));
-    setSelectAllAcrossResults(false);
+    setPage(1);
+
+    await loadReceipts();
+    setBulkDeleting(false);
+
+    setToast({
+      type: "success",
+      text: "Encaissements supprimés",
+    });
+
+    setTimeout(() => setToast(null), 2500);
   }
-}
+
+  function toggleSelectAll() {
+    if (
+      selectedReceipts.length === receipts.length &&
+      !selectAllAcrossResults
+    ) {
+      setSelectedReceipts([]);
+      setSelectAllAcrossResults(false);
+    } else {
+      setSelectedReceipts(receipts.map((r) => r.id));
+      setSelectAllAcrossResults(false);
+    }
+  }
 
   function toggleSelect(id: string) {
-  setSelectAllAcrossResults(false);
-  setSelectedReceipts((prev) =>
-    prev.includes(id)
-      ? prev.filter((x) => x !== id)
-      : [...prev, id]
-  );
-}
+    setSelectAllAcrossResults(false);
+    setSelectedReceipts((prev) =>
+      prev.includes(id) ? prev.filter((x) => x !== id) : [...prev, id],
+    );
+  }
 
-async function importReceipts() {
-  if (!importFile) return;
+  async function importReceipts() {
+    if (!importFile) return;
 
-  const startedAt = Date.now();
-  setImportBusy(true);
-  setImportStartedAt(startedAt);
-  setImportElapsedMs(0);
-  setImportProgress(0);
-  setImportTotal(0);
-  setImportPercent(0);
-setImportResult(null);
+    const startedAt = Date.now();
+    setImportBusy(true);
+    setImportStartedAt(startedAt);
+    setImportElapsedMs(0);
+    setImportProgress(0);
+    setImportTotal(0);
+    setImportPercent(0);
+    setImportResult(null);
 
-  try {
-    const text = await importFile.text();
-    const lines = text.split(/\r?\n/).filter(Boolean);
+    try {
+      const text = await importFile.text();
+      const lines = text.split(/\r?\n/).filter(Boolean);
 
-    const rows = lines.slice(1).map((l) => {
-      const c = l.split(",");
-      return {
-        lotNumber: c[0],
-        amount: Number(c[1]),
-        method: c[2],
-        date: c[3],
-        note: c[4] ?? "",
-      };
-    });
+      const rows = lines.slice(1).map((l) => {
+        const c = l.split(",");
+        return {
+          lotNumber: c[0],
+          amount: Number(c[1]),
+          method: c[2],
+          date: c[3],
+          note: c[4] ?? "",
+        };
+      });
 
-    if (rows.length === 0) {
-      throw new Error("Le fichier ne contient aucune ligne exploitable");
-    }
+      if (rows.length === 0) {
+        throw new Error("Le fichier ne contient aucune ligne exploitable");
+      }
 
-    setImportTotal(rows.length);
+      setImportTotal(rows.length);
 
-    const start = await fetch(apiUrl("/api/import/receipts"), {
-      method: "POST",
-      headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({
-        action: "start",
-        totalRows: rows.length,
-      }),
-    });
-
-    const startData = await start.json().catch(() => null);
-
-    if (!start.ok || !startData?.jobId) {
-      throw new Error(startData?.error ?? "Impossible de demarrer l'import");
-    }
-
-    const jobId = startData.jobId;
-
-    const batchSize = 50; // Increased from 20 due to backend optimizations
-    let processed = 0;
-    let imported = 0;
-    const errors: { row: number; error: string }[] = [];
-
-    while (processed < rows.length) {
-      const batch = rows.slice(processed, processed + batchSize);
-
-      const res = await fetch(apiUrl("/api/import/receipts"), {
+      const start = await fetch(apiUrl("/api/import/receipts"), {
         method: "POST",
-        headers: {
-          "Content-Type": "application/json",
-        },
+        headers: { "Content-Type": "application/json" },
         body: JSON.stringify({
-          action: "batch",
-          jobId,
-          rows: batch,
-          offset: processed,
-          dateFormat: importDateFormat,
-          isLastBatch: processed + batchSize >= rows.length,
+          action: "start",
+          totalRows: rows.length,
         }),
       });
 
-      const data = await res.json().catch(() => null);
+      const startData = await start.json().catch(() => null);
 
-      if (!res.ok) {
-        throw new Error(data?.error ?? "Echec pendant l'import");
+      if (!start.ok || !startData?.jobId) {
+        throw new Error(startData?.error ?? "Impossible de demarrer l'import");
       }
 
-      imported += Number(data?.imported ?? 0);
+      const jobId = startData.jobId;
 
-      if (Array.isArray(data?.errors)) {
-        errors.push(...data.errors);
+      const batchSize = 50; // Increased from 20 due to backend optimizations
+      let processed = 0;
+      let imported = 0;
+      const errors: { row: number; error: string }[] = [];
+
+      while (processed < rows.length) {
+        const batch = rows.slice(processed, processed + batchSize);
+
+        const res = await fetch(apiUrl("/api/import/receipts"), {
+          method: "POST",
+          headers: {
+            "Content-Type": "application/json",
+          },
+          body: JSON.stringify({
+            action: "batch",
+            jobId,
+            rows: batch,
+            offset: processed,
+            dateFormat: importDateFormat,
+            isLastBatch: processed + batchSize >= rows.length,
+          }),
+        });
+
+        const data = await res.json().catch(() => null);
+
+        if (!res.ok) {
+          throw new Error(data?.error ?? "Echec pendant l'import");
+        }
+
+        imported += Number(data?.imported ?? 0);
+
+        if (Array.isArray(data?.errors)) {
+          errors.push(...data.errors);
+        }
+
+        processed += batch.length;
+
+        setImportProgress(processed);
+        setImportPercent(Math.round((processed / rows.length) * 100));
       }
 
-      processed += batch.length;
+      await loadReceipts();
 
-      setImportProgress(processed);
-      setImportPercent(Math.round((processed / rows.length) * 100));
+      setImportResult({
+        imported,
+        errors,
+        durationMs: Date.now() - startedAt,
+      });
+
+      setImportFile(null);
+
+      const input = document.querySelector(
+        'input[type="file"]',
+      ) as HTMLInputElement | null;
+      if (input) input.value = "";
+    } catch (error: any) {
+      setImportResult({
+        imported: 0,
+        errors: [
+          {
+            row: 0,
+            error: error?.message ?? "Import impossible",
+          },
+        ],
+        durationMs: Date.now() - startedAt,
+      });
+    } finally {
+      setImportBusy(false);
+      setImportStartedAt(null);
+      setImportElapsedMs(0);
+    }
+  }
+
+  useEffect(() => {
+    if (!importBusy || !importStartedAt) {
+      setImportElapsedMs(0);
+      return;
     }
 
-    await loadReceipts();
-
-    setImportResult({
-      imported,
-      errors,
-      durationMs: Date.now() - startedAt,
-    });
-
-    setImportFile(null);
-
-    const input = document.querySelector('input[type="file"]') as HTMLInputElement | null;
-    if (input) input.value = "";
-  } catch (error: any) {
-    setImportResult({
-      imported: 0,
-      errors: [
-        {
-          row: 0,
-          error: error?.message ?? "Import impossible",
-        },
-      ],
-      durationMs: Date.now() - startedAt,
-    });
-  } finally {
-    setImportBusy(false);
-    setImportStartedAt(null);
-    setImportElapsedMs(0);
-  }
-}
-
-useEffect(() => {
-  if (!importBusy || !importStartedAt) {
-    setImportElapsedMs(0);
-    return;
-  }
-
-  setImportElapsedMs(Date.now() - importStartedAt);
-
-  const timer = window.setInterval(() => {
     setImportElapsedMs(Date.now() - importStartedAt);
-  }, 1000);
 
-  return () => window.clearInterval(timer);
-}, [importBusy, importStartedAt]);
+    const timer = window.setInterval(() => {
+      setImportElapsedMs(Date.now() - importStartedAt);
+    }, 1000);
+
+    return () => window.clearInterval(timer);
+  }, [importBusy, importStartedAt]);
 
   async function openDetail(id: string) {
-    const res = await fetch(apiUrl(`/api/receipts/${id}`), { cache: "no-store" });
+    const res = await fetch(apiUrl(`/api/receipts/${id}`), {
+      cache: "no-store",
+    });
     const data = await res.json().catch(() => null);
 
     if (!res.ok) {
@@ -509,6 +533,7 @@ useEffect(() => {
     setDetail(data);
     setEditMethod(data.method);
     setEditDate(data.date.slice(0, 10));
+    setEditAmount(String(data.amount));
     setEditBank(data.bankName ?? "");
     setEditCheck(data.bankRef ?? "");
     setEditMode(false);
@@ -516,7 +541,9 @@ useEffect(() => {
   }
 
   async function openEditInForm(id: string) {
-    const res = await fetch(apiUrl(`/api/receipts/${id}`), { cache: "no-store" });
+    const res = await fetch(apiUrl(`/api/receipts/${id}`), {
+      cache: "no-store",
+    });
     const data = await res.json().catch(() => null);
 
     if (!res.ok) {
@@ -532,7 +559,7 @@ useEffect(() => {
     setQuery(
       data.unit?.lotNumber
         ? `${data.unit.lotNumber} • ${data.owner?.name ?? ""}`
-        : data.owner?.name ?? ""
+        : (data.owner?.name ?? ""),
     );
     setUnits([]);
     setAmount(String(data.amount ?? ""));
@@ -599,6 +626,7 @@ useEffect(() => {
       body: JSON.stringify({
         method: editMethod,
         date: editDate,
+        amount: Number(editAmount),
         bankName: editBank,
         bankRef: editCheck,
       }),
@@ -619,6 +647,7 @@ useEffect(() => {
       ...detail,
       method: editMethod,
       date: editDate,
+      amount: Number(editAmount),
       bankName: editBank,
       bankRef: editCheck,
     });
@@ -638,7 +667,9 @@ useEffect(() => {
     const data = await res.json().catch(() => null);
 
     setReceiptUsePrefix(Boolean(data?.receiptUsePrefix));
-    setReceiptPrefix(typeof data?.receiptPrefix === "string" ? data.receiptPrefix : "");
+    setReceiptPrefix(
+      typeof data?.receiptPrefix === "string" ? data.receiptPrefix : "",
+    );
   }
 
   async function loadBanks() {
@@ -647,27 +678,27 @@ useEffect(() => {
     setBanks(Array.isArray(data) ? data.filter((b: any) => b.isActive) : []);
   }
 
-useEffect(() => {
-  if (!year || !org?.id) return;
-  loadReceipts();
-}, [page, methodFilter, monthFilter, year, org?.id, lotFilter, sortDir]);
+  useEffect(() => {
+    if (!year || !org?.id) return;
+    loadReceipts();
+  }, [page, methodFilter, monthFilter, year, org?.id, lotFilter, sortDir]);
 
-useEffect(() => {
-  if (!org?.id) return;
-  loadBanks();
-  loadSettings();
-}, [org?.id]);
+  useEffect(() => {
+    if (!org?.id) return;
+    loadBanks();
+    loadSettings();
+  }, [org?.id]);
 
-useEffect(() => {
-  setPage(1);
-  setSelectedReceipts([]);
-  setSelectAllAcrossResults(false);
-}, [year, monthFilter, lotFilter, sortDir]);
+  useEffect(() => {
+    setPage(1);
+    setSelectedReceipts([]);
+    setSelectAllAcrossResults(false);
+  }, [year, monthFilter, lotFilter, sortDir]);
 
-useEffect(() => {
-  setSelectedReceipts([]);
-  setSelectAllAcrossResults(false);
-}, [methodFilter, page]);
+  useEffect(() => {
+    setSelectedReceipts([]);
+    setSelectAllAcrossResults(false);
+  }, [methodFilter, page]);
 
   async function searchUnits(q: string) {
     setQuery(q);
@@ -681,8 +712,8 @@ useEffect(() => {
       apiUrl(
         mode === "UNIT"
           ? `/api/units/search?q=${encodeURIComponent(q)}`
-          : `/api/owners/search?q=${encodeURIComponent(q)}`
-      )
+          : `/api/owners/search?q=${encodeURIComponent(q)}`,
+      ),
     );
     const data = await res.json().catch(() => []);
     setUnits(Array.isArray(data) ? data : []);
@@ -706,7 +737,8 @@ useEffect(() => {
   async function submit() {
     if (busy) return;
     if (!editingReceiptId && (!unitId || Number(amount) <= 0)) return;
-    if ((method === "TRANSFER" || method === "CHECK") && !bankName.trim()) return;
+    if ((method === "TRANSFER" || method === "CHECK") && !bankName.trim())
+      return;
     if (method === "CHECK" && !checkNumber.trim()) return;
 
     setBusy(true);
@@ -727,13 +759,15 @@ useEffect(() => {
               ? {
                   method,
                   date,
+                  amount: Number(amount),
                   bankName,
                   bankRef: checkNumber,
                   note,
                 }
               : {
                   unitId,
-                  lotNumber: mode === "UNIT" ? query.split(" • ")[0] : undefined,
+                  lotNumber:
+                    mode === "UNIT" ? query.split(" • ")[0] : undefined,
                   amount: Number(amount),
                   method,
                   type: "CONTRIBUTION",
@@ -741,9 +775,9 @@ useEffect(() => {
                   note,
                   bankName,
                   checkNumber,
-                }
+                },
           ),
-        }
+        },
       );
 
       const data = await res.json().catch(() => null);
@@ -773,8 +807,12 @@ useEffect(() => {
       setSuccess({
         receiptNumber: Number(data.receiptNumber),
         receiptPeriod: String(data.receiptPeriod),
-        firstAllocatedPeriod: data.firstAllocatedPeriod ? String(data.firstAllocatedPeriod) : null,
-        lastAllocatedPeriod: data.lastAllocatedPeriod ? String(data.lastAllocatedPeriod) : null,
+        firstAllocatedPeriod: data.firstAllocatedPeriod
+          ? String(data.firstAllocatedPeriod)
+          : null,
+        lastAllocatedPeriod: data.lastAllocatedPeriod
+          ? String(data.lastAllocatedPeriod)
+          : null,
         monthsTouched: Number(data.monthsTouched ?? 0),
         unallocatedAmount: Number(data.unallocatedAmount ?? 0),
       });
@@ -810,8 +848,8 @@ useEffect(() => {
               setMethodFilter("ALL");
             }}
             className={`rounded-md px-3 py-1.5 text-sm border font-medium transition-all ${
-              methodFilter === "ALL" 
-                ? "bg-gradient-to-r from-cyan-500 to-blue-600 text-white border-transparent shadow-sm" 
+              methodFilter === "ALL"
+                ? "bg-gradient-to-r from-cyan-500 to-blue-600 text-white border-transparent shadow-sm"
                 : "bg-white text-zinc-600 border-zinc-200 hover:bg-zinc-50"
             }`}
           >
@@ -824,8 +862,8 @@ useEffect(() => {
               setMethodFilter("CASH");
             }}
             className={`rounded-md px-3 py-1.5 text-sm border font-medium transition-all ${
-              methodFilter === "CASH" 
-                ? "bg-gradient-to-r from-cyan-500 to-blue-600 text-white border-transparent shadow-sm" 
+              methodFilter === "CASH"
+                ? "bg-gradient-to-r from-cyan-500 to-blue-600 text-white border-transparent shadow-sm"
                 : "bg-white text-zinc-600 border-zinc-200 hover:bg-zinc-50"
             }`}
           >
@@ -838,8 +876,8 @@ useEffect(() => {
               setMethodFilter("TRANSFER");
             }}
             className={`rounded-md px-3 py-1.5 text-sm border font-medium transition-all ${
-              methodFilter === "TRANSFER" 
-                ? "bg-gradient-to-r from-cyan-500 to-blue-600 text-white border-transparent shadow-sm" 
+              methodFilter === "TRANSFER"
+                ? "bg-gradient-to-r from-cyan-500 to-blue-600 text-white border-transparent shadow-sm"
                 : "bg-white text-zinc-600 border-zinc-200 hover:bg-zinc-50"
             }`}
           >
@@ -852,8 +890,8 @@ useEffect(() => {
               setMethodFilter("CHECK");
             }}
             className={`rounded-md px-3 py-1.5 text-sm border font-medium transition-all ${
-              methodFilter === "CHECK" 
-                ? "bg-gradient-to-r from-cyan-500 to-blue-600 text-white border-transparent shadow-sm" 
+              methodFilter === "CHECK"
+                ? "bg-gradient-to-r from-cyan-500 to-blue-600 text-white border-transparent shadow-sm"
                 : "bg-white text-zinc-600 border-zinc-200 hover:bg-zinc-50"
             }`}
           >
@@ -926,28 +964,36 @@ useEffect(() => {
 
         <div className="grid grid-cols-2 gap-4 xl:grid-cols-4">
           <div className="rounded-[24px] border border-white/70 bg-white/90 p-5 shadow-[0_10px_30px_rgba(15,23,42,0.06)]">
-            <div className="text-[11px] font-semibold uppercase tracking-[0.12em] text-zinc-400">Total encaissé</div>
+            <div className="text-[11px] font-semibold uppercase tracking-[0.12em] text-zinc-400">
+              Total encaissé
+            </div>
             <div className="mt-1 text-lg font-semibold text-zinc-900">
               {totalAll.toLocaleString("fr-FR")} MAD
             </div>
           </div>
 
           <div className="rounded-[24px] border border-white/70 bg-white/90 p-5 shadow-[0_10px_30px_rgba(15,23,42,0.06)]">
-            <div className="text-[11px] font-semibold uppercase tracking-[0.12em] text-zinc-400">Espèces</div>
+            <div className="text-[11px] font-semibold uppercase tracking-[0.12em] text-zinc-400">
+              Espèces
+            </div>
             <div className="mt-1 text-lg font-semibold text-emerald-600">
               {totalCash.toLocaleString("fr-FR")} MAD
             </div>
           </div>
 
           <div className="rounded-[24px] border border-white/70 bg-white/90 p-5 shadow-[0_10px_30px_rgba(15,23,42,0.06)]">
-            <div className="text-[11px] font-semibold uppercase tracking-[0.12em] text-zinc-400">Virements</div>
+            <div className="text-[11px] font-semibold uppercase tracking-[0.12em] text-zinc-400">
+              Virements
+            </div>
             <div className="mt-1 text-lg font-semibold text-blue-600">
               {totalTransfer.toLocaleString("fr-FR")} MAD
             </div>
           </div>
 
           <div className="rounded-[24px] border border-white/70 bg-white/90 p-5 shadow-[0_10px_30px_rgba(15,23,42,0.06)]">
-            <div className="text-[11px] font-semibold uppercase tracking-[0.12em] text-zinc-400">Chèques</div>
+            <div className="text-[11px] font-semibold uppercase tracking-[0.12em] text-zinc-400">
+              Chèques
+            </div>
             <div className="mt-1 text-lg font-semibold text-amber-600">
               {totalCheck.toLocaleString("fr-FR")} MAD
             </div>
@@ -957,13 +1003,21 @@ useEffect(() => {
         {canEdit ? (
           <div className="flex items-center gap-3">
             <button
-              onClick={() =>{ setImportOpen(true); setImportFile(null); setImportResult(null); setImportProgress(0); setImportTotal(0); setImportPercent(0); }}
+              onClick={() => {
+                setImportOpen(true);
+                setImportFile(null);
+                setImportResult(null);
+                setImportProgress(0);
+                setImportTotal(0);
+                setImportPercent(0);
+              }}
               className="flex items-center gap-2 rounded-md border border-zinc-200 bg-white px-5 py-2.5 text-sm font-semibold text-zinc-700 shadow-sm transition-all hover:bg-zinc-50 active:scale-95"
             >
               <Upload className="h-4 w-4" /> Importer
             </button>
 
-            <button onClick={openCreate}
+            <button
+              onClick={openCreate}
               className="flex items-center gap-2 rounded-md bg-gradient-to-r from-cyan-500 to-blue-600 px-6 py-2.5 text-sm font-bold text-white shadow-[0_10px_24px_rgba(14,165,233,0.22)] transition-all hover:scale-[1.02] active:scale-[0.98]"
             >
               <PlusCircle className="h-4 w-4" /> Encaisser
@@ -973,16 +1027,15 @@ useEffect(() => {
       </div>
 
       {canEdit && (selectedReceipts.length > 0 || selectAllAcrossResults) && (
-
         <div className="flex items-center justify-between rounded-md border border-zinc-200 bg-white p-3 shadow-sm">
-
           <div className="text-sm text-zinc-600">
             {selectAllAcrossResults
               ? `${totalReceipts} encaissement(s) sélectionné(s)`
               : `${selectedReceipts.length} encaissement(s) sélectionné(s)`}
           </div>
 
-          {!selectAllAcrossResults && totalReceipts > selectedReceipts.length ? (
+          {!selectAllAcrossResults &&
+          totalReceipts > selectedReceipts.length ? (
             <button
               type="button"
               onClick={() => setSelectAllAcrossResults(true)}
@@ -1002,15 +1055,14 @@ useEffect(() => {
             </button>
           ) : null}
 
-          <button onClick={deleteSelected}
+          <button
+            onClick={deleteSelected}
             disabled={bulkDeleting}
             className="flex items-center gap-2 rounded-md bg-gradient-to-br from-rose-500 to-red-600 px-5 py-2.5 text-sm font-bold text-white shadow-[0_10px_20px_rgba(244,63,94,0.2)] transition-all hover:scale-[1.02] active:scale-[0.98] disabled:cursor-not-allowed disabled:opacity-40"
           >
             {bulkDeleting ? "Suppression..." : "Supprimer la sélection"}
           </button>
-
         </div>
-
       )}
 
       {bulkDeleting ? (
@@ -1020,221 +1072,265 @@ useEffect(() => {
         </div>
       ) : null}
 
-{false && selectedReceipts.length > 0 && !selectAllAcrossResults && totalReceipts > selectedReceipts.length ? (
-  <div className="flex items-center justify-between rounded-md border border-zinc-200 bg-amber-50 px-4 py-3 text-sm text-amber-900 shadow-sm">
-    <span>
-      {selectedReceipts.length} ligne(s) selectionnee(s) sur cette page.
-    </span>
+      {false &&
+      selectedReceipts.length > 0 &&
+      !selectAllAcrossResults &&
+      totalReceipts > selectedReceipts.length ? (
+        <div className="flex items-center justify-between rounded-md border border-zinc-200 bg-amber-50 px-4 py-3 text-sm text-amber-900 shadow-sm">
+          <span>
+            {selectedReceipts.length} ligne(s) selectionnee(s) sur cette page.
+          </span>
 
-    <button
-      type="button"
-      onClick={() => setSelectAllAcrossResults(true)}
-      className="rounded-md border border-amber-200 bg-white px-3 py-2 text-xs font-medium text-amber-900 transition hover:bg-amber-100"
-    >
-      Selectionner toute la base ({totalReceipts})
-    </button>
-  </div>
-) : null}
+          <button
+            type="button"
+            onClick={() => setSelectAllAcrossResults(true)}
+            className="rounded-md border border-amber-200 bg-white px-3 py-2 text-xs font-medium text-amber-900 transition hover:bg-amber-100"
+          >
+            Selectionner toute la base ({totalReceipts})
+          </button>
+        </div>
+      ) : null}
 
-{false && selectAllAcrossResults ? (
-  <div className="flex items-center justify-between rounded-md border border-red-200 bg-red-50 px-4 py-3 text-sm text-red-900 shadow-sm">
-    <span>{totalReceipts} ligne(s) selectionnee(s) dans toute la base filtree.</span>
+      {false && selectAllAcrossResults ? (
+        <div className="flex items-center justify-between rounded-md border border-red-200 bg-red-50 px-4 py-3 text-sm text-red-900 shadow-sm">
+          <span>
+            {totalReceipts} ligne(s) selectionnee(s) dans toute la base filtree.
+          </span>
 
-    <button
-      type="button"
-      onClick={() => setSelectAllAcrossResults(false)}
-      className="rounded-md border border-red-200 bg-white px-3 py-2 text-xs font-medium text-red-800 transition hover:bg-red-100"
-    >
-      Revenir a la page courante
-    </button>
-  </div>
-) : null}
+          <button
+            type="button"
+            onClick={() => setSelectAllAcrossResults(false)}
+            className="rounded-md border border-red-200 bg-white px-3 py-2 text-xs font-medium text-red-800 transition hover:bg-red-100"
+          >
+            Revenir a la page courante
+          </button>
+        </div>
+      ) : null}
 
-<div className="overflow-hidden rounded-[28px] border border-white/70 bg-white/90 shadow-[0_12px_30px_rgba(15,23,42,0.06)]">
-  <div className="overflow-x-auto">
-    <Table className="text-sm">
-<THead>
-  <TR className="border-b border-zinc-200 bg-zinc-50">
-    <TH className="w-10">
-      <input
-        type="checkbox"
-        checked={
-          selectAllAcrossResults || (
-          receipts.length > 0 &&
-          selectedReceipts.length === receipts.length
-        )}
-        onChange={toggleSelectAll}
-      />
-    </TH>
+      <div className="overflow-hidden rounded-[28px] border border-white/70 bg-white/90 shadow-[0_12px_30px_rgba(15,23,42,0.06)]">
+        <div className="overflow-x-auto">
+          <Table className="text-sm">
+            <THead>
+              <TR className="border-b border-zinc-200 bg-zinc-50">
+                <TH className="w-10">
+                  <input
+                    type="checkbox"
+                    checked={
+                      selectAllAcrossResults ||
+                      (receipts.length > 0 &&
+                        selectedReceipts.length === receipts.length)
+                    }
+                    onChange={toggleSelectAll}
+                  />
+                </TH>
 
-    <TH className="text-[11px] font-bold uppercase tracking-[0.12em] text-zinc-500">N°</TH>
-    <TH 
-      className="cursor-pointer text-[11px] font-bold uppercase tracking-[0.12em] text-zinc-500 hover:text-zinc-700"
-      onClick={() => setSortDir(sortDir === "desc" ? "asc" : "desc")}
-    >
-      <div className="flex items-center gap-1">
-        Date
-        <span className="text-[10px]">
-          {sortDir === "desc" ? "▼" : "▲"}
-        </span>
-      </div>
-    </TH>
-    <TH className="text-[11px] font-bold uppercase tracking-[0.12em] text-zinc-500">Lot</TH>
-    <TH className="text-[11px] font-bold uppercase tracking-[0.12em] text-zinc-500">Immeuble</TH>
-    <TH className="text-[11px] font-bold uppercase tracking-[0.12em] text-zinc-500">Copropriétaire</TH>
-    <TH className="text-[11px] font-bold uppercase tracking-[0.12em] text-zinc-500">Méthode</TH>
-    <TH className="text-right text-[11px] font-bold uppercase tracking-[0.12em] text-zinc-500">Montant</TH>
-    <TH className="w-24 text-right text-[11px] font-bold uppercase tracking-[0.12em] text-zinc-500">Actions</TH>
-  </TR>
-</THead>
-
-        <tbody>
-          {filteredReceipts.map((r) => (
-            <TR
-              key={r.id}
-              onClick={() => openDetail(r.id)}
-              className="group cursor-pointer border-b border-zinc-100 transition hover:bg-zinc-50"
-            >
-                <TD onClick={(e) => e.stopPropagation()}>
-  <input
-    type="checkbox"
-    checked={selectedReceipts.includes(r.id)}
-    onChange={() => toggleSelect(r.id)}
-  />
-</TD>
-                <TD className="font-semibold text-zinc-900">
-                  {fmtReceiptNumber(r.receiptNumber, receiptUsePrefix, receiptPrefix)}
-                </TD>
-
-                <TD className="text-zinc-600">{fmtDate(r.date)}</TD>
-                <TD>
-                  <span className="font-medium text-zinc-900">{r.unit?.lotNumber ?? r.unit?.reference ?? "—"}</span>
-                </TD>
-                <TD className="text-zinc-700">{r.building?.name ?? "—"}</TD>
-                <TD className="font-medium text-zinc-900">
-                  {r.owner?.firstName ? `${r.owner.firstName} ${r.owner.name}` : r.owner?.name}
-                </TD>
-                <TD>
-                  {r.method === "CASH" && (
-                    <span className="inline-flex gap-3 items-center rounded-md bg-emerald-100 px-2.5 py-1 text-xs font-medium text-emerald-700">
-                      💵 Espèces
+                <TH className="text-[11px] font-bold uppercase tracking-[0.12em] text-zinc-500">
+                  N°
+                </TH>
+                <TH
+                  className="cursor-pointer text-[11px] font-bold uppercase tracking-[0.12em] text-zinc-500 hover:text-zinc-700"
+                  onClick={() =>
+                    setSortDir(sortDir === "desc" ? "asc" : "desc")
+                  }
+                >
+                  <div className="flex items-center gap-1">
+                    Date
+                    <span className="text-[10px]">
+                      {sortDir === "desc" ? "▼" : "▲"}
                     </span>
-                  )}
-                  {r.method === "TRANSFER" && (
-                    <span className="inline-flex gap-3 items-center rounded-md bg-blue-100 px-2.5 py-1 text-xs font-medium text-blue-700">
-                      🏦 Virement
-                    </span>
-                  )}
-                  {r.method === "CHECK" && (
-                    <span className="inline-flex gap-3 items-center rounded-md bg-amber-100 px-2.5 py-1 text-xs font-medium text-amber-700">
-                      🧾 Chèque
-                    </span>
-                  )}
-                </TD>
-                <TD className="text-right">
-                  <div className="font-semibold text-zinc-900">
-                    {Number(r.amount).toLocaleString("fr-FR")} MAD
                   </div>
-                  {r.firstPeriod && (
-                    <div className={`mt-0.5 text-[10px] font-medium ${
-                      r.isPartial ? "text-amber-600" : "text-emerald-600"
-                    }`}>
-                      {r.isPartial ? "🟠" : "🟢"} {fmtPeriodRange(r.firstPeriod, r.lastPeriod)}
-                    </div>
-                  )}
-                </TD>
-
-                <TD className="text-right">
-                  <div
-                    className="flex justify-end gap-2"
-                    onClick={(e) => e.stopPropagation()}
-                  >
-                    <button
-                      type="button"
-                      onClick={() => openEditInForm(r.id)}
-                      className="flex h-8 w-8 items-center justify-center rounded-lg text-zinc-400 transition hover:bg-blue-50 hover:text-blue-600"
-                      title="Modifier l'encaissement"
-                    >
-                      <svg
-                        xmlns="http://www.w3.org/2000/svg"
-                        className="h-4 w-4"
-                        viewBox="0 0 24 24"
-                        fill="none"
-                        stroke="currentColor"
-                        strokeWidth="2"
-                      >
-                        <path d="M12 20h9" />
-                        <path d="M16.5 3.5a2.1 2.1 0 0 1 3 3L7 19l-4 1 1-4 12.5-12.5z" />
-                      </svg>
-                    </button>
-
-                    {/* Bouton imprimer reçu */}
-                    <button
-                      type="button"
-                      onClick={() => window.open(apiUrl(`/api/receipts/${r.id}/print`), "_blank")}
-                      className="flex h-8 w-8 items-center justify-center rounded-lg text-zinc-400 transition hover:bg-teal-50 hover:text-teal-600"
-                      title="Imprimer le reçu"
-                    >
-                      <svg xmlns="http://www.w3.org/2000/svg" className="h-4 w-4" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
-                        <path d="M6 9V2h12v7" />
-                        <path d="M6 18H4a2 2 0 0 1-2-2v-5a2 2 0 0 1 2-2h16a2 2 0 0 1 2 2v5a2 2 0 0 1-2 2h-2" />
-                        <rect x="6" y="14" width="12" height="8" rx="1" />
-                      </svg>
-                    </button>
-
-                    <button
-                      type="button"
-                      onClick={() => askDelete(r.id, r.receiptNumber)}
-                      className="flex h-8 w-8 items-center justify-center rounded-lg text-zinc-400 transition hover:bg-red-50 hover:text-red-600"
-                      title="Supprimer l'encaissement"
-                    >
-                      <svg
-                        xmlns="http://www.w3.org/2000/svg"
-                        className="h-4 w-4"
-                        viewBox="0 0 24 24"
-                        fill="none"
-                        stroke="currentColor"
-                        strokeWidth="2"
-                      >
-                        <path d="M3 6h18" />
-                        <path d="M8 6V4h8v2" />
-                        <path d="M19 6l-1 14H6L5 6" />
-                        <path d="M10 11v6" />
-                        <path d="M14 11v6" />
-                      </svg>
-                    </button>
-                  </div>
-                </TD>
+                </TH>
+                <TH className="text-[11px] font-bold uppercase tracking-[0.12em] text-zinc-500">
+                  Lot
+                </TH>
+                <TH className="text-[11px] font-bold uppercase tracking-[0.12em] text-zinc-500">
+                  Immeuble
+                </TH>
+                <TH className="text-[11px] font-bold uppercase tracking-[0.12em] text-zinc-500">
+                  Copropriétaire
+                </TH>
+                <TH className="text-[11px] font-bold uppercase tracking-[0.12em] text-zinc-500">
+                  Méthode
+                </TH>
+                <TH className="text-right text-[11px] font-bold uppercase tracking-[0.12em] text-zinc-500">
+                  Montant
+                </TH>
+                <TH className="w-24 text-right text-[11px] font-bold uppercase tracking-[0.12em] text-zinc-500">
+                  Actions
+                </TH>
               </TR>
-            ))}
-        </tbody>
-    </Table>
-  </div>
-</div>
+            </THead>
 
-<div className="mt-5 flex items-center justify-between">
-  <div className="text-sm text-zinc-500">
-    Page {page} sur {totalPages}
-  </div>
+            <tbody>
+              {filteredReceipts.map((r) => (
+                <TR
+                  key={r.id}
+                  onClick={() => openDetail(r.id)}
+                  className="group cursor-pointer border-b border-zinc-100 transition hover:bg-zinc-50"
+                >
+                  <TD onClick={(e) => e.stopPropagation()}>
+                    <input
+                      type="checkbox"
+                      checked={selectedReceipts.includes(r.id)}
+                      onChange={() => toggleSelect(r.id)}
+                    />
+                  </TD>
+                  <TD className="font-semibold text-zinc-900">
+                    {fmtReceiptNumber(
+                      r.receiptNumber,
+                      receiptUsePrefix,
+                      receiptPrefix,
+                    )}
+                  </TD>
 
-  <div className="flex items-center gap-2">
-    <button
-      disabled={page === 1}
-      onClick={() => setPage(page - 1)}
-      className="rounded-md border border-zinc-200 bg-white px-4 py-2 text-sm font-medium text-zinc-700 shadow-sm transition hover:bg-zinc-50 disabled:cursor-not-allowed disabled:opacity-50"
-    >
-      Précédent
-    </button>
+                  <TD className="text-zinc-600">{fmtDate(r.date)}</TD>
+                  <TD>
+                    <span className="font-medium text-zinc-900">
+                      {r.unit?.lotNumber ?? r.unit?.reference ?? "—"}
+                    </span>
+                  </TD>
+                  <TD className="text-zinc-700">{r.building?.name ?? "—"}</TD>
+                  <TD className="font-medium text-zinc-900">
+                    {r.owner?.firstName
+                      ? `${r.owner.firstName} ${r.owner.name}`
+                      : r.owner?.name}
+                  </TD>
+                  <TD>
+                    {r.method === "CASH" && (
+                      <span className="inline-flex gap-3 items-center rounded-md bg-emerald-100 px-2.5 py-1 text-xs font-medium text-emerald-700">
+                        💵 Espèces
+                      </span>
+                    )}
+                    {r.method === "TRANSFER" && (
+                      <span className="inline-flex gap-3 items-center rounded-md bg-blue-100 px-2.5 py-1 text-xs font-medium text-blue-700">
+                        🏦 Virement
+                      </span>
+                    )}
+                    {r.method === "CHECK" && (
+                      <span className="inline-flex gap-3 items-center rounded-md bg-amber-100 px-2.5 py-1 text-xs font-medium text-amber-700">
+                        🧾 Chèque
+                      </span>
+                    )}
+                  </TD>
+                  <TD className="text-right">
+                    <div className="font-semibold text-zinc-900">
+                      {Number(r.amount).toLocaleString("fr-FR")} MAD
+                    </div>
+                    {r.firstPeriod && (
+                      <div
+                        className={`mt-0.5 text-[10px] font-medium ${
+                          r.isPartial ? "text-amber-600" : "text-emerald-600"
+                        }`}
+                      >
+                        {r.isPartial ? "🟠" : "🟢"}{" "}
+                        {fmtPeriodRange(r.firstPeriod, r.lastPeriod)}
+                      </div>
+                    )}
+                  </TD>
 
-    <button
-      disabled={page === totalPages}
-      onClick={() => setPage(page + 1)}
-      className="rounded-md border border-zinc-200 bg-white px-4 py-2 text-sm font-medium text-zinc-700 shadow-sm transition hover:bg-zinc-50 disabled:cursor-not-allowed disabled:opacity-50"
-    >
-      Suivant
-    </button>
-  </div>
-</div>
+                  <TD className="text-right">
+                    <div
+                      className="flex justify-end gap-2"
+                      onClick={(e) => e.stopPropagation()}
+                    >
+                      <button
+                        type="button"
+                        onClick={() => openEditInForm(r.id)}
+                        className="flex h-8 w-8 items-center justify-center rounded-lg text-zinc-400 transition hover:bg-blue-50 hover:text-blue-600"
+                        title="Modifier l'encaissement"
+                      >
+                        <svg
+                          xmlns="http://www.w3.org/2000/svg"
+                          className="h-4 w-4"
+                          viewBox="0 0 24 24"
+                          fill="none"
+                          stroke="currentColor"
+                          strokeWidth="2"
+                        >
+                          <path d="M12 20h9" />
+                          <path d="M16.5 3.5a2.1 2.1 0 0 1 3 3L7 19l-4 1 1-4 12.5-12.5z" />
+                        </svg>
+                      </button>
+
+                      {/* Bouton imprimer reçu */}
+                      <button
+                        type="button"
+                        onClick={() =>
+                          window.open(
+                            apiUrl(`/api/receipts/${r.id}/print`),
+                            "_blank",
+                          )
+                        }
+                        className="flex h-8 w-8 items-center justify-center rounded-lg text-zinc-400 transition hover:bg-teal-50 hover:text-teal-600"
+                        title="Imprimer le reçu"
+                      >
+                        <svg
+                          xmlns="http://www.w3.org/2000/svg"
+                          className="h-4 w-4"
+                          viewBox="0 0 24 24"
+                          fill="none"
+                          stroke="currentColor"
+                          strokeWidth="2"
+                        >
+                          <path d="M6 9V2h12v7" />
+                          <path d="M6 18H4a2 2 0 0 1-2-2v-5a2 2 0 0 1 2-2h16a2 2 0 0 1 2 2v5a2 2 0 0 1-2 2h-2" />
+                          <rect x="6" y="14" width="12" height="8" rx="1" />
+                        </svg>
+                      </button>
+
+                      <button
+                        type="button"
+                        onClick={() => askDelete(r.id, r.receiptNumber)}
+                        className="flex h-8 w-8 items-center justify-center rounded-lg text-zinc-400 transition hover:bg-red-50 hover:text-red-600"
+                        title="Supprimer l'encaissement"
+                      >
+                        <svg
+                          xmlns="http://www.w3.org/2000/svg"
+                          className="h-4 w-4"
+                          viewBox="0 0 24 24"
+                          fill="none"
+                          stroke="currentColor"
+                          strokeWidth="2"
+                        >
+                          <path d="M3 6h18" />
+                          <path d="M8 6V4h8v2" />
+                          <path d="M19 6l-1 14H6L5 6" />
+                          <path d="M10 11v6" />
+                          <path d="M14 11v6" />
+                        </svg>
+                      </button>
+                    </div>
+                  </TD>
+                </TR>
+              ))}
+            </tbody>
+          </Table>
+        </div>
+      </div>
+
+      <div className="mt-5 flex items-center justify-between">
+        <div className="text-sm text-zinc-500">
+          Page {page} sur {totalPages}
+        </div>
+
+        <div className="flex items-center gap-2">
+          <button
+            disabled={page === 1}
+            onClick={() => setPage(page - 1)}
+            className="rounded-md border border-zinc-200 bg-white px-4 py-2 text-sm font-medium text-zinc-700 shadow-sm transition hover:bg-zinc-50 disabled:cursor-not-allowed disabled:opacity-50"
+          >
+            Précédent
+          </button>
+
+          <button
+            disabled={page === totalPages}
+            onClick={() => setPage(page + 1)}
+            className="rounded-md border border-zinc-200 bg-white px-4 py-2 text-sm font-medium text-zinc-700 shadow-sm transition hover:bg-zinc-50 disabled:cursor-not-allowed disabled:opacity-50"
+          >
+            Suivant
+          </button>
+        </div>
+      </div>
 
       <Modal
         open={open}
@@ -1242,7 +1338,11 @@ useEffect(() => {
           setOpen(false);
           setEditingReceiptId(null);
         }}
-        title={editingReceiptId ? "Modifier l'encaissement" : "Encaisser une cotisation"}
+        title={
+          editingReceiptId
+            ? "Modifier l'encaissement"
+            : "Encaisser une cotisation"
+        }
       >
         <div className="grid gap-4">
           {success ? (
@@ -1250,7 +1350,12 @@ useEffect(() => {
               <div className="font-semibold">Encaissement enregistré</div>
               <div className="mt-2 space-y-1">
                 <div>
-                  N° reçu : {fmtReceiptNumber(success.receiptNumber, receiptUsePrefix, receiptPrefix)}
+                  N° reçu :{" "}
+                  {fmtReceiptNumber(
+                    success.receiptNumber,
+                    receiptUsePrefix,
+                    receiptPrefix,
+                  )}
                 </div>
                 <div>
                   Mois couverts :{" "}
@@ -1262,7 +1367,9 @@ useEffect(() => {
                 {success.lastAllocatedPeriod &&
                 new Date(success.lastAllocatedPeriod).getTime() >
                   new Date(success.receiptPeriod).getTime() ? (
-                  <div>Avance jusqu’à : {fmtMonth(success.lastAllocatedPeriod)}</div>
+                  <div>
+                    Avance jusqu’à : {fmtMonth(success.lastAllocatedPeriod)}
+                  </div>
                 ) : null}
                 {success.unallocatedAmount > 0 ? (
                   <div>Crédit restant : {success.unallocatedAmount}</div>
@@ -1337,15 +1444,15 @@ useEffect(() => {
                                 u.type === "APARTMENT"
                                   ? "bg-blue-100 text-blue-700"
                                   : u.type === "GARAGE"
-                                  ? "bg-emerald-100 text-emerald-700"
-                                  : "bg-zinc-200 text-zinc-700"
+                                    ? "bg-emerald-100 text-emerald-700"
+                                    : "bg-zinc-200 text-zinc-700"
                               }`}
                             >
                               {u.type === "APARTMENT"
                                 ? "Appartement"
                                 : u.type === "GARAGE"
-                                ? "Garage"
-                                : "Autre"}
+                                  ? "Garage"
+                                  : "Autre"}
                             </span>
                           </div>
 
@@ -1375,7 +1482,6 @@ useEffect(() => {
             <input
               className="h-12 w-full rounded-md border border-zinc-200 bg-white px-4 text-sm shadow-sm outline-none transition focus:border-zinc-900 disabled:bg-zinc-100 disabled:text-zinc-500"
               value={amount}
-              disabled={Boolean(editingReceiptId)}
               onChange={(e) => setAmount(e.target.value)}
               placeholder="Ex: 350"
               inputMode="decimal"
@@ -1400,8 +1506,12 @@ useEffect(() => {
                 }`}
               >
                 <div className="text-2xl">💵</div>
-                <div className="mt-3 text-sm font-semibold text-zinc-900">Espèces</div>
-                <div className="mt-1 text-xs text-zinc-500">Encaissement direct</div>
+                <div className="mt-3 text-sm font-semibold text-zinc-900">
+                  Espèces
+                </div>
+                <div className="mt-1 text-xs text-zinc-500">
+                  Encaissement direct
+                </div>
               </button>
 
               <button
@@ -1417,8 +1527,12 @@ useEffect(() => {
                 }`}
               >
                 <div className="text-2xl">🏦</div>
-                <div className="mt-3 text-sm font-semibold text-zinc-900">Virement</div>
-                <div className="mt-1 text-xs text-zinc-500">Via banque interne</div>
+                <div className="mt-3 text-sm font-semibold text-zinc-900">
+                  Virement
+                </div>
+                <div className="mt-1 text-xs text-zinc-500">
+                  Via banque interne
+                </div>
               </button>
 
               <button
@@ -1433,8 +1547,12 @@ useEffect(() => {
                 }`}
               >
                 <div className="text-2xl">🧾</div>
-                <div className="mt-3 text-sm font-semibold text-zinc-900">Chèque</div>
-                <div className="mt-1 text-xs text-zinc-500">Banque + numéro de chèque</div>
+                <div className="mt-3 text-sm font-semibold text-zinc-900">
+                  Chèque
+                </div>
+                <div className="mt-1 text-xs text-zinc-500">
+                  Banque + numéro de chèque
+                </div>
               </button>
             </div>
           </div>
@@ -1494,17 +1612,23 @@ useEffect(() => {
             />
           </div>
 
-          <button onClick={submit}
+          <button
+            onClick={submit}
             disabled={
               busy ||
               !unitId ||
               Number(amount) <= 0 ||
-              ((method === "TRANSFER" || method === "CHECK") && !bankName.trim()) ||
+              ((method === "TRANSFER" || method === "CHECK") &&
+                !bankName.trim()) ||
               (method === "CHECK" && !checkNumber.trim())
             }
             className="flex items-center gap-2 btn-brand h-12 rounded-md text-sm font-medium disabled:opacity-50"
           >
-            {busy ? "Enregistrement..." : editingReceiptId ? "Mettre à jour" : "Encaisser"}
+            {busy
+              ? "Enregistrement..."
+              : editingReceiptId
+                ? "Mettre à jour"
+                : "Encaisser"}
           </button>
         </div>
       </Modal>
@@ -1517,7 +1641,7 @@ useEffect(() => {
             ? `Encaissement n°${fmtReceiptNumber(
                 detail.receiptNumber,
                 receiptUsePrefix,
-                receiptPrefix
+                receiptPrefix,
               )}`
             : "Détail"
         }
@@ -1534,7 +1658,12 @@ useEffect(() => {
                   </div>
 
                   <div className="mt-3 text-xl font-semibold text-zinc-900">
-                    N° {fmtReceiptNumber(detail.receiptNumber, receiptUsePrefix, receiptPrefix)}
+                    N°{" "}
+                    {fmtReceiptNumber(
+                      detail.receiptNumber,
+                      receiptUsePrefix,
+                      receiptPrefix,
+                    )}
                   </div>
 
                   {editMode ? (
@@ -1545,13 +1674,30 @@ useEffect(() => {
                       className="mt-1 h-10 rounded-md border px-3"
                     />
                   ) : (
-                    <div className="mt-1 text-sm text-zinc-500">{fmtDate(detail.date)}</div>
+                    <div className="mt-1 text-sm text-zinc-500">
+                      {fmtDate(detail.date)}
+                    </div>
                   )}
                 </div>
 
                 <div className="rounded-md bg-blue-600 px-4 py-3 text-right text-white shadow-sm">
-                  <div className="text-xs uppercase tracking-wide text-zinc-300">Montant</div>
-                  <div className="mt-1 text-2xl font-semibold">{detail.amount}</div>
+                  <div className="text-xs uppercase tracking-wide text-zinc-300">
+                    Montant
+                  </div>
+                  {editMode ? (
+                    <input
+                      type="number"
+                      step="0.01"
+                      min="0"
+                      value={editAmount}
+                      onChange={(e) => setEditAmount(e.target.value)}
+                      className="mt-1 w-24 rounded-md border-0 bg-blue-700 px-2 py-1 text-right text-lg font-semibold text-white shadow-inner outline-none transition focus:bg-blue-800"
+                    />
+                  ) : (
+                    <div className="mt-1 text-2xl font-semibold">
+                      {detail.amount}
+                    </div>
+                  )}
                 </div>
               </div>
 
@@ -1561,7 +1707,9 @@ useEffect(() => {
                     Copropriétaire
                   </div>
                   <div className="mt-1 text-sm font-semibold text-zinc-900">
-                    {detail.owner?.firstName ? `${detail.owner.firstName} ${detail.owner.name}` : detail.owner?.name ?? "—"}
+                    {detail.owner?.firstName
+                      ? `${detail.owner.firstName} ${detail.owner.name}`
+                      : (detail.owner?.name ?? "—")}
                   </div>
                   <div className="mt-1 text-xs text-zinc-500">
                     {detail.owner?.cin ?? ""}
@@ -1619,7 +1767,9 @@ useEffect(() => {
             <div className="rounded-3xl border border-zinc-200 bg-white p-5 shadow-sm">
               <div className="flex items-center justify-between gap-3">
                 <div>
-                  <div className="text-lg font-semibold text-zinc-900">Mois couverts</div>
+                  <div className="text-lg font-semibold text-zinc-900">
+                    Mois couverts
+                  </div>
                   <div className="mt-1 text-sm text-zinc-500">
                     Détail des périodes payées et de l’éventuelle avance
                   </div>
@@ -1692,19 +1842,32 @@ useEffect(() => {
                         const first = group.items[0];
                         const last = group.items[group.items.length - 1];
                         return (
-                          <div key={idx} className="flex items-center justify-between rounded-md border border-emerald-100 bg-emerald-50/50 px-5 py-4 shadow-sm">
+                          <div
+                            key={idx}
+                            className="flex items-center justify-between rounded-md border border-emerald-100 bg-emerald-50/50 px-5 py-4 shadow-sm"
+                          >
                             <div className="min-w-0">
-                              <div className="text-xs font-semibold uppercase tracking-wider text-emerald-600/80">Période réglée</div>
+                              <div className="text-xs font-semibold uppercase tracking-wider text-emerald-600/80">
+                                Période réglée
+                              </div>
                               <div className="mt-1 text-base font-semibold text-zinc-900">
-                                {fmtPeriodRange(first.due.period, last.due.period)}
+                                {fmtPeriodRange(
+                                  first.due.period,
+                                  last.due.period,
+                                )}
                               </div>
                               <div className="mt-1 text-xs text-zinc-500">
                                 {group.items.length} mois couvert(s)
                               </div>
                             </div>
                             <div className="ml-4 rounded-md bg-emerald-600 px-4 py-2 text-right text-white shadow-sm">
-                              <div className="text-[10px] font-medium uppercase tracking-tight text-emerald-100">Total</div>
-                              <div className="text-lg font-bold">{group.total.toLocaleString("fr-FR")} <span className="text-xs font-normal">MAD</span></div>
+                              <div className="text-[10px] font-medium uppercase tracking-tight text-emerald-100">
+                                Total
+                              </div>
+                              <div className="text-lg font-bold">
+                                {group.total.toLocaleString("fr-FR")}{" "}
+                                <span className="text-xs font-normal">MAD</span>
+                              </div>
                             </div>
                           </div>
                         );
@@ -1712,9 +1875,14 @@ useEffect(() => {
 
                       if (group.type === "COMPLEMENT") {
                         return (
-                          <div key={idx} className="flex items-center justify-between rounded-md border border-emerald-100 bg-emerald-50/50 px-5 py-4 shadow-sm">
+                          <div
+                            key={idx}
+                            className="flex items-center justify-between rounded-md border border-emerald-100 bg-emerald-50/50 px-5 py-4 shadow-sm"
+                          >
                             <div className="min-w-0">
-                              <div className="text-xs font-semibold uppercase tracking-wider text-emerald-600/80">Règlement complémentaire</div>
+                              <div className="text-xs font-semibold uppercase tracking-wider text-emerald-600/80">
+                                Règlement complémentaire
+                              </div>
                               <div className="mt-1 text-base font-semibold text-zinc-900">
                                 {fmtMonth(group.item.due.period)}
                               </div>
@@ -1723,8 +1891,13 @@ useEffect(() => {
                               </div>
                             </div>
                             <div className="ml-4 rounded-md bg-emerald-600 px-4 py-2 text-right text-white shadow-sm">
-                              <div className="text-[10px] font-medium uppercase tracking-tight text-emerald-100">Plus</div>
-                              <div className="text-lg font-bold">{group.total.toLocaleString("fr-FR")} <span className="text-xs font-normal">MAD</span></div>
+                              <div className="text-[10px] font-medium uppercase tracking-tight text-emerald-100">
+                                Plus
+                              </div>
+                              <div className="text-lg font-bold">
+                                {group.total.toLocaleString("fr-FR")}{" "}
+                                <span className="text-xs font-normal">MAD</span>
+                              </div>
                             </div>
                           </div>
                         );
@@ -1732,9 +1905,14 @@ useEffect(() => {
 
                       // PARTIAL
                       return (
-                        <div key={idx} className="flex items-center justify-between rounded-md border border-amber-100 bg-amber-50/50 px-5 py-4 shadow-sm">
+                        <div
+                          key={idx}
+                          className="flex items-center justify-between rounded-md border border-amber-100 bg-amber-50/50 px-5 py-4 shadow-sm"
+                        >
                           <div className="min-w-0">
-                            <div className="text-xs font-semibold uppercase tracking-wider text-amber-600/80">Paiement partiel</div>
+                            <div className="text-xs font-semibold uppercase tracking-wider text-amber-600/80">
+                              Paiement partiel
+                            </div>
                             <div className="mt-1 text-base font-semibold text-zinc-900">
                               {fmtMonth(group.item.due.period)}
                             </div>
@@ -1743,8 +1921,13 @@ useEffect(() => {
                             </div>
                           </div>
                           <div className="ml-4 rounded-md bg-amber-500 px-4 py-2 text-right text-white shadow-sm">
-                            <div className="text-[10px] font-medium uppercase tracking-tight text-amber-100">Total</div>
-                            <div className="text-lg font-bold">{group.total.toLocaleString("fr-FR")} <span className="text-xs font-normal">MAD</span></div>
+                            <div className="text-[10px] font-medium uppercase tracking-tight text-amber-100">
+                              Total
+                            </div>
+                            <div className="text-lg font-bold">
+                              {group.total.toLocaleString("fr-FR")}{" "}
+                              <span className="text-xs font-normal">MAD</span>
+                            </div>
                           </div>
                         </div>
                       );
@@ -1756,7 +1939,8 @@ useEffect(() => {
 
             {detail.unallocatedAmount > 0 ? (
               <div className="rounded-md border border-amber-200 bg-amber-50 p-4 text-sm text-amber-800 shadow-sm">
-                <span className="font-semibold">Crédit restant :</span> {detail.unallocatedAmount}
+                <span className="font-semibold">Crédit restant :</span>{" "}
+                {detail.unallocatedAmount}
               </div>
             ) : null}
           </div>
@@ -1764,7 +1948,8 @@ useEffect(() => {
 
         {editMode && (
           <div className="flex justify-end">
-            <button onClick={updateReceipt}
+            <button
+              onClick={updateReceipt}
               className="flex items-center gap-2 btn-brand rounded-md px-4 py-2 text-sm"
             >
               Enregistrer
@@ -1785,10 +1970,11 @@ useEffect(() => {
               ? ` l'encaissement N°${fmtReceiptNumber(
                   receiptToDeleteNumber,
                   receiptUsePrefix,
-                  receiptPrefix
+                  receiptPrefix,
                 )}`
               : " cet encaissement"}{" "}
-            ? Cette action est irréversible et les mois couverts seront recalculés.
+            ? Cette action est irréversible et les mois couverts seront
+            recalculés.
           </div>
 
           <div className="flex justify-end gap-3">
@@ -1804,7 +1990,8 @@ useEffect(() => {
               Annuler
             </button>
 
-            <button type="button"
+            <button
+              type="button"
               onClick={confirmDelete}
               disabled={deleting}
               className="flex items-center gap-2 rounded-md bg-red-600 px-4 py-2 text-sm font-medium text-white shadow-sm transition hover:bg-red-700 disabled:opacity-50"
@@ -1859,36 +2046,34 @@ useEffect(() => {
             </label>
           </div>
 
-{importBusy && (
-  <div className="space-y-2">
-    <div className="flex justify-between text-sm text-zinc-700">
-      <span>Import en cours</span>
-      <span>
-        {importProgress} / {importTotal}
-      </span>
-    </div>
+          {importBusy && (
+            <div className="space-y-2">
+              <div className="flex justify-between text-sm text-zinc-700">
+                <span>Import en cours</span>
+                <span>
+                  {importProgress} / {importTotal}
+                </span>
+              </div>
 
-    <div className="h-3 w-full rounded-md bg-zinc-200 overflow-hidden">
-      <div
-        className="h-3 bg-blue-600 transition-all"
-        style={{ width: `${importPercent}%` }}
-      />
-    </div>
+              <div className="h-3 w-full rounded-md bg-zinc-200 overflow-hidden">
+                <div
+                  className="h-3 bg-blue-600 transition-all"
+                  style={{ width: `${importPercent}%` }}
+                />
+              </div>
 
-    <div className="flex justify-between text-xs text-zinc-500">
-      <span>{importPercent}%</span>
-      <span>
-        Temps ecoule : {fmtElapsed(importElapsedMs)}
-      </span>
-    </div>
+              <div className="flex justify-between text-xs text-zinc-500">
+                <span>{importPercent}%</span>
+                <span>Temps ecoule : {fmtElapsed(importElapsedMs)}</span>
+              </div>
 
-    {importProgress === 0 ? (
-      <div className="rounded-md border border-amber-200 bg-amber-50 px-3 py-2 text-xs text-amber-700">
-        Preparation du premier lot...
-      </div>
-    ) : null}
-  </div>
-)}         
+              {importProgress === 0 ? (
+                <div className="rounded-md border border-amber-200 bg-amber-50 px-3 py-2 text-xs text-amber-700">
+                  Preparation du premier lot...
+                </div>
+              ) : null}
+            </div>
+          )}
 
           <div className="rounded-md bg-zinc-50 p-3 text-xs text-zinc-600">
             lotNumber,amount,method,date,note
@@ -1898,51 +2083,58 @@ useEffect(() => {
             INM1A2,350,TRANSFER,2026-03-02,Virement
           </div>
 
-          <button onClick={importReceipts}
-  disabled={!importFile || importBusy}
-  className="flex items-center gap-2 h-12 w-full rounded-md bg-blue-600 hover:bg-blue-700 text-sm font-medium text-white disabled:opacity-50"
->
-  {importBusy ? "Import en cours..." : "Importer"}
-</button>
+          <button
+            onClick={importReceipts}
+            disabled={!importFile || importBusy}
+            className="flex items-center gap-2 h-12 w-full rounded-md bg-blue-600 hover:bg-blue-700 text-sm font-medium text-white disabled:opacity-50"
+          >
+            {importBusy ? "Import en cours..." : "Importer"}
+          </button>
 
-{importResult ? (
-  <div className="grid gap-2">
-    <div className="flex items-center gap-3">
-      <span className="inline-flex gap-3 items-center gap-1 rounded-md bg-emerald-100 px-3 py-1 text-sm font-medium text-emerald-700">
-        ✓ {importResult.imported} importé{importResult.imported > 1 ? "s" : ""}
-      </span>
+          {importResult ? (
+            <div className="grid gap-2">
+              <div className="flex items-center gap-3">
+                <span className="inline-flex gap-3 items-center gap-1 rounded-md bg-emerald-100 px-3 py-1 text-sm font-medium text-emerald-700">
+                  ✓ {importResult.imported} importé
+                  {importResult.imported > 1 ? "s" : ""}
+                </span>
 
-      <span
-        className={`inline-flex gap-3 items-center gap-1 rounded-md px-3 py-1 text-sm font-medium ${
-          importResult.errors.length > 0
-            ? "bg-red-100 text-red-700"
-            : "bg-zinc-200 text-zinc-600"
-        }`}
-      >
-        {importResult.errors.length > 0 ? "⚠" : "✓"} {importResult.errors.length} erreur
-        {importResult.errors.length > 1 ? "s" : ""}
-      </span>
+                <span
+                  className={`inline-flex gap-3 items-center gap-1 rounded-md px-3 py-1 text-sm font-medium ${
+                    importResult.errors.length > 0
+                      ? "bg-red-100 text-red-700"
+                      : "bg-zinc-200 text-zinc-600"
+                  }`}
+                >
+                  {importResult.errors.length > 0 ? "⚠" : "✓"}{" "}
+                  {importResult.errors.length} erreur
+                  {importResult.errors.length > 1 ? "s" : ""}
+                </span>
 
-      <span className="inline-flex gap-3 items-center gap-1 rounded-md bg-blue-100 px-3 py-1 text-sm font-medium text-blue-700">
-        Temps : {fmtElapsed(importResult.durationMs)}
-      </span>
-    </div>
+                <span className="inline-flex gap-3 items-center gap-1 rounded-md bg-blue-100 px-3 py-1 text-sm font-medium text-blue-700">
+                  Temps : {fmtElapsed(importResult.durationMs)}
+                </span>
+              </div>
 
-    {importResult.errors.length > 0 ? (
-      <div className="rounded-md border border-zinc-200 bg-white p-3">
-        <div className="mb-2 text-sm font-medium text-zinc-900">Détail des erreurs</div>
-        <ul className="max-h-48 space-y-1 overflow-auto text-sm text-zinc-700">
-          {importResult.errors.map((e, idx) => (
-            <li key={idx} className="flex gap-2">
-              <span className="w-16 shrink-0 text-zinc-500">Ligne {e.row}</span>
-              <span className="break-words">{e.error}</span>
-            </li>
-          ))}
-        </ul>
-      </div>
-    ) : null}
-  </div>
-) : null}
+              {importResult.errors.length > 0 ? (
+                <div className="rounded-md border border-zinc-200 bg-white p-3">
+                  <div className="mb-2 text-sm font-medium text-zinc-900">
+                    Détail des erreurs
+                  </div>
+                  <ul className="max-h-48 space-y-1 overflow-auto text-sm text-zinc-700">
+                    {importResult.errors.map((e, idx) => (
+                      <li key={idx} className="flex gap-2">
+                        <span className="w-16 shrink-0 text-zinc-500">
+                          Ligne {e.row}
+                        </span>
+                        <span className="break-words">{e.error}</span>
+                      </li>
+                    ))}
+                  </ul>
+                </div>
+              ) : null}
+            </div>
+          ) : null}
         </div>
       </Modal>
     </div>
