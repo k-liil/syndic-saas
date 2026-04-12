@@ -27,7 +27,7 @@ type OtherReceipt = {
 };
 
 function fmtDate(d: string) {
-  return new Date(d).toLocaleDateString();
+  return new Date(d).toLocaleDateString("fr-FR");
 }
 
 function fmtElapsed(ms: number) {

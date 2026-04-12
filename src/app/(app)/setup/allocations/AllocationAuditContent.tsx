@@ -344,7 +344,7 @@ export function AllocationAuditContent() {
                           </div>
                           <div>
                             <p className="text-xs text-slate-400 font-medium">
-                              {new Date(r.date).toLocaleDateString()}
+                              {new Date(r.date).toLocaleDateString("fr-FR")}
                             </p>
                             <p className="text-sm font-bold text-slate-900">
                               {r.amount} DH
