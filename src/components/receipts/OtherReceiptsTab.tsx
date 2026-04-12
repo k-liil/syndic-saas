@@ -75,7 +75,6 @@ export function OtherReceiptsTab({
     const params = new URLSearchParams({
       page: String(page),
       pageSize: String(pageSize),
-      type: "OTHER",
       year,
     });
 
