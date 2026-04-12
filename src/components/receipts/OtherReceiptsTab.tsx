@@ -64,10 +64,16 @@ export function OtherReceiptsTab({
   const [importStartedAt, setImportStartedAt] = useState<number | null>(null);
   const [importElapsedMs, setImportElapsedMs] = useState(0);
   const [importResult, setImportResult] = useState<null | {
-    imported: number;
-    errors: { row: number; error: string }[];
     durationMs: number;
+    errors: { row: number; error: string }[];
   }>(null);
+
+  // Search & Selection
+  const [searchQuery, setSearchQuery] = useState("");
+  const [selectedIds, setSelectedIds] = useState<string[]>([]);
+  const [selectAllAcrossResults, setSelectAllAcrossResults] = useState(false);
+  const [bulkDeleting, setBulkDeleting] = useState(false);
+  const [total, setTotal] = useState(0);
 
   async function load() {
     if (!year) return;
@@ -82,13 +88,27 @@ export function OtherReceiptsTab({
       params.append("month", String(monthFilter));
     }
 
+    if (searchQuery.trim()) {
+      params.append("search", searchQuery.trim());
+    }
+
     const res = await fetch(apiUrl(`/api/other-receipts?${params.toString()}`), {
       cache: "no-store",
     });
     const data = await res.json().catch(() => null);
     setItems(Array.isArray(data?.items) ? data.items : []);
     setTotalPages(Number(data?.pagination?.totalPages ?? 1));
+    setTotal(Number(data?.pagination?.totalItems ?? 0));
   }
+
+  // Debounced search
+  useEffect(() => {
+    const timer = setTimeout(() => {
+      setPage(1);
+      load();
+    }, 300);
+    return () => clearTimeout(timer);
+  }, [searchQuery, year, monthFilter]);
 
   useEffect(() => {
     if (!year) return;
@@ -112,6 +132,61 @@ export function OtherReceiptsTab({
     await load();
   }
 
+  function toggleSelect(id: string) {
+    setSelectedIds((prev) =>
+      prev.includes(id) ? prev.filter((i) => i !== id) : [...prev, id]
+    );
+  }
+
+  function toggleSelectAll() {
+    if (selectAllAcrossResults || (items.length > 0 && selectedIds.length === items.length)) {
+      setSelectedIds([]);
+      setSelectAllAcrossResults(false);
+    } else {
+      setSelectedIds(items.map((r) => r.id));
+    }
+  }
+
+  async function deleteSelected() {
+    if (selectedIds.length === 0 && !selectAllAcrossResults) return;
+
+    const ok = window.confirm(
+      selectAllAcrossResults
+        ? `🚨 ATTENTION : Vous allez supprimer TOUTES les autres recettes (${total}) qui correspondent aux filtres actuels. Continuer ?`
+        : `Supprimer les ${selectedIds.length} ligne(s) sélectionnée(s) ?`
+    );
+    if (!ok) return;
+
+    setBulkDeleting(true);
+    try {
+      const res = await fetch(apiUrl("/api/other-receipts/bulk"), {
+        method: "DELETE",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          ids: selectAllAcrossResults ? undefined : selectedIds,
+          deleteAll: selectAllAcrossResults,
+          year,
+          month: monthFilter > 0 ? monthFilter : undefined,
+          search: searchQuery,
+        }),
+      });
+
+      if (!res.ok) {
+        const data = await res.json();
+        alert(data.error || "Erreur lors de la suppression");
+      } else {
+        setSelectedIds([]);
+        setSelectAllAcrossResults(false);
+        await load();
+      }
+    } catch (e) {
+      console.error(e);
+      alert("Erreur de connexion au serveur");
+    } finally {
+      setBulkDeleting(false);
+    }
+  }
+
   async function importOtherReceipts() {
     if (!importFile) return;
 
@@ -130,17 +205,33 @@ export function OtherReceiptsTab({
       const lines = text.split(/\r?\n/).filter(Boolean);
 
       const rows = lines.slice(1).map((line) => {
-        // Simple regex to split by comma while respecting quotes if present (though our script doesn't use quotes)
-        const c = line.match(/(".*?"|[^",\s]+)(?=\s*,|\s*$)/g) || line.split(",");
+        // Robust CSV splitting: split by comma but preserve spaces and handle quotes
+        // We look for commas that are NOT inside double quotes
+        const parts: string[] = [];
+        let current = "";
+        let inQuotes = false;
+        
+        for (let i = 0; i < line.length; i++) {
+          const char = line[i];
+          if (char === '"') inQuotes = !inQuotes;
+          else if (char === ',' && !inQuotes) {
+            parts.push(current.trim());
+            current = "";
+          } else {
+            current += char;
+          }
+        }
+        parts.push(current.trim());
+
         return {
-          type: c[0]?.replace(/"/g, "") ?? "",
-          description: c[1]?.replace(/"/g, "") ?? "",
-          amount: Number(c[2]?.replace(/"/g, "")),
-          method: c[3]?.replace(/"/g, "") ?? "",
-          date: c[4]?.replace(/"/g, "") ?? "",
-          bankName: c[5]?.replace(/"/g, "") ?? "",
-          bankRef: c[6]?.replace(/"/g, "") ?? "",
-          note: c[7]?.replace(/"/g, "") ?? "",
+          type: parts[0] ?? "",
+          description: parts[1] ?? "",
+          amount: Number(parts[2]),
+          method: parts[3] ?? "",
+          date: parts[4] ?? "",
+          bankName: parts[5] ?? "",
+          bankRef: parts[6] ?? "",
+          note: parts[7] ?? "",
         };
       });
 
@@ -261,12 +352,33 @@ export function OtherReceiptsTab({
 
   return (
     <div className="space-y-4">
-      <div className="flex flex-col gap-4 bg-zinc-50/50 p-6 rounded-[32px] border border-white xl:flex-row xl:items-center xl:justify-between mb-6 shadow-sm">
-        <div className="flex items-center gap-1.5 text-zinc-400">
-          <Upload className="h-4 w-4" />
-          <span className="text-[11px] font-bold uppercase tracking-[0.15em]">
-            Gestion des autres recettes
-          </span>
+      <div className="flex flex-col gap-4 bg-zinc-50/50 p-6 rounded-[32px] border border-white xl:flex-row xl:items-center xl:justify-between mb-2 shadow-sm">
+        <div className="flex flex-col gap-3">
+          <div className="flex items-center gap-1.5 text-zinc-400">
+            <Upload className="h-4 w-4" />
+            <span className="text-[11px] font-bold uppercase tracking-[0.15em]">
+              Gestion des autres recettes
+            </span>
+          </div>
+          
+          <div className="relative w-full max-w-md">
+            <svg
+              className="absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-zinc-400"
+              xmlns="http://www.w3.org/2000/svg"
+              fill="none"
+              viewBox="0 0 24 24"
+              stroke="currentColor"
+            >
+              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z" />
+            </svg>
+            <input
+              type="text"
+              placeholder="Rechercher par description, banque, note..."
+              value={searchQuery}
+              onChange={(e) => setSearchQuery(e.target.value)}
+              className="h-10 w-full rounded-xl border-zinc-200 bg-white/50 pl-10 text-sm transition focus:border-indigo-500 focus:ring-indigo-500/20"
+            />
+          </div>
         </div>
 
         {canEdit ? (
@@ -288,11 +400,74 @@ export function OtherReceiptsTab({
         ) : null}
       </div>
 
+      {/* Bulk Action Bar */}
+      {canEdit && (selectedIds.length > 0 || selectAllAcrossResults) && (
+        <div className="flex items-center justify-between rounded-2xl border border-zinc-200 bg-white px-5 py-4 shadow-lg animate-in fade-in slide-in-from-top-2">
+          <div className="flex items-center gap-6">
+            <div className="flex flex-col">
+              <span className="text-sm font-bold text-zinc-900">
+                {selectAllAcrossResults ? total : selectedIds.length} encaissement(s) sélectionné(s)
+              </span>
+              <span className="text-[10px] text-zinc-500 uppercase tracking-tight">Actions groupées disponibles</span>
+            </div>
+
+            {!selectAllAcrossResults && total > selectedIds.length && (
+              <button
+                onClick={() => setSelectAllAcrossResults(true)}
+                className="rounded-full bg-indigo-50 px-4 py-1.5 text-xs font-bold text-indigo-600 transition hover:bg-indigo-100"
+              >
+                Sélectionner toute la base ({total})
+              </button>
+            )}
+            {selectAllAcrossResults && (
+              <button
+                onClick={() => setSelectAllAcrossResults(false)}
+                className="rounded-full bg-zinc-100 px-4 py-1.5 text-xs font-bold text-zinc-600 transition hover:bg-zinc-200"
+              >
+                Revenir à la page courante
+              </button>
+            )}
+          </div>
+
+          <button
+            onClick={deleteSelected}
+            disabled={bulkDeleting}
+            className="flex items-center gap-2 rounded-xl bg-gradient-to-br from-rose-500 to-red-600 px-6 py-2.5 text-sm font-bold text-white shadow-md transition-all hover:scale-[1.02] active:scale-[0.98] disabled:opacity-40"
+          >
+            {bulkDeleting ? (
+              <>
+                <span className="h-3 w-3 animate-spin rounded-full border-2 border-white/30 border-t-white" />
+                Suppression...
+              </>
+            ) : (
+              "Supprimer la sélection"
+            )}
+          </button>
+        </div>
+      )}
+
+      {bulkDeleting && (
+        <div className="flex items-center gap-3 rounded-xl border border-amber-200 bg-amber-50 px-5 py-4 text-sm text-amber-900 animate-pulse">
+           <span className="h-4 w-4 animate-spin rounded-full border-2 border-amber-300 border-t-amber-700" />
+           <span>Suppression en cours dans toute la base, merci de patienter...</span>
+        </div>
+      )}
+
       <div className="overflow-hidden rounded-[28px] border border-white/70 bg-white/90 shadow-[0_12px_30px_rgba(15,23,42,0.06)]">
         <div className="overflow-x-auto">
           <Table className="text-sm">
             <THead>
               <TR className="border-b border-zinc-200 bg-zinc-50">
+                {canEdit && (
+                  <TH className="w-12 px-5 py-4">
+                    <input
+                      type="checkbox"
+                      checked={selectAllAcrossResults || (items.length > 0 && selectedIds.length === items.length)}
+                      onChange={toggleSelectAll}
+                      className="h-4 w-4 rounded border-zinc-300 text-indigo-600 focus:ring-indigo-500"
+                    />
+                  </TH>
+                )}
                 <TH className="text-[11px] font-bold uppercase tracking-[0.12em] text-zinc-500">
                   N°
                 </TH>
@@ -319,7 +494,17 @@ export function OtherReceiptsTab({
 
             <tbody>
               {items.map((r) => (
-                <TR key={r.id} className="group border-b border-zinc-100 transition hover:bg-zinc-50">
+                <TR key={r.id} className={`group border-b border-zinc-100 transition hover:bg-zinc-50 ${selectedIds.includes(r.id) ? 'bg-indigo-50/50' : ''}`}>
+                  {canEdit && (
+                    <TD className="px-5 py-4">
+                      <input
+                        type="checkbox"
+                        checked={selectAllAcrossResults || selectedIds.includes(r.id)}
+                        onChange={() => toggleSelect(r.id)}
+                        className="h-4 w-4 rounded border-zinc-300 text-indigo-600 focus:ring-indigo-500"
+                      />
+                    </TD>
+                  )}
                   <TD className="font-semibold text-zinc-900">{r.receiptNumber}</TD>
                   <TD className="text-zinc-600">{fmtDate(r.date)}</TD>
                   <TD>
