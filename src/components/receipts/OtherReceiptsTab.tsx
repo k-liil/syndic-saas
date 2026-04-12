@@ -60,6 +60,7 @@ export function OtherReceiptsTab({
   const [importProgress, setImportProgress] = useState(0);
   const [importTotal, setImportTotal] = useState(0);
   const [importPercent, setImportPercent] = useState(0);
+  const [importStep, setImportStep] = useState<string>("");
   const [importStartedAt, setImportStartedAt] = useState<number | null>(null);
   const [importElapsedMs, setImportElapsedMs] = useState(0);
   const [importResult, setImportResult] = useState<null | {
@@ -121,85 +122,127 @@ export function OtherReceiptsTab({
     setImportProgress(0);
     setImportTotal(0);
     setImportPercent(0);
+    setImportStep("Lecture du fichier...");
     setImportResult(null);
 
-    const text = await importFile.text();
-    const lines = text.split(/\r?\n/).filter(Boolean);
+    try {
+      const text = await importFile.text();
+      setImportStep("Analyse du contenu CSV...");
+      const lines = text.split(/\r?\n/).filter(Boolean);
 
-    const rows = lines.slice(1).map((line) => {
-      const c = line.split(",");
-      return {
-        type: c[0],
-        description: c[1],
-        amount: Number(c[2]),
-        method: c[3],
-        date: c[4],
-        bankName: c[5] ?? "",
-        bankRef: c[6] ?? "",
-        note: c[7] ?? "",
-      };
-    });
-
-    setImportTotal(rows.length);
-
-    const start = await fetch(apiUrl("/api/import/other-receipts"), {
-      method: "POST",
-      headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({
-        action: "start",
-        totalRows: rows.length,
-      }),
-    });
-
-    const startData = await start.json();
-    const jobId = startData.jobId;
-    const batchSize = 100;
-    let processed = 0;
-    let imported = 0;
-    const errors: { row: number; error: string }[] = [];
-
-    while (processed < rows.length) {
-      const batch = rows.slice(processed, processed + batchSize);
-
-      const res = await fetch(apiUrl("/api/import/other-receipts"), {
-        method: "POST",
-        headers: {
-          "Content-Type": "application/json",
-        },
-        body: JSON.stringify({
-          action: "batch",
-          jobId,
-          rows: batch,
-          offset: processed,
-          isLastBatch: processed + batchSize >= rows.length,
-        }),
+      const rows = lines.slice(1).map((line) => {
+        // Simple regex to split by comma while respecting quotes if present (though our script doesn't use quotes)
+        const c = line.match(/(".*?"|[^",\s]+)(?=\s*,|\s*$)/g) || line.split(",");
+        return {
+          type: c[0]?.replace(/"/g, "") ?? "",
+          description: c[1]?.replace(/"/g, "") ?? "",
+          amount: Number(c[2]?.replace(/"/g, "")),
+          method: c[3]?.replace(/"/g, "") ?? "",
+          date: c[4]?.replace(/"/g, "") ?? "",
+          bankName: c[5]?.replace(/"/g, "") ?? "",
+          bankRef: c[6]?.replace(/"/g, "") ?? "",
+          note: c[7]?.replace(/"/g, "") ?? "",
+        };
       });
 
-      const data = await res.json().catch(() => null);
+      setImportTotal(rows.length);
+      setImportStep(`Initialisation du job pour ${rows.length} lignes...`);
 
-      imported += Number(data?.imported ?? 0);
+      const controller = new AbortController();
+      const signal = controller.signal;
+      const timeoutId = setTimeout(() => controller.abort(), 30000); // 30s timeout
 
-      if (Array.isArray(data?.errors)) {
-        errors.push(...data.errors);
+      const start = await fetch(apiUrl("/api/import/other-receipts"), {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          action: "start",
+          totalRows: rows.length,
+        }),
+        signal,
+      });
+
+      clearTimeout(timeoutId);
+
+      if (!start.ok) {
+        const errData = await start.json().catch(() => ({}));
+        throw new Error(errData.error || `Erreur serveur (${start.status})`);
       }
 
-      processed += batch.length;
-      setImportProgress(processed);
-      setImportPercent(Math.round((processed / rows.length) * 100));
+      const startData = await start.json();
+      const jobId = startData.jobId;
+      const batchSize = 10; // Reduced for better real-time visibility
+      let processed = 0;
+      let imported = 0;
+      const errors: { row: number; error: string }[] = [];
+
+      while (processed < rows.length) {
+        const batch = rows.slice(processed, processed + batchSize);
+        const nextBatchEnd = Math.min(processed + batchSize, rows.length);
+        
+        setImportStep(`Envoi des lignes ${processed + 1} à ${nextBatchEnd}...`);
+
+        const bController = new AbortController();
+        const bTimeoutId = setTimeout(() => bController.abort(), 45000); // 45s for batches
+
+        const res = await fetch(apiUrl("/api/import/other-receipts"), {
+          method: "POST",
+          headers: {
+            "Content-Type": "application/json",
+          },
+          body: JSON.stringify({
+            action: "batch",
+            jobId,
+            rows: batch,
+            offset: processed,
+            isLastBatch: processed + batchSize >= rows.length,
+          }),
+          signal: bController.signal,
+        });
+
+        clearTimeout(bTimeoutId);
+
+        if (!res.ok) {
+          const errData = await res.json().catch(() => ({}));
+          throw new Error(`Erreur lors du traitement du lot : ${errData.error || res.statusText}`);
+        }
+
+        const data = await res.json().catch(() => null);
+        imported += Number(data?.imported ?? 0);
+
+        if (Array.isArray(data?.errors)) {
+          errors.push(...data.errors);
+        }
+
+        processed += batch.length;
+        setImportProgress(processed);
+        setImportPercent(Math.round((processed / rows.length) * 100));
+      }
+
+      setImportStep("Synchronisation finale...");
+      await load();
+      setImportStep("Terminé !");
+
+      setImportResult({
+        imported,
+        errors,
+        durationMs: Date.now() - startedAt,
+      });
+
+    } catch (error: any) {
+      console.error("Import failed:", error);
+      alert(`L'importation a échoué : ${error.name === 'AbortError' ? 'Le serveur a mis trop de temps à répondre (Timeout)' : error.message}`);
+      setImportResult({
+        imported: 0,
+        errors: [{ row: 0, error: error.message }],
+        durationMs: Date.now() - startedAt,
+      });
+    } finally {
+      setImportFile(null);
+      setImportBusy(false);
+      setImportStartedAt(null);
+      setImportElapsedMs(0);
     }
-
-    await load();
-
-    setImportResult({
-      imported,
-      errors,
-      durationMs: Date.now() - startedAt,
-    });
-
-    setImportFile(null);
-    setImportBusy(false);
-    setImportStartedAt(null);
-    setImportElapsedMs(0);
   }
 
   useEffect(() => {
@@ -332,8 +375,8 @@ export function OtherReceiptsTab({
 
           {importBusy && (
             <div className="space-y-2">
-              <div className="flex justify-between text-sm text-zinc-700">
-                <span>Import en cours</span>
+              <div className="flex justify-between text-sm font-medium text-cyan-700 animate-pulse">
+                <span>{importStep}</span>
                 <span>
                   {importProgress} / {importTotal}
                 </span>
