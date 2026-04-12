@@ -30,7 +30,7 @@ export async function GET(req: Request) {
   const year = rawYear ? Number(rawYear) : null;
   const rawMonth = searchParams.get("month");
   const month = rawMonth ? Number(rawMonth) : null;
-  const q = asString(searchParams.get("q")).trim();
+  const q = (searchParams.get("search") || searchParams.get("q") || "").trim();
 
   const method = asString(searchParams.get("method")).trim();
 
