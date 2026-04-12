@@ -102,7 +102,7 @@ export async function requireRole(minimumRole: AppRole) {
       session: r.session, 
       userId: r.userId,
       isSuperAdmin: true,
-      organizationId: null,
+      organizationId: r.organizationId,
     };
   }
 

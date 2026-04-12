@@ -40,11 +40,21 @@ export async function POST(req: Request) {
     }
 
     const body = (await req.json()) as Body;
+    const url = new URL(req.url);
+    const orgIdFromUrl = url.searchParams.get("orgId");
+    
+    // Fallback if gate didn't provide it (Super Admin cases)
+    const organizationId = gate.organizationId || orgIdFromUrl || "";
+
+    if (!organizationId) {
+      console.error("[Import] Missing organizationId");
+      return NextResponse.json({ error: "Contexte de copropriété manquant. Veuillez rafraîchir la page." }, { status: 400 });
+    }
 
     if (body.action === "start") {
       const job = await prisma.importJob.create({
         data: {
-          organizationId: gate.organizationId ?? "",
+          organizationId: organizationId,
           type: "other-receipts",
           totalRows: body.totalRows,
           processed: 0,
@@ -69,7 +79,7 @@ export async function POST(req: Request) {
       where: { id: jobId },
     });
 
-    if (!job || job.organizationId !== gate.organizationId) {
+    if (!job || job.organizationId !== organizationId) {
       return NextResponse.json({ error: "Job introuvable" }, { status: 404 });
     }
 
@@ -139,7 +149,7 @@ export async function POST(req: Request) {
       // Use a transaction for the fetch + insert
       const res = await prisma.$transaction(async (tx) => {
         const last = await tx.otherReceipt.findFirst({
-          where: { organizationId: gate.organizationId ?? "" },
+          where: { organizationId: organizationId },
           orderBy: { receiptNumber: "desc" },
           select: { receiptNumber: true },
         });
@@ -149,7 +159,7 @@ export async function POST(req: Request) {
         await tx.otherReceipt.createMany({
           data: validRows.map((row, index) => ({
             receiptNumber: startNumber + index + 1,
-            organizationId: gate.organizationId ?? "",
+            organizationId: organizationId,
             type: row.type,
             description: row.description,
             amount: row.amount,
