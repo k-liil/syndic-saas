@@ -361,25 +361,6 @@ export function OtherReceiptsTab({
               Gestion des autres recettes
             </span>
           </div>
-          
-          <div className="relative w-full max-w-md">
-            <svg
-              className="absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-zinc-400"
-              xmlns="http://www.w3.org/2000/svg"
-              fill="none"
-              viewBox="0 0 24 24"
-              stroke="currentColor"
-            >
-              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z" />
-            </svg>
-            <input
-              type="text"
-              placeholder="Rechercher par description, banque, note..."
-              value={searchQuery}
-              onChange={(e) => setSearchQuery(e.target.value)}
-              className="h-10 w-full rounded-xl border-zinc-200 bg-white/50 pl-10 text-sm transition focus:border-indigo-500 focus:ring-indigo-500/20"
-            />
-          </div>
         </div>
 
         {canEdit ? (
@@ -479,7 +460,17 @@ export function OtherReceiptsTab({
                   Type
                 </TH>
                 <TH className="text-[11px] font-bold uppercase tracking-[0.12em] text-zinc-500">
-                  Description
+                  <div className="flex flex-col gap-2">
+                    <span>Description</span>
+                    <input
+                      type="text"
+                      placeholder="Filtrer..."
+                      value={searchQuery}
+                      onChange={(e) => setSearchQuery(e.target.value)}
+                      className="h-7 w-full rounded-md border-zinc-200 bg-white px-2 text-[10px] font-normal normal-case tracking-normal shadow-sm transition-all focus:border-indigo-500 focus:ring-1 focus:ring-indigo-500/20"
+                      onClick={(e) => e.stopPropagation()} // Prevent sort trigger if any
+                    />
+                  </div>
                 </TH>
                 <TH className="text-[11px] font-bold uppercase tracking-[0.12em] text-zinc-500">
                   Méthode
