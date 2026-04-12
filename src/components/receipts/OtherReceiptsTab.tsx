@@ -261,72 +261,149 @@ export function OtherReceiptsTab({
 
   return (
     <div className="space-y-4">
-      {canEdit ? (
-      <div className="flex justify-end gap-3">
-        <button
-          onClick={() =>{ setImportOpen(true); setImportFile(null); setImportResult(null); setImportProgress(0); setImportTotal(0); setImportPercent(0); }} 
-          className="flex items-center gap-2 rounded-md border border-zinc-200 bg-white px-4 py-2 text-sm font-semibold text-zinc-700 hover:bg-zinc-50 transition-all active:scale-95 shadow-sm" 
-        > <Upload className="h-4 w-4" /> Importer</button>
+      <div className="flex flex-col gap-4 bg-zinc-50/50 p-6 rounded-[32px] border border-white xl:flex-row xl:items-center xl:justify-between mb-6 shadow-sm">
+        <div className="flex items-center gap-1.5 text-zinc-400">
+          <Upload className="h-4 w-4" />
+          <span className="text-[11px] font-bold uppercase tracking-[0.15em]">
+            Gestion des autres recettes
+          </span>
+        </div>
 
-        <button
-          onClick={() =>{ setEditing(null); setOpen(true); }} 
-          className="btn-brand flex items-center gap-2 rounded-md px-5 py-2.5 text-sm font-bold shadow-[0_10px_24px_rgba(14,165,233,0.22)]" 
-        > <PlusCircle className="h-4 w-4" /> Ajouter</button>
+        {canEdit ? (
+          <div className="flex items-center gap-3">
+            <button
+              onClick={() =>{ setImportOpen(true); setImportFile(null); setImportResult(null); setImportProgress(0); setImportTotal(0); setImportPercent(0); }} 
+              className="flex items-center gap-2 rounded-md border border-zinc-200 bg-white px-5 py-2.5 text-sm font-semibold text-zinc-700 shadow-sm transition-all hover:bg-zinc-50 active:scale-95"
+            >
+              <Upload className="h-4 w-4" /> Importer
+            </button>
+
+            <button
+              onClick={() =>{ setEditing(null); setOpen(true); }} 
+              className="flex items-center gap-2 rounded-md bg-gradient-to-r from-cyan-500 to-blue-600 px-6 py-2.5 text-sm font-bold text-white shadow-[0_10px_24px_rgba(14,165,233,0.22)] transition-all hover:scale-[1.02] active:scale-[0.98]"
+            >
+              <PlusCircle className="h-4 w-4" /> Ajouter
+            </button>
+          </div>
+        ) : null}
       </div>
-      ) : null}
 
-      <Table>
-        <THead>
-          <TR>
-            <TH>N°</TH>
-            <TH>Date</TH>
-            <TH>Type</TH>
-            <TH>Description</TH>
-            <TH>Methode</TH>
-            <TH className="text-right">Montant</TH>
-            <TH></TH>
-          </TR>
-        </THead>
+      <div className="overflow-hidden rounded-[28px] border border-white/70 bg-white/90 shadow-[0_12px_30px_rgba(15,23,42,0.06)]">
+        <div className="overflow-x-auto">
+          <Table className="text-sm">
+            <THead>
+              <TR className="border-b border-zinc-200 bg-zinc-50">
+                <TH className="text-[11px] font-bold uppercase tracking-[0.12em] text-zinc-500">
+                  N°
+                </TH>
+                <TH className="text-[11px] font-bold uppercase tracking-[0.12em] text-zinc-500">
+                  Date
+                </TH>
+                <TH className="text-[11px] font-bold uppercase tracking-[0.12em] text-zinc-500">
+                  Type
+                </TH>
+                <TH className="text-[11px] font-bold uppercase tracking-[0.12em] text-zinc-500">
+                  Description
+                </TH>
+                <TH className="text-[11px] font-bold uppercase tracking-[0.12em] text-zinc-500">
+                  Méthode
+                </TH>
+                <TH className="text-right text-[11px] font-bold uppercase tracking-[0.12em] text-zinc-500">
+                  Montant
+                </TH>
+                <TH className="w-24 text-right text-[11px] font-bold uppercase tracking-[0.12em] text-zinc-500">
+                  Actions
+                </TH>
+              </TR>
+            </THead>
 
-        <tbody>
-          {items.map((r) => (
-            <TR key={r.id}>
-              <TD>{r.receiptNumber}</TD>
-              <TD>{fmtDate(r.date)}</TD>
-              <TD>{r.type}</TD>
-              <TD>{r.description}</TD>
-              <TD>{r.method}</TD>
-              <TD className="text-right">
-                {Number(r.amount).toLocaleString("fr-FR")} MAD
-              </TD>
-              <TD className="text-right">
-                {canEdit ? (
-                <div className="flex justify-end gap-2">
-                  <button
-                    onClick={() => {
-                      setEditing(r);
-                      setOpen(true);
-                    }}
-                    className="rounded-lg border px-3 py-1 text-sm hover:bg-zinc-50"
-                  >
-                    Modifier
-                  </button>
+            <tbody>
+              {items.map((r) => (
+                <TR key={r.id} className="group border-b border-zinc-100 transition hover:bg-zinc-50">
+                  <TD className="font-semibold text-zinc-900">{r.receiptNumber}</TD>
+                  <TD className="text-zinc-600">{fmtDate(r.date)}</TD>
+                  <TD>
+                    <span className={`inline-flex rounded-md px-2 py-0.5 text-[10px] font-bold uppercase tracking-wider ${
+                      r.type === "RENT" ? "bg-blue-100 text-blue-700" : "bg-purple-100 text-purple-700"
+                    }`}>
+                      {r.type === "RENT" ? "Loyer" : "Autre"}
+                    </span>
+                  </TD>
+                  <TD className="font-medium text-zinc-900">{r.description}</TD>
+                  <TD>
+                    {r.method === "CASH" && (
+                      <span className="inline-flex gap-3 items-center rounded-md bg-emerald-100 px-2.5 py-1 text-xs font-medium text-emerald-700">
+                        💵 Espèces
+                      </span>
+                    )}
+                    {r.method === "TRANSFER" && (
+                      <span className="inline-flex gap-3 items-center rounded-md bg-blue-100 px-2.5 py-1 text-xs font-medium text-blue-700">
+                        🏦 Virement
+                      </span>
+                    )}
+                    {r.method === "CHECK" && (
+                      <span className="inline-flex gap-3 items-center rounded-md bg-amber-100 px-2.5 py-1 text-xs font-medium text-amber-700">
+                        🧾 Chèque
+                      </span>
+                    )}
+                  </TD>
+                  <TD className="text-right font-semibold text-zinc-900">
+                    {Number(r.amount).toLocaleString("fr-FR")} MAD
+                  </TD>
+                  <TD className="text-right">
+                    {canEdit ? (
+                    <div className="flex justify-end gap-2">
+                      <button
+                        onClick={() => {
+                          setEditing(r);
+                          setOpen(true);
+                        }}
+                        className="flex h-8 w-8 items-center justify-center rounded-lg text-zinc-400 transition hover:bg-blue-50 hover:text-blue-600"
+                        title="Modifier"
+                      >
+                        <svg
+                          xmlns="http://www.w3.org/2000/svg"
+                          className="h-4 w-4"
+                          viewBox="0 0 24 24"
+                          fill="none"
+                          stroke="currentColor"
+                          strokeWidth="2"
+                        >
+                          <path d="M12 20h9" />
+                          <path d="M16.5 3.5a2.1 2.1 0 0 1 3 3L7 19l-4 1 1-4 12.5-12.5z" />
+                        </svg>
+                      </button>
 
-                  <button
-                    onClick={() => remove(r.id)}
-                    className="rounded-lg border border-red-200 px-3 py-1 text-sm text-red-600 hover:bg-red-50"
-                  >
-                    Supprimer
-                  </button>
-                </div>
-                ) : (
-                  <span className="text-xs text-zinc-400">Lecture seule</span>
-                )}
-              </TD>
-            </TR>
-          ))}
-        </tbody>
-      </Table>
+                      <button
+                        onClick={() => remove(r.id)}
+                        className="flex h-8 w-8 items-center justify-center rounded-lg text-zinc-400 transition hover:bg-red-50 hover:text-red-600"
+                        title="Supprimer"
+                      >
+                        <svg
+                          xmlns="http://www.w3.org/2000/svg"
+                          className="h-4 w-4"
+                          viewBox="0 0 24 24"
+                          fill="none"
+                          stroke="currentColor"
+                          strokeWidth="2"
+                        >
+                          <path d="M3 6h18" />
+                          <path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2" />
+                          <line x1="10" y1="11" x2="10" y2="17" />
+                          <line x1="14" y1="11" x2="14" y2="17" />
+                        </svg>
+                      </button>
+                    </div>
+                    ) : (
+                      <span className="text-xs text-zinc-400">Lecture seule</span>
+                    )}
+                  </TD>
+                </TR>
+              ))}
+            </tbody>
+          </Table>
+        </div>
+      </div>
 
       <div className="mt-4 flex gap-2">
         <button disabled={page === 1} onClick={() => setPage(page - 1)}>

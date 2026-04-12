@@ -1,6 +1,7 @@
 "use client";
 
-import { Suspense, useState } from "react";
+import { Suspense, useState, useEffect, useCallback } from "react";
+import { useSearchParams, useRouter, usePathname } from "next/navigation";
 import { ReceiptsTabs } from "@/components/receipts/ReceiptsTabs";
 import { ContributionReceiptsTab } from "@/components/receipts/ContributionReceiptsTab";
 import { OtherReceiptsTab } from "@/components/receipts/OtherReceiptsTab";
@@ -11,9 +12,30 @@ import {
 } from "@/components/ui/PageLogger";
 
 export default function ReceiptsPage() {
-  const [tab, setTab] = useState<"CONTRIBUTION" | "OTHER">("CONTRIBUTION");
+  const searchParams = useSearchParams();
+  const router = useRouter();
+  const pathname = usePathname();
+
+  const [tab, setTab] = useState<"CONTRIBUTION" | "OTHER">(() => {
+    const t = searchParams.get("type");
+    return t === "OTHER" ? "OTHER" : "CONTRIBUTION";
+  });
+
   const [monthFilter, setMonthFilter] = useState(0);
   const logger = usePageLogger();
+
+  const handleTabChange = useCallback((newTab: "CONTRIBUTION" | "OTHER") => {
+    setTab(newTab);
+    const params = new URLSearchParams(searchParams.toString());
+    params.set("type", newTab);
+    router.push(`${pathname}?${params.toString()}`);
+  }, [searchParams, pathname, router]);
+
+  useEffect(() => {
+    const t = searchParams.get("type");
+    if (t === "OTHER") setTab("OTHER");
+    else setTab("CONTRIBUTION");
+  }, [searchParams]);
 
   return (
     <div className="space-y-6">
@@ -60,7 +82,7 @@ export default function ReceiptsPage() {
         </div>
       </div>
 
-      <ReceiptsTabs tab={tab} setTab={setTab} />
+      <ReceiptsTabs tab={tab} setTab={handleTabChange} />
 
       <Suspense
         fallback={
