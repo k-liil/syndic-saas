@@ -64,8 +64,9 @@ export function OtherReceiptsTab({
   const [importStartedAt, setImportStartedAt] = useState<number | null>(null);
   const [importElapsedMs, setImportElapsedMs] = useState(0);
   const [importResult, setImportResult] = useState<null | {
-    durationMs: number;
+    imported: number;
     errors: { row: number; error: string }[];
+    durationMs: number;
   }>(null);
 
   // Search & Selection
