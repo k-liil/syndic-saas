@@ -6,28 +6,38 @@ import { getOrgIdFromRequest } from "@/lib/org-utils";
 export const dynamic = "force-dynamic";
 
 export async function GET(req: Request) {
-  const gate = await requireManager();
-  if (!gate.ok) {
-    return NextResponse.json({ error: gate.error }, { status: gate.status });
+  try {
+    const gate = await requireManager();
+    if (!gate.ok) {
+      return NextResponse.json({ error: gate.error }, { status: gate.status });
+    }
+
+    const orgId = await getOrgIdFromRequest(req, gate);
+    if (!orgId) {
+      return NextResponse.json([]);
+    }
+
+    const banks = await prisma.internalBank.findMany({
+      where: { organizationId: orgId! },
+      orderBy: { name: "asc" },
+    });
+
+    // Normalize Decimal to number for JSON serialization
+    const normalizedBanks = banks.map(bank => ({
+      ...bank,
+      openingBalance: Number(bank.openingBalance)
+    }));
+
+    return NextResponse.json(normalizedBanks);
+  } catch (err: any) {
+    console.error("[BANKS_API_ERROR]", err);
+    return NextResponse.json({ 
+      error: "SERVER_ERROR", 
+      message: err.message,
+      stack: err.stack,
+      orgId: req.url.split("orgId=")[1] || "N/A"
+    }, { status: 500 });
   }
-
-  const orgId = await getOrgIdFromRequest(req, gate);
-  if (!orgId) {
-    return NextResponse.json([]);
-  }
-
-  const banks = await prisma.internalBank.findMany({
-    where: { organizationId: orgId! },
-    orderBy: { name: "asc" },
-  });
-
-  // Normalize Decimal to number for JSON serialization
-  const normalizedBanks = banks.map(bank => ({
-    ...bank,
-    openingBalance: Number(bank.openingBalance)
-  }));
-
-  return NextResponse.json(normalizedBanks);
 }
 
 export async function POST(req: Request) {
