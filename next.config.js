@@ -1,5 +1,20 @@
 /** @type {import("next").NextConfig} */
-const nextConfig = {};
+const nextConfig = {
+  async redirects() {
+    return [
+      {
+        source: '/:path*',
+        has: [
+          {
+            type: 'host',
+            value: 'syndic-saas-production.up.railway.app',
+          },
+        ],
+        destination: 'https://syndiclib.ma/:path*',
+        permanent: true,
+      },
+    ];
+  },
+};
 
-// Trigger restart process
 module.exports = nextConfig;
