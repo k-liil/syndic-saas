@@ -3,6 +3,8 @@ import { prisma } from "@/lib/prisma";
 import { requireManager } from "@/lib/authz";
 import { getOrgIdFromRequest } from "@/lib/org-utils";
 
+export const dynamic = "force-dynamic";
+
 export async function GET(req: Request) {
   const gate = await requireManager();
   if (!gate.ok) {
@@ -19,7 +21,13 @@ export async function GET(req: Request) {
     orderBy: { name: "asc" },
   });
 
-  return NextResponse.json(banks);
+  // Normalize Decimal to number for JSON serialization
+  const normalizedBanks = banks.map(bank => ({
+    ...bank,
+    openingBalance: Number(bank.openingBalance)
+  }));
+
+  return NextResponse.json(normalizedBanks);
 }
 
 export async function POST(req: Request) {
