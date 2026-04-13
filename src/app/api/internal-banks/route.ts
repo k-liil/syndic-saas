@@ -43,6 +43,7 @@ export async function POST(req: Request) {
     data: {
       organizationId: orgId!,
       name: body.name.trim(),
+      openingBalance: typeof body.openingBalance === "number" ? body.openingBalance : 0,
     },
   });
 
@@ -81,6 +82,8 @@ export async function PUT(req: Request) {
       name: typeof body.name === "string" ? body.name.trim() : undefined,
       isActive:
         typeof body.isActive === "boolean" ? body.isActive : undefined,
+      openingBalance:
+        typeof body.openingBalance === "number" ? body.openingBalance : undefined,
     },
   });
 

@@ -292,6 +292,9 @@ model Payment {
   bankName String?
   bankRef  String?
 
+  bankId   String?
+  bank     InternalBank? @relation(fields: [bankId], references: [id])
+
   createdAt DateTime @default(now())
 
   @@unique([organizationId, paymentNumber])
@@ -327,6 +330,9 @@ model Receipt {
 
   bankName String?
   bankRef  String?
+
+  bankId   String?
+  bank     InternalBank? @relation(fields: [bankId], references: [id])
 
   unallocatedAmount Int @default(0)
 
@@ -494,8 +500,13 @@ model InternalBank {
   organization   Organization @relation(fields: [organizationId], references: [id], onDelete: Cascade)
   name      String
   isActive  Boolean  @default(true)
+  openingBalance Decimal @default(0) @db.Decimal(12,2)
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
+
+  receipts      Receipt[]
+  otherReceipts OtherReceipt[]
+  payments      Payment[]
 
   @@index([organizationId])
 }
@@ -598,6 +609,9 @@ model OtherReceipt {
 
   bankName String?
   bankRef  String?
+
+  bankId   String?
+  bank     InternalBank? @relation(fields: [bankId], references: [id])
 
   note String?
 

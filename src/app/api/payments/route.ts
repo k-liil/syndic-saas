@@ -100,6 +100,7 @@ export async function GET(req: Request) {
         note: true,
         bankName: true,
         bankRef: true,
+        bankId: true,
         supplier: { select: { id: true, name: true } },
         accountingPost: { select: { id: true, name: true, code: true } },
       },
@@ -225,6 +226,7 @@ export async function POST(req: Request) {
         attachments,
         bankName: typeof body.bankName === "string" ? body.bankName : null,
         bankRef: typeof body.bankRef === "string" ? body.bankRef : null,
+        bankId: typeof body.bankId === "string" ? body.bankId : null,
         date: paymentDate,
         paymentNumber: nextNumber,
       },
@@ -412,6 +414,7 @@ export async function PUT(req: Request) {
       attachments,
       bankName: typeof body.bankName === "string" ? body.bankName : null,
       bankRef: typeof body.bankRef === "string" ? body.bankRef : null,
+      bankId: typeof body.bankId === "string" ? body.bankId : null,
       date: body.date ? new Date(body.date) : undefined,
     },
     include: {

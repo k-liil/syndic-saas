@@ -98,6 +98,10 @@ export async function POST(req: Request) {
         orderBy: { paymentNumber: "desc" },
         select: { paymentNumber: true },
       }),
+      prisma.internalBank.findMany({
+        where: { organizationId: gate.organizationId ?? "", isActive: true },
+        select: { id: true, name: true },
+      }),
     ]);
 
     const suppliersByName = new Map(
@@ -108,6 +112,9 @@ export async function POST(req: Request) {
     );
     const postsByName = new Map(
       posts.map((post) => [post.name.toLowerCase(), post])
+    );
+    const banksByName = new Map(
+      banks.map((bank) => [bank.name.toLowerCase(), bank])
     );
 
     const paymentStartNumber = settings?.paymentStartNumber ?? 1;
@@ -122,6 +129,7 @@ export async function POST(req: Request) {
       amount: number;
       date: Date;
       bankName: string | null;
+      bankId: string | null;
       bankRef: string | null;
       note: string | null;
       paymentNumber: number;
@@ -196,6 +204,7 @@ export async function POST(req: Request) {
         amount,
         date: paymentDate,
         bankName: method !== "CASH" ? bankName || null : null,
+        bankId: method !== "CASH" ? (banksByName.get((bankName || "").toLowerCase())?.id || null) : null,
         bankRef: method === "CHECK" ? bankRef || null : null,
         note: note || null,
         paymentNumber: nextPaymentNumber,

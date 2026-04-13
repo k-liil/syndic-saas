@@ -38,6 +38,7 @@ type InternalBank = {
   id: string;
   name: string;
   isActive: boolean;
+  openingBalance: number;
   createdAt: string;
   updatedAt: string;
 };
@@ -131,6 +132,7 @@ export default function SettingsPage() {
   const [openingBankBalance, setOpeningBankBalance] = useState<number>(0);
   const [banks, setBanks] = useState<InternalBank[]>([]);
   const [newBankName, setNewBankName] = useState("");
+  const [newBankOpeningBalance, setNewBankOpeningBalance] = useState<string>("0");
   const [savingBank, setSavingBank] = useState(false);
   const [savingSettings, setSavingSettings] = useState(false);
   const [status, setStatus] = useState<StatusState>({
@@ -309,6 +311,8 @@ export default function SettingsPage() {
       });
       if (!res.ok) throw new Error();
       await loadSettings();
+      // Also reload banks to see any balance changes if we did logic there
+      await loadBanks();
       showStatus("success", "Calcul des cotisations mis à jour.");
     } catch {
       showStatus("error", "Erreur lors de l'enregistrement");
@@ -476,19 +480,15 @@ export default function SettingsPage() {
     setSavingSettings(false);
   }
 
-  async function addBank() {
-    const name = newBankName.trim();
-    if (!name) return;
-
-    setSavingBank(true);
-    showStatus("saving", "Enregistrement...");
-
     const res = await fetch(apiUrl("/api/internal-banks"), {
       method: "POST",
       headers: {
         "Content-Type": "application/json",
       },
-      body: JSON.stringify({ name }),
+      body: JSON.stringify({
+        name,
+        openingBalance: Number(newBankOpeningBalance) || 0,
+      }),
     });
 
     if (!res.ok) {
@@ -499,6 +499,7 @@ export default function SettingsPage() {
     }
 
     setNewBankName("");
+    setNewBankOpeningBalance("0");
     await loadBanks();
     setSavingBank(false);
     showStatus("success", "Banque enregistree.");
@@ -525,6 +526,28 @@ export default function SettingsPage() {
     }
 
     await loadBanks();
+  }
+
+  async function updateBankOpeningBalance(bank: InternalBank, balance: number) {
+    showStatus("saving", "Mise à jour...");
+
+    const res = await fetch(apiUrl("/api/internal-banks"), {
+      method: "PUT",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({
+        id: bank.id,
+        openingBalance: balance,
+      }),
+    });
+
+    if (!res.ok) {
+      const err = await res.json().catch(() => ({}));
+      showStatus("error", `Erreur: ${err?.error ?? "update bank failed"}`);
+      return;
+    }
+
+    await loadBanks();
+    showStatus("success", "Solde d'ouverture mis à jour.");
   }
 
   function requestDeleteBank(bankId: string, bankName: string) {
@@ -799,19 +822,6 @@ export default function SettingsPage() {
                     step="0.01"
                   />
                 </div>
-
-                <div>
-                  <label className="mb-2 block text-sm font-medium text-zinc-700">
-                    Solde initial banque
-                  </label>
-                  <input
-                    type="number"
-                    className="h-12 w-full rounded-md border border-zinc-200 bg-white px-4 text-sm shadow-sm outline-none"
-                    value={openingBankBalance}
-                    onChange={(e) => setOpeningBankBalance(Number(e.target.value))}
-                    step="0.01"
-                  />
-                </div>
               </div>
             </div>
           </>
@@ -975,60 +985,90 @@ export default function SettingsPage() {
               </p>
             </div>
 
-            <div className="mt-5 flex flex-col gap-3 sm:flex-row">
+            <div className="mt-5 grid grid-cols-1 gap-3 sm:grid-cols-3">
               <input
-                className="h-12 flex-1 rounded-md border border-zinc-200 bg-white px-4 text-sm shadow-sm outline-none placeholder:text-zinc-400"
+                className="h-12 col-span-1 rounded-md border border-zinc-200 bg-white px-4 text-sm shadow-sm outline-none placeholder:text-zinc-400"
                 value={newBankName}
                 onChange={(e) => setNewBankName(e.target.value)}
                 placeholder="Ex: Attijariwafa Bank"
               />
+              <input
+                type="number"
+                className="h-12 col-span-1 rounded-md border border-zinc-200 bg-white px-4 text-sm shadow-sm outline-none placeholder:text-zinc-400"
+                value={newBankOpeningBalance}
+                onChange={(e) => setNewBankOpeningBalance(e.target.value)}
+                placeholder="Solde d'ouverture (DH)"
+                step="0.01"
+              />
               <button type="button"
-                disabled
-                className="flex items-center gap-2 h-12 rounded-md bg-blue-600 hover:bg-blue-700 px-5 text-sm font-semibold text-white shadow-sm disabled:cursor-not-allowed disabled:opacity-50"
+                onClick={addBank}
+                disabled={savingBank || !newBankName.trim()}
+                className="flex items-center justify-center gap-2 h-12 rounded-md bg-blue-600 hover:bg-blue-700 px-5 text-sm font-semibold text-white shadow-sm disabled:cursor-not-allowed disabled:opacity-40"
               >
-                Utilise Enregistrer
+                {savingBank ? <Loader2 className="h-4 w-4 animate-spin" /> : <PlusCircle className="h-4 w-4" />}
+                Ajouter la banque
               </button>
             </div>
 
             <div className="mt-5 space-y-3">
               {banks.length === 0 ? (
-                <div className="rounded-md border border-dashed border-zinc-200 bg-zinc-50 px-4 py-5 text-sm text-zinc-500">
-                  Aucune banque interne configuree.
+                <div className="rounded-md border border-dashed border-zinc-200 bg-zinc-50 px-4 py-5 text-sm text-zinc-500 text-center">
+                  Aucune banque interne configurée.
                 </div>
               ) : (
                 banks.map((bank) => (
                   <div
                     key={bank.id}
-                    className="flex flex-col gap-3 rounded-md border border-zinc-200 bg-zinc-50 px-4 py-4 sm:flex-row sm:items-center sm:justify-between"
+                    className="flex flex-col gap-4 rounded-xl border border-zinc-200 bg-zinc-50/50 p-4 sm:flex-row sm:items-center sm:justify-between hover:bg-white transition-colors"
                   >
-                    <div className="min-w-0">
-                      <div className="truncate text-sm font-medium text-zinc-900">
-                        {bank.name}
-                      </div>
-                      <div className="mt-1">
+                    <div className="flex-1 min-w-0">
+                      <div className="flex items-center gap-2">
+                        <Building2 className="h-4 w-4 text-zinc-400" />
+                        <span className="truncate text-sm font-bold text-zinc-900">
+                          {bank.name}
+                        </span>
                         <span
                           className={
                             bank.isActive
-                              ? "inline-flex gap-3 rounded-md bg-emerald-100 px-2.5 py-1 text-xs font-medium text-emerald-700"
-                              : "inline-flex gap-3 rounded-md bg-zinc-200 px-2.5 py-1 text-xs font-medium text-zinc-600"
+                              ? "inline-flex rounded-full bg-emerald-100 px-2 py-0.5 text-[10px] font-bold text-emerald-700 uppercase"
+                              : "inline-flex rounded-full bg-zinc-200 px-2 py-0.5 text-[10px] font-bold text-zinc-600 uppercase"
                           }
                         >
                           {bank.isActive ? "Active" : "Inactive"}
                         </span>
                       </div>
+                      <div className="mt-2 flex items-center gap-4">
+                        <div className="flex flex-col">
+                          <span className="text-[10px] font-bold text-zinc-400 uppercase tracking-tight">Solde d'ouverture</span>
+                          <div className="flex items-center gap-2">
+                            <input
+                              type="number"
+                              className="h-8 w-28 rounded-md border border-zinc-200 bg-white px-2 text-sm font-semibold text-zinc-900 shadow-sm transition-focus focus:border-indigo-500 outline-none"
+                              defaultValue={bank.openingBalance}
+                              onBlur={(e) => {
+                                const val = Number(e.target.value);
+                                if (val !== bank.openingBalance) {
+                                  updateBankOpeningBalance(bank, val);
+                                }
+                              }}
+                            />
+                            <span className="text-xs font-bold text-zinc-400">DH</span>
+                          </div>
+                        </div>
+                      </div>
                     </div>
 
-                    <div className="flex items-center gap-3">
+                    <div className="flex items-center gap-2 border-t border-zinc-100 pt-3 sm:border-0 sm:pt-0">
                       <button
                         type="button"
                         onClick={() => toggleBank(bank)}
-                        className={`relative inline-flex gap-3 h-6 w-11 items-center rounded-md transition ${
+                        className={`relative inline-flex h-6 w-11 items-center rounded-full transition-colors focus:ring-2 focus:ring-indigo-500 outline-none ${
                           bank.isActive ? "bg-emerald-500" : "bg-zinc-300"
                         }`}
                         title={bank.isActive ? "Désactiver" : "Réactiver"}
                       >
                         <span
-                          className={`inline-block h-4 w-4 transform rounded-md bg-white transition ${
+                          className={`inline-block h-4 w-4 transform rounded-full bg-white shadow-sm transition-transform ${
                             bank.isActive ? "translate-x-6" : "translate-x-1"
                           }`}
                         />
@@ -1036,7 +1076,12 @@ export default function SettingsPage() {
 
                       <button
                         type="button"
-                        onClick={() =>requestDeleteBank(bank.id, bank.name)} className="rounded-md p-2 text-red-500 hover:bg-red-50 transition" title="Supprimer" > <Trash2 className="h-5 w-5" /></button>
+                        onClick={() => requestDeleteBank(bank.id, bank.name)}
+                        className="rounded-lg p-2 text-zinc-400 hover:bg-red-50 hover:text-red-500 transition-colors"
+                        title="Supprimer"
+                      >
+                        <Trash2 className="h-5 w-5" />
+                      </button>
                     </div>
                   </div>
                 ))

@@ -472,6 +472,7 @@ await tx.fiscalYear.upsert({
           note: note || null,
           bankName: bankName || null,
           bankRef: checkNumber || null,
+          bankId: body.bankId || null,
           unallocatedAmount: 0,
         },
         select: {

@@ -161,6 +161,8 @@ export async function POST(req: Request) {
       );
     }
 
+    const bankId = asString(body.bankId).trim();
+
     const last = await prisma.otherReceipt.findFirst({
       where: { organizationId: orgId },
       orderBy: { receiptNumber: "desc" },
@@ -182,6 +184,7 @@ export async function POST(req: Request) {
         date,
         bankName: bankName || null,
         bankRef: bankRef || null,
+        bankId: bankId || null,
         note: note || null
       }
     });

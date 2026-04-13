@@ -11,6 +11,8 @@ type Row = {
   method?: string;
   date?: string;
   note?: string;
+  bankName?: string;
+  bankRef?: string;
 };
 
 type Body =
@@ -163,12 +165,17 @@ export async function POST(req: Request) {
   const settings = await prisma.appSettings.findFirst({
     where: { organizationId: orgId },
     select: {
-      startYear: true,
-      startMonth: true,
-      receiptStartNumber: true,
       globalFixedAmount: true,
     },
   });
+  
+  const banks = await prisma.internalBank.findMany({
+    where: { organizationId: orgId, isActive: true },
+    select: { id: true, name: true },
+  });
+  const banksByName = new Map(
+    banks.map((bank) => [bank.name.toLowerCase(), bank])
+  );
 
   const globalPeriods = await prisma.contributionPeriod.findMany({
     where: {
@@ -208,6 +215,9 @@ export async function POST(req: Request) {
     receiptDate: Date;
     method: PaymentMethod;
     note: string;
+    bankName: string | null;
+    bankId: string | null;
+    bankRef: string | null;
     receiptNumber: number;
   }> = [];
 
@@ -296,6 +306,9 @@ export async function POST(req: Request) {
       receiptDate,
       method: parseMethod(row.method),
       note: (row.note ?? "").trim(),
+      bankName: row.bankName ? row.bankName.trim() : null,
+      bankId: row.bankName ? (banksByName.get(row.bankName.trim().toLowerCase())?.id || null) : null,
+      bankRef: row.bankRef ? row.bankRef.trim() : null,
       receiptNumber: nextReceiptNumber,
     });
 
@@ -424,6 +437,9 @@ export async function POST(req: Request) {
                   method: item.method,
                   date: item.receiptDate,
                   note: item.note || null,
+                  bankName: item.bankName,
+                  bankId: item.bankId,
+                  bankRef: item.bankRef,
                   unallocatedAmount: 0,
                 },
                 select: { id: true },

@@ -91,9 +91,18 @@ export async function POST(req: Request) {
       method: "CASH" | "TRANSFER" | "CHECK";
       date: Date;
       bankName: string | null;
+      bankId: string | null;
       bankRef: string | null;
       note: string | null;
     }> = [];
+
+    const banks = await prisma.internalBank.findMany({
+      where: { organizationId, isActive: true },
+      select: { id: true, name: true },
+    });
+    const banksByName = new Map(
+      banks.map((bank) => [bank.name.toLowerCase(), bank])
+    );
 
     // Validation Loop
     for (let i = 0; i < body.rows.length; i++) {
@@ -136,6 +145,7 @@ export async function POST(req: Request) {
         method: method as "CASH" | "TRANSFER" | "CHECK",
         date,
         bankName: bankName || null,
+        bankId: banksByName.get((bankName || "").toLowerCase())?.id || null,
         bankRef: bankRef || null,
         note: note || null,
       });
@@ -166,6 +176,7 @@ export async function POST(req: Request) {
             method: row.method,
             date: row.date,
             bankName: row.bankName,
+            bankId: row.bankId,
             bankRef: row.bankRef,
             note: row.note,
           })),

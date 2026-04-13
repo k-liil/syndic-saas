@@ -41,6 +41,7 @@ type Payment = {
   date: string;
   note: string | null;
   bankName?: string | null;
+  bankId?: string | null;
   bankRef?: string | null;
   accountingPostId?: string | null;
   accountingPost?: {
@@ -186,6 +187,7 @@ function PaymentsPageContent() {
   const [categoryAuto, setCategoryAuto] = useState(true);
   const [method, setMethod] = useState<"CASH" | "TRANSFER" | "CHECK" | "DEBIT">("CASH");
   const [bankName, setBankName] = useState("");
+  const [bankId, setBankId] = useState("");
   const [bankRef, setBankRef] = useState("");
   const [amount, setAmount] = useState<number | "">("");
   const [date, setDate] = useState(toDisplayDate(new Date()));
@@ -408,6 +410,7 @@ function toggleSelect(id: string) {
     setCategoryAuto(true);
     setMethod("CASH");
     setBankName("");
+    setBankId("");
     setBankRef("");
     setAmount("");
     setDate(toDisplayDate(new Date()));
@@ -457,6 +460,7 @@ function toggleSelect(id: string) {
         accountingPostId: categoryId || null,
         method,
         bankName: method !== "CASH" ? bankName : null,
+        bankId: method !== "CASH" ? (bankId || null) : null,
         bankRef: method === "CHECK" ? bankRef : null,
         amount: parseFloat(String(amount)),
         date: apiDate,
@@ -519,6 +523,7 @@ function toggleSelect(id: string) {
         accountingPostId: categoryId || null,
         method,
         bankName: method !== "CASH" ? bankName : null,
+        bankId: method !== "CASH" ? (bankId || null) : null,
         bankRef: method === "CHECK" ? bankRef : null,
         amount: parseFloat(String(amount)),
         date: apiDate,
@@ -867,6 +872,7 @@ function toggleSelect(id: string) {
                                   setCategoryAuto(!p.accountingPost?.id);
                                   setMethod(p.method);
                                   setBankName(p.bankName || "");
+                                  setBankId(p.bankId || "");
                                   setBankRef(p.bankRef || "");
                                   setAmount(p.amount);
                                   setDate(formatDate(p.date));
@@ -1100,12 +1106,17 @@ function toggleSelect(id: string) {
                     </label>
                     <select
                       className="h-12 w-full rounded-md border border-zinc-200 px-4 text-sm outline-none"
-                      value={bankName}
-                      onChange={(e) => setBankName(e.target.value)}
+                      value={bankId}
+                      onChange={(e) => {
+                        const id = e.target.value;
+                        setBankId(id);
+                        const bank = banks.find(b => b.id === id);
+                        setBankName(bank ? bank.name : "");
+                      }}
                     >
                       <option value="">Choisir une banque</option>
                       {banks.map((b) => (
-                        <option key={b.id} value={b.name}>
+                        <option key={b.id} value={b.id}>
                           {b.name}
                         </option>
                       ))}
@@ -1298,6 +1309,7 @@ function toggleSelect(id: string) {
                     setCategoryAuto(!selectedPayment.accountingPost?.id);
                     setMethod(selectedPayment.method);
                     setBankName(selectedPayment.bankName || "");
+                    setBankId(selectedPayment.bankId || "");
                     setBankRef(selectedPayment.bankRef || "");
                     setAmount(selectedPayment.amount);
                     setDate(formatDate(selectedPayment.date));

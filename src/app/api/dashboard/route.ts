@@ -48,14 +48,24 @@ export async function GET(req: Request) {
 
   const startDate = new Date(Date.UTC(year, 0, 1, 0, 0, 0, 0));
   const endDate = new Date(Date.UTC(year + 1, 0, 1, 0, 0, 0, 0));
-  const [settings, earliestFiscalYear] = await Promise.all([
+  
+  const [settings, earliestFiscalYear, activeBanks] = await Promise.all([
     prisma.appSettings.findFirst({ where: { organizationId: orgId } }),
     prisma.fiscalYear.findFirst({
       where: { organizationId: orgId },
       orderBy: { year: "asc" },
       select: { year: true },
     }),
+    prisma.internalBank.findMany({
+      where: { organizationId: orgId, isActive: true },
+      select: { openingBalance: true },
+    }),
   ]);
+
+  const openingBank = activeBanks.reduce(
+    (acc, b) => acc + toNumber(b.openingBalance),
+    0
+  );
 
   const firstExerciseYearCandidates = [
     settings?.startYear,
@@ -81,11 +91,9 @@ export async function GET(req: Request) {
     ownersCount,
     paidOwners,
     expensesByCategory,
-    // Add these for monthly breakdown - still findMany but minimal fields
     receiptsMonths,
     otherReceiptsMonths,
     paymentsMonths,
-    // Pre-year carry-forward for opening balance of requested year
     preYearReceiptsCashAgg,
     preYearReceiptsBankAgg,
     preYearOtherReceiptsCashAgg,
@@ -115,7 +123,6 @@ export async function GET(req: Request) {
       _sum: { amount: true },
       where: { organizationId: orgId!, date: { gte: startDate, lt: endDate } },
     }),
-    // Minimal fetch for month calculation
     prisma.receipt.findMany({
       where: { organizationId: orgId!, date: { gte: startDate, lt: endDate } },
       select: { amount: true, date: true, method: true },
@@ -212,17 +219,18 @@ export async function GET(req: Request) {
   }
 
   const openingCash = toNumber(settings?.openingCashBalance);
-  const openingBank = toNumber(settings?.openingBankBalance);
   const openingCashForYear =
     openingCash +
     toNumber(preYearReceiptsCashAgg._sum.amount) +
     toNumber(preYearOtherReceiptsCashAgg._sum.amount) -
     toNumber(preYearPaymentsCashAgg._sum.amount);
+  
   const openingBankForYear =
     openingBank +
     toNumber(preYearReceiptsBankAgg._sum.amount) +
     toNumber(preYearOtherReceiptsBankAgg._sum.amount) -
     toNumber(preYearPaymentsBankAgg._sum.amount);
+
   const openingTotal = openingCashForYear + openingBankForYear;
 
   const cumulativeBalanceByMonth = new Array(12).fill(0);

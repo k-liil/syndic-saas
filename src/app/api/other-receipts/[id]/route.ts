@@ -45,6 +45,7 @@ export async function PUT(
       date: new Date(body.date),
       bankName: body.bankName || null,
       bankRef: body.bankRef || null,
+      bankId: body.bankId || null,
       note: body.note || null
     }
   });

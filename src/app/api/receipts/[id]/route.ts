@@ -41,8 +41,7 @@ export async function GET(
         GROUP BY ra2."dueId"
       )
       SELECT 
-        r.id as "r_id", r."receiptNumber" as "r_number", r.date as "r_date", r.amount as "r_amount", 
-        r.method as "r_method", r.note as "r_note", r."bankName" as "r_bankName", r."bankRef" as "r_bankRef", 
+        r.method as "r_method", r.note as "r_note", r."bankName" as "r_bankName", r."bankRef" as "r_bankRef", r."bankId" as "r_bankId",
         r."unallocatedAmount" as "r_unallocated",
         o.id as "o_id", o.name as "o_name", o."firstName" as "o_firstName", o.cin as "o_cin", o.email as "o_email", o.phone as "o_phone",
         b.id as "b_id", b.name as "b_name",
@@ -78,6 +77,7 @@ export async function GET(
       note: first.r_note,
       bankName: first.r_bankName,
       bankRef: first.r_bankRef,
+      bankId: first.r_bankId,
       unallocatedAmount: Number(first.r_unallocated),
       owner: first.o_id
         ? {
@@ -195,8 +195,8 @@ export async function PUT(
         ...(amount !== undefined ? { amount } : {}),
         bankName: bankName || null,
         bankRef: bankRef || null,
+        bankId: body.bankId || null,
         note: note || null,
-      },
       select: {
         id: true,
         receiptNumber: true,

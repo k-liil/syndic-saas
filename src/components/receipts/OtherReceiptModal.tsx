@@ -16,8 +16,15 @@ type OtherReceipt = {
   method: Method;
   amount: number;
   bankName?: string | null;
+  bankId?: string | null;
   bankRef?: string | null;
   note?: string | null;
+};
+
+type InternalBank = {
+  id: string;
+  name: string;
+  isActive: boolean;
 };
 
 export function OtherReceiptModal({
@@ -40,8 +47,10 @@ export function OtherReceiptModal({
   const [method, setMethod] = useState<Method>("CASH");
   const [date, setDate] = useState(new Date().toISOString().slice(0, 10));
   const [bankName, setBankName] = useState("");
+  const [bankId, setBankId] = useState("");
   const [bankRef, setBankRef] = useState("");
   const [note, setNote] = useState("");
+  const [banks, setBanks] = useState<InternalBank[]>([]);
   const [busy, setBusy] = useState(false);
   const [error, setError] = useState("");
 
@@ -55,22 +64,34 @@ export function OtherReceiptModal({
       setMethod("CASH");
       setDate(new Date().toISOString().slice(0, 10));
       setBankName("");
+      setBankId("");
       setBankRef("");
       setNote("");
       setError("");
-      return;
+    } else {
+      setType(receipt.type ?? "OTHER");
+      setDescription(receipt.description ?? "");
+      setAmount(String(receipt.amount ?? ""));
+      setMethod(receipt.method ?? "CASH");
+      setDate(String(receipt.date).slice(0, 10));
+      setBankName(receipt.bankName ?? "");
+      setBankId(receipt.bankId ?? "");
+      setBankRef(receipt.bankRef ?? "");
+      setNote(receipt.note ?? "");
+      setError("");
     }
 
-    setType(receipt.type ?? "OTHER");
-    setDescription(receipt.description ?? "");
-    setAmount(String(receipt.amount ?? ""));
-    setMethod(receipt.method ?? "CASH");
-    setDate(String(receipt.date).slice(0, 10));
-    setBankName(receipt.bankName ?? "");
-    setBankRef(receipt.bankRef ?? "");
-    setNote(receipt.note ?? "");
-    setError("");
-  }, [open, receipt]);
+    async function loadBanks() {
+      try {
+        const res = await fetch(apiUrl("/api/internal-banks"));
+        const json = await res.json();
+        setBanks(Array.isArray(json) ? json.filter((b: any) => b.isActive) : []);
+      } catch (err) {
+        console.error("Failed to load banks:", err);
+      }
+    }
+    void loadBanks();
+  }, [open, receipt, apiUrl]);
 
   async function save() {
     if (busy) return;
@@ -97,6 +118,7 @@ export function OtherReceiptModal({
             method,
             date,
             bankName,
+            bankId: bankId || null,
             bankRef,
             note,
           }),
@@ -188,12 +210,21 @@ export function OtherReceiptModal({
         {method !== "CASH" && (
           <div>
             <label className="text-sm font-medium">Banque</label>
-            <input
+            <select
               className="h-10 w-full rounded-md border px-3"
-              value={bankName}
-              onChange={(e) => setBankName(e.target.value)}
-              placeholder="Nom de la banque"
-            />
+              value={bankId}
+              onChange={(e) => {
+                const id = e.target.value;
+                setBankId(id);
+                const bank = banks.find(b => b.id === id);
+                setBankName(bank ? bank.name : "");
+              }}
+            >
+              <option value="">Sélectionner une banque</option>
+              {banks.map(bank => (
+                <option key={bank.id} value={bank.id}>{bank.name}</option>
+              ))}
+            </select>
           </div>
         )}
 

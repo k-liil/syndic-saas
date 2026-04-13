@@ -27,6 +27,9 @@ type Receipt = {
   amount: number;
   method: Method;
   note: string | null;
+  bankName?: string | null;
+  bankId?: string | null;
+  bankRef?: string | null;
   owner: { name: string; firstName?: string | null };
   building: { name: string };
   unit: {
@@ -177,6 +180,7 @@ export function ContributionReceiptsTab({
   const [date, setDate] = useState(() => new Date().toISOString().slice(0, 10));
   const [note, setNote] = useState("");
   const [bankName, setBankName] = useState("");
+  const [bankId, setBankId] = useState("");
   const [checkNumber, setCheckNumber] = useState("");
   const [banks, setBanks] = useState<{ id: string; name: string }[]>([]);
 
@@ -187,6 +191,7 @@ export function ContributionReceiptsTab({
   const [editDate, setEditDate] = useState("");
   const [editAmount, setEditAmount] = useState("");
   const [editBank, setEditBank] = useState("");
+  const [editBankId, setEditBankId] = useState("");
   const [editCheck, setEditCheck] = useState("");
 
   const [importOpen, setImportOpen] = useState(false);
@@ -537,6 +542,7 @@ export function ContributionReceiptsTab({
     setEditDate(data.date.slice(0, 10));
     setEditAmount(String(data.amount));
     setEditBank(data.bankName ?? "");
+    setEditBankId(data.bankId ?? "");
     setEditCheck(data.bankRef ?? "");
     setEditMode(false);
     setDetailOpen(true);
@@ -569,6 +575,7 @@ export function ContributionReceiptsTab({
     setDate(String(data.date).slice(0, 10));
     setNote(data.note ?? "");
     setBankName(data.bankName ?? "");
+    setBankId(data.bankId ?? "");
     setCheckNumber(data.bankRef ?? "");
     setSuccess(null);
     setOpen(true);
@@ -634,6 +641,7 @@ export function ContributionReceiptsTab({
         date: editDate,
         amount: Number(editAmount),
         bankName: editBank,
+        bankId: editBankId || null,
         bankRef: editCheck,
       }),
     });
@@ -729,6 +737,7 @@ export function ContributionReceiptsTab({
   function openCreate() {
     setEditingReceiptId(null);
     setBankName("");
+    setBankId("");
     setCheckNumber("");
     setUnitId("");
     setAmount("");
@@ -768,6 +777,7 @@ export function ContributionReceiptsTab({
                   date,
                   amount: Number(amount),
                   bankName,
+                  bankId: bankId || null,
                   bankRef: checkNumber,
                   note,
                 }
@@ -781,6 +791,7 @@ export function ContributionReceiptsTab({
                   date,
                   note,
                   bankName,
+                  bankId: bankId || null,
                   checkNumber,
                 },
           ),
@@ -1574,13 +1585,18 @@ export function ContributionReceiptsTab({
 
               <select
                 className="h-12 w-full rounded-md border border-zinc-200 bg-white px-4 text-sm shadow-sm outline-none"
-                value={bankName}
-                onChange={(e) => setBankName(e.target.value)}
+                value={bankId}
+                onChange={(e) => {
+                  const id = e.target.value;
+                  setBankId(id);
+                  const bank = banks.find(b => b.id === id);
+                  setBankName(bank ? bank.name : "");
+                }}
               >
                 <option value="">Choisir une banque</option>
 
                 {banks.map((b) => (
-                  <option key={b.id} value={b.name}>
+                  <option key={b.id} value={b.id}>
                     {b.name}
                   </option>
                 ))}
@@ -1760,17 +1776,60 @@ export function ContributionReceiptsTab({
                     </div>
                   )}
 
-                  {detail.bankName ? (
-                    <div className="mt-1 text-xs text-zinc-500">
-                      Banque : {detail.bankName}
-                    </div>
-                  ) : null}
+                  {editMode ? (
+                    <>
+                      <div className="mt-2 text-xs font-medium uppercase tracking-wide text-zinc-400">
+                        Banque
+                      </div>
+                      <select
+                        value={editBankId}
+                        onChange={(e) => {
+                          const id = e.target.value;
+                          setEditBankId(id);
+                          const bank = banks.find(b => b.id === id);
+                          setEditBank(bank ? bank.name : "");
+                        }}
+                        className="mt-1 h-10 w-full rounded-md border px-3"
+                      >
+                        <option value="">Choisir une banque</option>
+                        {banks.map((b) => (
+                          <option key={b.id} value={b.id}>
+                            {b.name}
+                          </option>
+                        ))}
+                      </select>
+                    </>
+                  ) : (
+                    <>
+                      {detail.bankName ? (
+                        <div className="mt-1 text-xs text-zinc-500">
+                          Banque : {detail.bankName}
+                        </div>
+                      ) : null}
+                    </>
+                  )}
 
-                  {detail.bankRef ? (
-                    <div className="mt-1 text-xs text-zinc-500">
-                      Référence : {detail.bankRef}
-                    </div>
-                  ) : null}
+                  {editMode ? (
+                    <>
+                      <div className="mt-2 text-xs font-medium uppercase tracking-wide text-zinc-400">
+                        Référence
+                      </div>
+                      <input
+                        value={editCheck}
+                        onChange={(e) => setEditCheck(e.target.value)}
+                        className="mt-1 h-10 w-full rounded-md border px-3"
+                        placeholder="Réf / Chèque"
+                      />
+                    </>
+                  ) : (
+                    <>
+                      {detail.bankRef ? (
+                        <div className="mt-1 text-xs text-zinc-500">
+                          Référence : {detail.bankRef}
+                        </div>
+                      ) : null}
+                    </>
+                  )}
                 </div>
               </div>
             </div>
