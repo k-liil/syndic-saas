@@ -139,6 +139,7 @@ export default function SettingsPage() {
     type: "idle",
     text: "",
   });
+  const [debugInfo, setDebugInfo] = useState<any>(null);
   const [tab, setTab] = useState<
     "general" | "numbering" | "banks" | "contributions"
   >("general");
@@ -280,9 +281,30 @@ export default function SettingsPage() {
   }
 
   async function loadBanks() {
-    const res = await fetch(apiUrl("/api/internal-banks"));
-    const json = await res.json();
-    setBanks(Array.isArray(json) ? json : []);
+    const url = apiUrl("/api/internal-banks");
+    try {
+      const res = await fetch(url);
+      const json = await res.json();
+      setBanks(Array.isArray(json) ? json : []);
+      setDebugInfo((prev: any) => ({
+        ...prev,
+        banks: {
+          url,
+          count: Array.isArray(json) ? json.length : 0,
+          raw: json,
+          status: res.status
+        }
+      }));
+    } catch (err: any) {
+      setDebugInfo((prev: any) => ({
+        ...prev,
+        banks: {
+          url,
+          error: err.message,
+          stack: err.stack
+        }
+      }));
+    }
   }
 
   async function loadContributions() {
@@ -1560,6 +1582,64 @@ export default function SettingsPage() {
           </div>
         </div>
       </Modal>
+
+      {role === "SUPER_ADMIN" && (
+        <div className="mt-12 rounded-lg border border-indigo-200 bg-indigo-50/50 p-6">
+          <h2 className="text-lg font-bold text-indigo-800 mb-4 flex items-center gap-2">
+            🕵️ Diagnostic Debug (Super Admin)
+          </h2>
+          <div className="space-y-4">
+            <div className="grid grid-cols-2 gap-4">
+              <div className="rounded border border-indigo-100 bg-white p-3">
+                <p className="text-xs font-bold text-indigo-400 uppercase mb-1">Session Org ID</p>
+                <code className="text-sm text-indigo-900 break-all">{(session?.user as any)?.organizationId || "null"}</code>
+              </div>
+              <div className="rounded border border-indigo-100 bg-white p-3">
+                <p className="text-xs font-bold text-indigo-400 uppercase mb-1">Session Org Name</p>
+                <code className="text-sm text-indigo-900">{(session?.user as any)?.organizationName || "null"}</code>
+              </div>
+            </div>
+
+            {debugInfo?.banks && (
+              <div className="rounded border border-indigo-100 bg-white p-3">
+                <p className="text-xs font-bold text-indigo-400 uppercase mb-1">Banks API Diagnostic</p>
+                <div className="space-y-2 mt-2">
+                  <div className="text-xs flex gap-2">
+                    <span className="font-semibold w-16">URL:</span>
+                    <span className="text-indigo-600 break-all">{debugInfo.banks.url}</span>
+                  </div>
+                  <div className="text-xs flex gap-2">
+                    <span className="font-semibold w-16">Status:</span>
+                    <span className="text-indigo-600">{debugInfo.banks.status || "Error"}</span>
+                  </div>
+                  <div className="text-xs flex gap-2">
+                    <span className="font-semibold w-16">Count:</span>
+                    <span className="text-indigo-600">{debugInfo.banks.count ?? "N/A"}</span>
+                  </div>
+                  <div>
+                    <p className="text-[10px] font-bold text-indigo-300 mb-1">RAW DATA:</p>
+                    <pre className="text-[10px] bg-slate-900 text-slate-100 p-2 rounded overflow-auto max-h-40">
+                      {JSON.stringify(debugInfo.banks.raw || debugInfo.banks.error, null, 2)}
+                    </pre>
+                  </div>
+                </div>
+              </div>
+            )}
+            
+            <div className="pt-2 text-center">
+              <button 
+                onClick={() => {
+                  loadSettings();
+                  loadBanks();
+                }}
+                className="text-xs font-bold text-indigo-600 hover:text-indigo-800 underline"
+              >
+                Relaancer le diagnostic complet
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
     </div>
   );
 }
