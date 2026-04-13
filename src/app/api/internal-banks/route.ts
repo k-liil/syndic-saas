@@ -16,18 +16,44 @@ export async function GET(req: Request) {
     return NextResponse.json([]);
   }
 
-  const banks = await prisma.internalBank.findMany({
-    where: { organizationId: orgId! },
-    orderBy: { name: "asc" },
-  });
+  try {
+    const banks = await prisma.internalBank.findMany({
+      where: { organizationId: orgId! },
+      orderBy: { name: "asc" },
+    });
 
-  // Normalize Decimal to number for JSON serialization
-  const normalizedBanks = banks.map(bank => ({
-    ...bank,
-    openingBalance: Number(bank.openingBalance)
-  }));
+    // Normalize Decimal to number for JSON serialization
+    const normalizedBanks = banks.map(bank => ({
+      ...bank,
+      openingBalance: Number(bank.openingBalance)
+    }));
 
-  return NextResponse.json(normalizedBanks);
+    return NextResponse.json(normalizedBanks);
+  } catch (err: any) {
+    // SELF-HEALING: If the column is missing, try to add it on the fly
+    if (err.message?.includes("openingBalance") || err.message?.includes("P2021")) {
+      console.log("🛠️ Attempting self-healing: Adding missing openingBalance column...");
+      try {
+        await prisma.$executeRawUnsafe('ALTER TABLE "InternalBank" ADD COLUMN IF NOT EXISTS "openingBalance" DECIMAL(12,2) NOT NULL DEFAULT 0;');
+        
+        // Retry the query
+        const banks = await prisma.internalBank.findMany({
+          where: { organizationId: orgId! },
+          orderBy: { name: "asc" },
+        });
+
+        return NextResponse.json(banks.map(bank => ({
+          ...bank,
+          openingBalance: Number(bank.openingBalance)
+        })));
+      } catch (repairErr: any) {
+        console.error("❌ Self-healing failed:", repairErr);
+      }
+    }
+    
+    console.error("[BANKS_API_ERROR]", err);
+    return NextResponse.json({ error: "SERVER_ERROR" }, { status: 500 });
+  }
 }
 
 export async function POST(req: Request) {
