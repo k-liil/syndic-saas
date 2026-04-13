@@ -83,7 +83,7 @@ export async function POST(req: Request) {
     const offset = asNumber(body.offset);
     const errors: { row: number; error: string }[] = [];
 
-    const [suppliers, posts, settings, lastPayment] = await Promise.all([
+    const [suppliers, posts, settings, lastPayment, banks] = await Promise.all([
       prisma.supplier.findMany({
         where: { organizationId: gate.organizationId ?? "" },
         select: { id: true, name: true },
@@ -92,7 +92,10 @@ export async function POST(req: Request) {
         where: { organizationId: gate.organizationId ?? "" },
         select: { id: true, code: true, name: true },
       }),
-      prisma.appSettings.findFirst({ where: { organizationId: gate.organizationId ?? "" } }),
+      prisma.appSettings.findFirst({ 
+        where: { organizationId: gate.organizationId ?? "" },
+        select: { paymentStartNumber: true }
+      }),
       prisma.payment.findFirst({
         where: { organizationId: gate.organizationId ?? "" },
         orderBy: { paymentNumber: "desc" },

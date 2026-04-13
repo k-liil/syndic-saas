@@ -480,6 +480,11 @@ export default function SettingsPage() {
     setSavingSettings(false);
   }
 
+  async function addBank() {
+    const name = newBankName.trim();
+    if (!name) return;
+    setSavingBank(true);
+
     const res = await fetch(apiUrl("/api/internal-banks"), {
       method: "POST",
       headers: {

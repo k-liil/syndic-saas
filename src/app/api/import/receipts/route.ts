@@ -166,6 +166,9 @@ export async function POST(req: Request) {
     where: { organizationId: orgId },
     select: {
       globalFixedAmount: true,
+      startYear: true,
+      startMonth: true,
+      receiptStartNumber: true,
     },
   });
   

@@ -197,6 +197,7 @@ export async function PUT(
         bankRef: bankRef || null,
         bankId: body.bankId || null,
         note: note || null,
+      },
       select: {
         id: true,
         receiptNumber: true,
