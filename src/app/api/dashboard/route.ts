@@ -147,7 +147,7 @@ export async function GET(req: Request) {
       where: {
         organizationId: orgId!,
         date: carryForwardDateFilter,
-        method: { in: ["TRANSFER", "CHECK", "DEBIT"] },
+        method: { in: ["TRANSFER", "CHECK", "DEBIT", "BANK_DEPOSIT"] },
       },
       _sum: { amount: true },
     }),
@@ -163,7 +163,7 @@ export async function GET(req: Request) {
       where: {
         organizationId: orgId!,
         date: carryForwardDateFilter,
-        method: { in: ["TRANSFER", "CHECK", "DEBIT"] },
+        method: { in: ["TRANSFER", "CHECK", "DEBIT", "BANK_DEPOSIT"] },
       },
       _sum: { amount: true },
     }),
@@ -179,7 +179,7 @@ export async function GET(req: Request) {
       where: {
         organizationId: orgId!,
         date: carryForwardDateFilter,
-        method: { in: ["TRANSFER", "CHECK", "DEBIT"] },
+        method: { in: ["TRANSFER", "CHECK", "DEBIT", "BANK_DEPOSIT"] },
       },
       _sum: { amount: true },
     }),

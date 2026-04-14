@@ -339,7 +339,7 @@ export async function PUT(req: Request) {
     typeof body.method === "string" ? body.method : "CASH";
   const attachments = parseAttachments(body.attachments) as Prisma.InputJsonValue;
 
-  if (!["CASH", "TRANSFER", "CHECK", "DEBIT"].includes(method)) {
+  if (!["CASH", "TRANSFER", "CHECK", "DEBIT", "BANK_DEPOSIT"].includes(method)) {
     return NextResponse.json(
       { error: "INVALID_METHOD" },
       { status: 400 }

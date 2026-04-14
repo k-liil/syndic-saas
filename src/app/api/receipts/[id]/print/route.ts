@@ -2,6 +2,7 @@ import { NextRequest, NextResponse } from "next/server";
 import { prisma } from "@/lib/prisma";
 import { requireAuth } from "@/lib/authz";
 import { getOrgIdFromRequest } from "@/lib/org-utils";
+import { formatDateLong } from "@/lib/date-utils";
 
 export async function GET(
   req: NextRequest,
@@ -52,9 +53,7 @@ export async function GET(
   const prefix = settings?.receiptUsePrefix && settings?.receiptPrefix ? settings.receiptPrefix : "";
   const receiptRef = `${prefix}${receipt.receiptNumber}`;
 
-  const dateStr = receipt.date
-    ? new Intl.DateTimeFormat("fr-FR", { day: "numeric", month: "long", year: "numeric" }).format(new Date(receipt.date))
-    : "—";
+  const dateStr = formatDateLong(receipt.date);
 
   const ownerName = [receipt.owner?.firstName, receipt.owner?.name].filter(Boolean).join(" ").toUpperCase() || "—";
   const lotLabel = receipt.unit?.lotNumber ?? receipt.unit?.reference ?? "—";
@@ -65,6 +64,7 @@ export async function GET(
     TRANSFER: "Virement bancaire",
     CHECK: "Chèque",
     DEBIT: "Prélèvement",
+    BANK_DEPOSIT: "Versement",
   };
 
   const paymentMethod = methodLabel[receipt.method] ?? receipt.method;

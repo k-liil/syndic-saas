@@ -22,6 +22,22 @@ export function formatDate(d: string | Date | null | undefined): string {
 }
 
 /**
+ * Formats a date into a long string (e.g., "14 Avril 2026").
+ */
+export function formatDateLong(d: string | Date | null | undefined): string {
+  if (!d) return "—";
+  
+  const date = typeof d === "string" ? new Date(d) : d;
+  
+  return date.toLocaleDateString("fr-FR", {
+    day: "numeric",
+    month: "long",
+    year: "numeric",
+    timeZone: "UTC",
+  });
+}
+
+/**
  * Formats a date into a long month year string (e.g., "Avril 2026").
  */
 export function formatMonth(d: string | Date | null | undefined): string {
