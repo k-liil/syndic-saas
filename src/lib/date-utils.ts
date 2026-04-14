@@ -43,3 +43,29 @@ export function formatMonth(d: string | Date | null | undefined): string {
 export function getTodayInputVal(): string {
   return new Date().toISOString().slice(0, 10);
 }
+
+/**
+ * Parses a DD/MM/YYYY string into a Date object (UTC).
+ */
+export function parseDate(display: string): Date | null {
+  const parts = display.split("/");
+  if (parts.length !== 3) return null;
+  const d = parseInt(parts[0]);
+  const m = parseInt(parts[1]) - 1;
+  const y = parseInt(parts[2]);
+  if (isNaN(d) || isNaN(m) || isNaN(y)) return null;
+
+  const date = new Date(Date.UTC(y, m, d));
+  if (isNaN(date.getTime())) return null;
+  return date;
+}
+
+/**
+ * Converts a YYYY-MM-DD string into a DD/MM/YYYY string.
+ */
+export function toDisplayDate(iso: string | null | undefined): string {
+  if (!iso) return "";
+  const parts = iso.slice(0, 10).split("-");
+  if (parts.length !== 3) return iso;
+  return `${parts[2]}/${parts[1]}/${parts[0]}`;
+}
