@@ -164,7 +164,7 @@ if (method) where.method = method;
      return NextResponse.json({
        items,
        pagination: { page, pageSize, total: items.length, totalPages: 1 },
-       totals: { all: 0, cash: 0, transfer: 0, check: 0 }
+       totals: { all: 0, cash: 0, transfer: 0, check: 0, deposit: 0 }
      });
   }
 
@@ -215,6 +215,7 @@ if (method) where.method = method;
     cash: 0,
     transfer: 0,
     check: 0,
+    deposit: 0,
   };
 
   for (const m of methodAgg) {
@@ -223,6 +224,7 @@ if (method) where.method = method;
     if (m.method === "CASH") totals.cash = amount;
     if (m.method === "TRANSFER") totals.transfer = amount;
     if (m.method === "CHECK") totals.check = amount;
+    if (m.method === "BANK_DEPOSIT") totals.deposit = amount;
   }
 
   return NextResponse.json({
@@ -315,9 +317,9 @@ export async function POST(req: Request) {
       return NextResponse.json({ error: "Invalid method" }, { status: 400 });
     }
 
-    if ((method === "TRANSFER" || method === "CHECK") && !bankName) {
+    if ((method === "TRANSFER" || method === "CHECK" || method === "BANK_DEPOSIT") && !bankName) {
       return NextResponse.json(
-        { error: "Bank required for transfer or check" },
+        { error: "Bank required for transfer, check or deposit" },
         { status: 400 }
       );
     }

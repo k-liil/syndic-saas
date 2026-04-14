@@ -37,7 +37,7 @@ type Payment = {
   id: string;
   paymentNumber: number;
   amount: number;
-  method: "CASH" | "TRANSFER" | "CHECK" | "DEBIT";
+  method: "CASH" | "TRANSFER" | "CHECK" | "DEBIT" | "BANK_DEPOSIT";
   date: string;
   note: string | null;
   bankName?: string | null;
@@ -185,7 +185,7 @@ function PaymentsPageContent() {
   const [supplierId, setSupplierId] = useState("");
   const [categoryId, setCategoryId] = useState("");
   const [categoryAuto, setCategoryAuto] = useState(true);
-  const [method, setMethod] = useState<"CASH" | "TRANSFER" | "CHECK" | "DEBIT">("CASH");
+  const [method, setMethod] = useState<"CASH" | "TRANSFER" | "CHECK" | "DEBIT" | "BANK_DEPOSIT">("CASH");
   const [bankName, setBankName] = useState("");
   const [bankId, setBankId] = useState("");
   const [bankRef, setBankRef] = useState("");
@@ -1022,7 +1022,7 @@ function toggleSelect(id: string) {
                   Mode de paiement
                 </label>
 
-                <div className="grid grid-cols-2 gap-2 sm:grid-cols-4">
+                <div className="mt-3 grid grid-cols-2 gap-3 xl:grid-cols-5">
                   <button
                     type="button"
                     onClick={() => setMethod("CASH")}
@@ -1078,23 +1078,47 @@ function toggleSelect(id: string) {
                   </button>
 
                   <button
-  type="button"
-  onClick={() => setMethod("DEBIT")}
-  className={`rounded-md border p-3 text-left shadow-sm transition ${
-    method === "DEBIT"
-      ? "border-purple-500 bg-purple-50 shadow-sm"
-      : "border-zinc-200 bg-white hover:border-zinc-300 hover:shadow-sm"
-  }`}
->
-  <div className="text-xl">💳</div>
-  <div className="mt-2 text-sm font-semibold text-zinc-900">
-    Prélèvement
-  </div>
-  <div className="mt-1 text-xs text-zinc-500">
-    Débit direct banque
-  </div>
-</button>
+                    type="button"
+                    onClick={() => setMethod("DEBIT")}
+                    className={`rounded-md border p-3 text-left shadow-sm transition ${
+                      method === "DEBIT"
+                        ? "border-purple-500 bg-purple-50 shadow-sm"
+                        : "border-zinc-200 bg-white hover:border-zinc-300 hover:shadow-sm"
+                    }`}
+                  >
+                    <div className="text-xl">💳</div>
+                    <div className="mt-2 text-sm font-semibold text-zinc-900">
+                      Prélèvement
+                    </div>
+                    <div className="mt-1 text-xs text-zinc-500">
+                      Débit direct banque
+                    </div>
+                  </button>
 
+                  <button
+                    type="button"
+                    onClick={() => {
+                      setMethod("BANK_DEPOSIT");
+                      const today = new Date().toLocaleDateString("fr-FR");
+                      const feeText = `Paiement de 1 dirham pour les frais de timbre à la date du ${today}`;
+                      if (!note.includes("frais de timbre")) {
+                        setNote(prev => prev ? `${prev}\n${feeText}` : feeText);
+                      }
+                    }}
+                    className={`rounded-md border p-3 text-left shadow-sm transition ${
+                      method === "BANK_DEPOSIT"
+                        ? "border-violet-500 bg-violet-50 shadow-sm"
+                        : "border-zinc-200 bg-white hover:border-zinc-300 hover:shadow-sm"
+                    }`}
+                  >
+                    <div className="text-xl">💰</div>
+                    <div className="mt-2 text-sm font-semibold text-zinc-900">
+                      Versement
+                    </div>
+                    <div className="mt-1 text-xs text-zinc-500">
+                      Dépôt en banque
+                    </div>
+                  </button>
                 </div>
               </div>
 

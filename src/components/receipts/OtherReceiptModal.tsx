@@ -6,7 +6,7 @@ import { useApiUrl } from "@/lib/org-context";
 import { DateInput } from "@/components/ui/DateInput";
 import { getTodayInputVal } from "@/lib/date-utils";
 
-type Method = "CASH" | "TRANSFER" | "CHECK";
+type Method = "CASH" | "TRANSFER" | "CHECK" | "BANK_DEPOSIT";
 type OtherReceiptType = "RENT" | "OTHER";
 
 type OtherReceipt = {
@@ -99,8 +99,8 @@ export function OtherReceiptModal({
     if (busy) return;
     if (!description.trim()) return;
     if (Number(amount) <= 0) return;
-    if ((method === "TRANSFER" || method === "CHECK") && !bankName.trim()) return;
-    if (method === "CHECK" && !bankRef.trim()) return;
+    if (((method === "TRANSFER" || method === "CHECK" || method === "BANK_DEPOSIT") && !bankName.trim()) ||
+        (method === "CHECK" && !bankRef.trim())) return;
 
     setBusy(true);
     setError("");
@@ -191,11 +191,22 @@ export function OtherReceiptModal({
           <select
             className="h-10 w-full rounded-md border px-3"
             value={method}
-            onChange={(e) => setMethod(e.target.value as Method)}
+            onChange={(e) => {
+              const m = e.target.value as Method;
+              setMethod(m);
+              if (m === "BANK_DEPOSIT") {
+                const today = new Date().toLocaleDateString("fr-FR");
+                const feeText = `Paiement de 1 dirham pour les frais de timbre à la date du ${today}`;
+                if (!note.includes("frais de timbre")) {
+                  setNote(prev => prev ? `${prev}\n${feeText}` : feeText);
+                }
+              }
+            }}
           >
             <option value="CASH">Espèces</option>
             <option value="TRANSFER">Virement</option>
             <option value="CHECK">Chèque</option>
+            <option value="BANK_DEPOSIT">Versement</option>
           </select>
         </div>
 
@@ -267,7 +278,7 @@ export function OtherReceiptModal({
             busy ||
             !description.trim() ||
             Number(amount) <= 0 ||
-            ((method === "TRANSFER" || method === "CHECK") && !bankName.trim()) ||
+            ((method === "TRANSFER" || method === "CHECK" || method === "BANK_DEPOSIT") && !bankName.trim()) ||
             (method === "CHECK" && !bankRef.trim())
           }
           className="flex items-center justify-center gap-2 btn-brand h-12 w-full rounded-md disabled:opacity-50"

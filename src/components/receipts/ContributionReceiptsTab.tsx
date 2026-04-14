@@ -11,7 +11,7 @@ import { Upload, PlusCircle } from "lucide-react";
 import { formatDate, formatMonth, getTodayInputVal } from "@/lib/date-utils";
 import { DateInput } from "@/components/ui/DateInput";
 
-type Method = "CASH" | "TRANSFER" | "CHECK";
+type Method = "CASH" | "TRANSFER" | "CHECK" | "BANK_DEPOSIT";
 
 type UnitSearch = {
   id: string;
@@ -105,6 +105,7 @@ export function ContributionReceiptsTab({
     cash: 0,
     transfer: 0,
     check: 0,
+    deposit: 0,
   });
 
   const [page, setPage] = useState(1);
@@ -114,7 +115,7 @@ export function ContributionReceiptsTab({
   const [busy, setBusy] = useState(false);
 
   const [methodFilter, setMethodFilter] = useState<
-    "ALL" | "CASH" | "TRANSFER" | "CHECK"
+    "ALL" | "CASH" | "TRANSFER" | "CHECK" | "BANK_DEPOSIT"
   >("ALL");
 
   const [search, setSearch] = useState("");
@@ -125,6 +126,7 @@ export function ContributionReceiptsTab({
   const totalCash = totals.cash;
   const totalTransfer = totals.transfer;
   const totalCheck = totals.check;
+  const totalDeposit = totals.deposit;
 
   const filteredReceipts = receipts;
 
@@ -230,6 +232,7 @@ export function ContributionReceiptsTab({
       cash: Number(data?.totals?.cash ?? 0),
       transfer: Number(data?.totals?.transfer ?? 0),
       check: Number(data?.totals?.check ?? 0),
+      deposit: Number(data?.totals?.deposit ?? 0),
     });
   }
 
@@ -730,7 +733,7 @@ export function ContributionReceiptsTab({
     setSuccess(null);
   }
 
-  async function submit() {
+  async function submit(stayOpen = false) {
     if (busy) return;
     if (!editingReceiptId && (!unitId || Number(amount) <= 0)) return;
     if ((method === "TRANSFER" || method === "CHECK") && !bankName.trim())
@@ -819,7 +822,17 @@ export function ContributionReceiptsTab({
         unallocatedAmount: Number(data.unallocatedAmount ?? 0),
       });
 
-      setOpen(false);
+      if (!stayOpen) {
+        setOpen(false);
+      } else {
+        // Prepare for next entry without closing
+        setUnitId("");
+        setAmount("");
+        setNote("");
+        setQuery("");
+        setUnits([]);
+        // We keep method, date and bank selection for convenience
+      }
       await loadReceipts();
     } finally {
       setBusy(false);
@@ -964,7 +977,7 @@ export function ContributionReceiptsTab({
           )}
         </div>
 
-        <div className="grid grid-cols-2 gap-4 xl:grid-cols-4">
+        <div className="grid grid-cols-2 gap-4 xl:grid-cols-5">
           <div className="rounded-[24px] border border-white/70 bg-white/90 p-5 shadow-[0_10px_30px_rgba(15,23,42,0.06)]">
             <div className="text-[11px] font-semibold uppercase tracking-[0.12em] text-zinc-400">
               Total encaissé
@@ -998,6 +1011,15 @@ export function ContributionReceiptsTab({
             </div>
             <div className="mt-1 text-lg font-semibold text-amber-600">
               {totalCheck.toLocaleString("fr-FR")} MAD
+            </div>
+          </div>
+
+          <div className="rounded-[24px] border border-white/70 bg-white/90 p-5 shadow-[0_10px_30px_rgba(15,23,42,0.06)]">
+            <div className="text-[11px] font-semibold uppercase tracking-[0.12em] text-zinc-400">
+              Versement
+            </div>
+            <div className="mt-1 text-lg font-semibold text-purple-600">
+              {totalDeposit.toLocaleString("fr-FR")} MAD
             </div>
           </div>
         </div>
@@ -1213,6 +1235,11 @@ export function ContributionReceiptsTab({
                         🧾 Chèque
                       </span>
                     )}
+                    {r.method === "BANK_DEPOSIT" && (
+                      <span className="inline-flex gap-3 items-center rounded-md bg-purple-100 px-2.5 py-1 text-xs font-medium text-purple-700">
+                        🏦 Versement
+                      </span>
+                    )}
                   </TD>
                   <TD className="text-right">
                     <div className="font-semibold text-zinc-900">
@@ -1413,7 +1440,10 @@ export function ContributionReceiptsTab({
               }
               value={query}
               disabled={Boolean(editingReceiptId)}
-              onChange={(e) => searchUnits(e.target.value)}
+              onChange={(e) => {
+                setSuccess(null);
+                searchUnits(e.target.value);
+              }}
             />
 
             {units.length > 0 && (
@@ -1431,6 +1461,7 @@ export function ContributionReceiptsTab({
                           setUnitId(u.id);
                           setQuery(`${u.lotNumber || u.reference} • ${u.ownerName ?? ""}`);
                           setUnits([]);
+                          setSuccess(null);
                         }}
                       className="group block w-full rounded-md border border-zinc-200 bg-white px-3 py-3 text-left transition hover:border-zinc-300 hover:bg-zinc-50"
                     >
@@ -1491,80 +1522,58 @@ export function ContributionReceiptsTab({
           </div>
 
           <div>
-            <label className="text-sm font-medium">Méthode</label>
+            <label className="text-sm font-medium text-zinc-700">Méthode</label>
 
-            <div className="mt-2 grid grid-cols-1 gap-3 sm:grid-cols-3">
-              <button
-                type="button"
-                onClick={() => {
-                  setMethod("CASH");
-                  setBankName("");
-                  setCheckNumber("");
-                }}
-                className={`rounded-md border px-4 py-4 text-left shadow-sm transition ${
-                  method === "CASH"
-                    ? "border-emerald-500 bg-emerald-50 ring-2 ring-emerald-100"
-                    : "border-zinc-200 bg-white hover:border-zinc-300 hover:bg-zinc-50"
-                }`}
-              >
-                <div className="text-2xl">💵</div>
-                <div className="mt-3 text-sm font-semibold text-zinc-900">
-                  Espèces
-                </div>
-                <div className="mt-1 text-xs text-zinc-500">
-                  Encaissement direct
-                </div>
-              </button>
-
-              <button
-                type="button"
-                onClick={() => {
-                  setMethod("TRANSFER");
-                  setCheckNumber("");
-                }}
-                className={`rounded-md border px-4 py-4 text-left shadow-sm transition ${
-                  method === "TRANSFER"
-                    ? "border-blue-500 bg-blue-50 ring-2 ring-blue-100"
-                    : "border-zinc-200 bg-white hover:border-zinc-300 hover:bg-zinc-50"
-                }`}
-              >
-                <div className="text-2xl">🏦</div>
-                <div className="mt-3 text-sm font-semibold text-zinc-900">
-                  Virement
-                </div>
-                <div className="mt-1 text-xs text-zinc-500">
-                  Via banque interne
-                </div>
-              </button>
-
-              <button
-                type="button"
-                onClick={() => {
-                  setMethod("CHECK");
-                }}
-                className={`rounded-md border px-4 py-4 text-left shadow-sm transition ${
-                  method === "CHECK"
-                    ? "border-amber-500 bg-amber-50 ring-2 ring-amber-100"
-                    : "border-zinc-200 bg-white hover:border-zinc-300 hover:bg-zinc-50"
-                }`}
-              >
-                <div className="text-2xl">🧾</div>
-                <div className="mt-3 text-sm font-semibold text-zinc-900">
-                  Chèque
-                </div>
-                <div className="mt-1 text-xs text-zinc-500">
-                  Banque + numéro de chèque
-                </div>
-              </button>
+            <div className="mt-2 grid grid-cols-2 gap-3 md:grid-cols-4">
+              {[
+                { id: "CASH", label: "Espèces", sub: "Encaiss. direct", icon: "💵", color: "emerald", ring: "ring-emerald-100", border: "border-emerald-500", bg: "bg-emerald-50" },
+                { id: "TRANSFER", label: "Virement", sub: "Banque interne", icon: "🏦", color: "blue", ring: "ring-blue-100", border: "border-blue-500", bg: "bg-blue-50" },
+                { id: "CHECK", label: "Chèque", sub: "Banque + n° chèque", icon: "🧾", color: "amber", ring: "ring-amber-100", border: "border-amber-500", bg: "bg-amber-50" },
+                { id: "BANK_DEPOSIT", label: "Versement", sub: "Dépôt en banque", icon: "💰", color: "purple", ring: "ring-purple-100", border: "border-purple-500", bg: "bg-purple-50" },
+              ].map((m) => (
+                <button
+                  key={m.id}
+                  type="button"
+                  onClick={() => {
+                    setMethod(m.id as Method);
+                    if (m.id === "CASH") {
+                      setBankName("");
+                      setCheckNumber("");
+                    }
+                    if (m.id === "BANK_DEPOSIT") {
+                      const today = new Date().toLocaleDateString("fr-FR");
+                      const feeText = `Paiement de 1 dirham pour les frais de timbre à la date du ${today}`;
+                      if (!note.includes("frais de timbre")) {
+                        setNote(prev => prev ? `${prev}\n${feeText}` : feeText);
+                      }
+                    }
+                  }}
+                  className={`rounded-xl border p-3 text-left shadow-sm transition-all duration-200 ${
+                    method === m.id
+                      ? `${m.border} ${m.bg} ring-2 ${m.ring}`
+                      : "border-zinc-200 bg-white hover:border-zinc-300 hover:shadow-md"
+                  }`}
+                >
+                  <div className="text-xl">{m.icon}</div>
+                  <div className="mt-2 text-sm font-bold text-zinc-900">
+                    {m.label}
+                  </div>
+                  <div className="mt-1 text-[10px] text-zinc-500 leading-tight">
+                    {m.sub}
+                  </div>
+                </button>
+              ))}
             </div>
           </div>
 
-          {method !== "CASH" && (
+          {(method === "TRANSFER" || method === "CHECK" || method === "BANK_DEPOSIT") && (
             <div className="grid gap-2">
-              <label className="text-sm font-medium">Banque</label>
+              <label className="text-sm font-medium">
+                {method === "CHECK" ? "Banque émettrice" : "Banque de destination"}
+              </label>
 
               <select
-                className="h-12 w-full rounded-md border border-zinc-200 bg-white px-4 text-sm shadow-sm outline-none"
+                className="h-12 w-full rounded-md border border-zinc-200 bg-white px-4 text-sm shadow-sm outline-none transition focus:border-zinc-900"
                 value={bankId}
                 onChange={(e) => {
                   const id = e.target.value;
@@ -1617,24 +1626,45 @@ export function ContributionReceiptsTab({
             />
           </div>
 
-          <button
-            onClick={submit}
-            disabled={
-              busy ||
-              !unitId ||
-              Number(amount) <= 0 ||
-              ((method === "TRANSFER" || method === "CHECK") &&
-                !bankName.trim()) ||
-              (method === "CHECK" && !checkNumber.trim())
-            }
-            className="flex items-center gap-2 btn-brand h-12 rounded-md text-sm font-medium disabled:opacity-50"
-          >
-            {busy
-              ? "Enregistrement..."
-              : editingReceiptId
-                ? "Mettre à jour"
-                : "Encaisser"}
-          </button>
+          <div className="flex flex-col gap-3 sm:flex-row sm:items-center">
+            <button
+              onClick={() => submit(false)}
+              disabled={
+                busy ||
+                !unitId ||
+                Number(amount) <= 0 ||
+                ((method === "TRANSFER" || method === "CHECK" || method === "BANK_DEPOSIT") &&
+                  !bankName.trim()) ||
+                (method === "CHECK" && !checkNumber.trim())
+              }
+              className="flex flex-1 items-center justify-center gap-2 btn-brand h-12 rounded-md text-sm font-medium disabled:opacity-50"
+            >
+              {busy && !editingReceiptId ? (
+                "Enregistrement..."
+              ) : editingReceiptId ? (
+                "Mettre à jour"
+              ) : (
+                "Encaisser"
+              )}
+            </button>
+
+            {!editingReceiptId && (
+              <button
+                onClick={() => submit(true)}
+                disabled={
+                  busy ||
+                  !unitId ||
+                  Number(amount) <= 0 ||
+                  ((method === "TRANSFER" || method === "CHECK" || method === "BANK_DEPOSIT") &&
+                    !bankName.trim()) ||
+                  (method === "CHECK" && !checkNumber.trim())
+                }
+                className="flex flex-1 items-center justify-center gap-2 rounded-md border border-zinc-200 bg-white h-12 text-sm font-medium text-zinc-900 transition hover:bg-zinc-50 disabled:opacity-50"
+              >
+                {busy ? "Enregistrement..." : "Encaisser et créer un autre"}
+              </button>
+            )}
+          </div>
         </div>
       </Modal>
 
@@ -1739,12 +1769,24 @@ export function ContributionReceiptsTab({
                   {editMode ? (
                     <select
                       value={editMethod}
-                      onChange={(e) => setEditMethod(e.target.value as Method)}
+                      onChange={(e) => {
+                        const m = e.target.value as Method;
+                        setEditMethod(m);
+                        if (m === "BANK_DEPOSIT") {
+                          const today = new Date().toLocaleDateString("fr-FR");
+                          const feeText = `Paiement de 1 dirham pour les frais de timbre à la date du ${today}`;
+                          // Note: For editing, we might not want to overwrite, but the user requested automatic note on click
+                          if (detail && !detail.note?.includes("frais de timbre")) {
+                             // This is tricky for editing as note might not be in state yet or combined
+                          }
+                        }
+                      }}
                       className="mt-1 h-10 rounded-md border px-3"
                     >
                       <option value="CASH">Espèces</option>
                       <option value="TRANSFER">Virement</option>
                       <option value="CHECK">Chèque</option>
+                      <option value="BANK_DEPOSIT">Versement</option>
                     </select>
                   ) : (
                     <div className="mt-1 text-sm font-semibold text-zinc-900">

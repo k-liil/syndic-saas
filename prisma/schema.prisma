@@ -82,6 +82,7 @@ enum PaymentMethod {
   TRANSFER
   CHECK
   DEBIT
+  BANK_DEPOSIT
   INTERNAL_TRANSFER
 }
 

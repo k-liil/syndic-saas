@@ -156,7 +156,7 @@ export async function PUT(
       typeof body.bankName === "string" ? body.bankName.trim() : "";
     const bankRef = typeof body.bankRef === "string" ? body.bankRef.trim() : "";
     const note = typeof body.note === "string" ? body.note.trim() : "";
-    if (!["CASH", "TRANSFER", "CHECK"].includes(method)) {
+    if (!["CASH", "TRANSFER", "CHECK", "BANK_DEPOSIT"].includes(method)) {
       return NextResponse.json({ error: "Invalid method" }, { status: 400 });
     }
 
@@ -168,7 +168,7 @@ export async function PUT(
       return NextResponse.json({ error: "Invalid amount" }, { status: 400 });
     }
 
-    if ((method === "TRANSFER" || method === "CHECK") && !bankName) {
+    if ((method === "TRANSFER" || method === "CHECK" || method === "BANK_DEPOSIT") && !bankName) {
       return NextResponse.json({ error: "Bank required" }, { status: 400 });
     }
 

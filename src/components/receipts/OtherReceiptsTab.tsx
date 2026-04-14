@@ -11,7 +11,7 @@ import { useApiUrl } from "@/lib/org-context";
 import { Upload, PlusCircle, Trash2 } from "lucide-react";
 import { formatDate } from "@/lib/date-utils";
 
-type Method = "CASH" | "TRANSFER" | "CHECK";
+type Method = "CASH" | "TRANSFER" | "CHECK" | "BANK_DEPOSIT";
 type OtherReceiptType = "RENT" | "OTHER";
 
 type OtherReceipt = {

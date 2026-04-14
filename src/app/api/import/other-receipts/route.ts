@@ -88,7 +88,7 @@ export async function POST(req: Request) {
       type: "RENT" | "OTHER";
       description: string;
       amount: number;
-      method: "CASH" | "TRANSFER" | "CHECK";
+      method: "CASH" | "TRANSFER" | "CHECK" | "BANK_DEPOSIT";
       date: Date;
       bankName: string | null;
       bankId: string | null;
@@ -128,7 +128,7 @@ export async function POST(req: Request) {
         continue;
       }
 
-      if (!["CASH", "TRANSFER", "CHECK"].includes(method)) {
+      if (!["CASH", "TRANSFER", "CHECK", "BANK_DEPOSIT"].includes(method)) {
         errors.push({ row: rowNo, error: `Methode invalide: ${method}` });
         continue;
       }
@@ -142,7 +142,7 @@ export async function POST(req: Request) {
         type: type as "RENT" | "OTHER",
         description,
         amount,
-        method: method as "CASH" | "TRANSFER" | "CHECK",
+        method: method as "CASH" | "TRANSFER" | "CHECK" | "BANK_DEPOSIT",
         date,
         bankName: bankName || null,
         bankId: banksByName.get((bankName || "").toLowerCase())?.id || null,

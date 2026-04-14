@@ -133,7 +133,7 @@ export async function POST(req: Request) {
       );
     }
 
-    if (!["CASH","TRANSFER","CHECK"].includes(method)) {
+    if (!["CASH","TRANSFER","CHECK","BANK_DEPOSIT"].includes(method)) {
       return NextResponse.json(
         { error: "Invalid method" },
         { status: 400 }
@@ -147,7 +147,7 @@ export async function POST(req: Request) {
       );
     }
 
-    if ((method === "TRANSFER" || method === "CHECK") && !bankName) {
+    if ((method === "TRANSFER" || method === "CHECK" || method === "BANK_DEPOSIT") && !bankName) {
       return NextResponse.json(
         { error: "Bank required" },
         { status: 400 }

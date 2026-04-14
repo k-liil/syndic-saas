@@ -128,7 +128,7 @@ export async function POST(req: Request) {
     const validRows: Array<{
       supplierId: string;
       accountingPostId: string | null;
-      method: "CASH" | "TRANSFER" | "CHECK" | "DEBIT";
+      method: "CASH" | "TRANSFER" | "CHECK" | "DEBIT" | "BANK_DEPOSIT";
       amount: number;
       date: Date;
       bankName: string | null;
@@ -157,7 +157,7 @@ export async function POST(req: Request) {
         continue;
       }
 
-      if (!["CASH", "TRANSFER", "CHECK", "DEBIT"].includes(method)) {
+      if (!["CASH", "TRANSFER", "CHECK", "DEBIT", "BANK_DEPOSIT"].includes(method)) {
         errors.push({ row: rowNumber, error: "INVALID_METHOD" });
         continue;
       }
@@ -167,7 +167,7 @@ export async function POST(req: Request) {
         continue;
       }
 
-      if ((method === "TRANSFER" || method === "CHECK" || method === "DEBIT") && !bankName) {
+      if ((method === "TRANSFER" || method === "CHECK" || method === "DEBIT" || method === "BANK_DEPOSIT") && !bankName) {
         errors.push({ row: rowNumber, error: "BANK_REQUIRED" });
         continue;
       }
@@ -203,7 +203,7 @@ export async function POST(req: Request) {
       validRows.push({
         supplierId: supplier.id,
         accountingPostId,
-        method: method as "CASH" | "TRANSFER" | "CHECK" | "DEBIT",
+        method: method as "CASH" | "TRANSFER" | "CHECK" | "DEBIT" | "BANK_DEPOSIT",
         amount,
         date: paymentDate,
         bankName: method !== "CASH" ? bankName || null : null,
