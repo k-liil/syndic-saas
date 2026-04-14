@@ -8,7 +8,7 @@ import { canManage } from "@/lib/roles";
 import { useApiUrl } from "@/lib/org-context";
 import { useActiveYear } from "@/lib/use-active-year";
 import { getSuggestedPaymentPostCode } from "@/lib/payment-accounting-posts";
-import { toDisplayDate } from "@/lib/date-utils";
+import { toDisplayDate as toDisplayDateLib } from "@/lib/date-utils";
 
 type Supplier = {
   id: string;
@@ -1101,7 +1101,7 @@ function toggleSelect(id: string) {
                     onClick={() => {
                       setMethod("BANK_DEPOSIT");
                       const totalWithFee = (Number(amount) || 0) + 1;
-                      const displayDate = toDisplayDate(date);
+                      const displayDate = toDisplayDateLib(date);
                       const feeText = `Versement d'un montant de ${totalWithFee} DH avec une retenue de 1 DH pour les frais de timbre à la date du ${displayDate}`;
                       
                       if (!note.includes("frais de timbre")) {
