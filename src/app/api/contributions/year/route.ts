@@ -41,69 +41,92 @@ export async function GET(req: Request) {
   const start = new Date(Date.UTC(year, 0, 1));
   const end = new Date(Date.UTC(year, 11, 31));
 
-  const buildings = await prisma.building.findMany({
-    where: buildingId
-      ? { id: buildingId, organizationId: orgId }
-      : { organizationId: orgId },
-    select: {
-      id: true,
-      name: true,
-      units: {
-        select: {
-          id: true,
-          lotNumber: true,
-          reference: true,
-          ownerships: {
-            where: { endDate: null, organizationId: orgId },
-            select: {
-              owner: { select: { firstName: true, name: true } },
-            },
-          },
-          dues: {
-            where: {
-              organizationId: orgId,
-              period: {
-                gte: start,
-                lte: end,
+  const [buildings, totalBalances] = await Promise.all([
+    prisma.building.findMany({
+      where: buildingId
+        ? { id: buildingId, organizationId: orgId }
+        : { organizationId: orgId },
+      select: {
+        id: true,
+        name: true,
+        units: {
+          select: {
+            id: true,
+            lotNumber: true,
+            reference: true,
+            ownerships: {
+              where: { endDate: null, organizationId: orgId },
+              select: {
+                owner: { select: { firstName: true, name: true } },
               },
             },
-            select: {
-              period: true,
-              status: true,
-              paidAmount: true,
+            dues: {
+              where: {
+                organizationId: orgId,
+                period: {
+                  gte: start,
+                  lte: end,
+                },
+              },
+              select: {
+                period: true,
+                status: true,
+                paidAmount: true,
+              },
             },
           },
         },
       },
-    },
-  });
+    }),
+    prisma.monthlyDue.groupBy({
+      by: ["unitId"],
+      where: {
+        organizationId: orgId,
+        period: { lte: end },
+      },
+      _sum: {
+        amountDue: true,
+        paidAmount: true,
+      },
+    }),
+  ]);
+
+  const balanceMap = new Map(
+    totalBalances.map((b) => [
+      b.unitId,
+      Number(b._sum.amountDue || 0) - Number(b._sum.paidAmount || 0),
+    ]),
+  );
 
   const months = Array.from({ length: 12 }, (_, i) => i);
 
   const result = buildings.map((building) => ({
     ...building,
-    units: [...building.units].sort(naturalLotSort).map((unit) => {
-      const duesMap = new Map(
-        unit.dues.map((d) => [
-          new Date(d.period).getUTCMonth(),
-          { status: d.status, paidAmount: Number(d.paidAmount) },
-        ]),
-      );
+    units: [...building.units]
+      .sort(naturalLotSort)
+      .map((unit) => {
+        const duesMap = new Map(
+          unit.dues.map((d) => [
+            new Date(d.period).getUTCMonth(),
+            { status: d.status, paidAmount: Number(d.paidAmount) },
+          ]),
+        );
 
-      const fullYear = months.map((m) => {
-        const due = duesMap.get(m);
+        const fullYear = months.map((m) => {
+          const due = duesMap.get(m);
+          return {
+            month: m,
+            status: due?.status || "UNPAID",
+            paidAmount: due?.paidAmount || 0,
+          };
+        });
+
         return {
-          month: m,
-          status: due?.status || "UNPAID",
-          paidAmount: due?.paidAmount || 0,
+          ...unit,
+          fullYear,
+          totalBalance: balanceMap.get(unit.id) || 0,
         };
-      });
-
-      return {
-        ...unit,
-        fullYear,
-      };
-    }),
+      }),
   }));
 
   return NextResponse.json(result);

@@ -24,6 +24,7 @@ type ApiBuilding = {
       period: string;
       status: DueStatus;
     }[];
+    totalBalance: number;
   }[];
 };
 
@@ -53,6 +54,7 @@ type RowData = {
   oct: MonthData;
   nov: MonthData;
   dec: MonthData;
+  resteAPayer: number;
   isFullyPaid: boolean;
 };
 
@@ -143,6 +145,7 @@ function ContributionsYearPageContent() {
         oct: get(9),
         nov: get(10),
         dec: get(11),
+        resteAPayer: (u as any).totalBalance || 0,
         isFullyPaid,
       };
     });

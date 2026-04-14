@@ -41,6 +41,7 @@ type RowData = {
   oct: MonthData;
   nov: MonthData;
   dec: MonthData;
+  resteAPayer: number;
   isFullyPaid: boolean;
 };
 
@@ -153,7 +154,7 @@ const columns: ColumnDef<RowData>[] = [
     header: "Coproprietaire",
     cell: ({ row }) => (
       <div
-        className={`min-w-[240px] text-xs ${row.original.isFullyPaid ? "text-emerald-600 font-medium" : "text-zinc-800"}`}
+        className={`min-w-[210px] text-xs ${row.original.isFullyPaid ? "text-emerald-600 font-medium" : "text-zinc-800"}`}
       >
         {row.original.owner}
       </div>
@@ -219,6 +220,22 @@ const columns: ColumnDef<RowData>[] = [
     header: "Dec",
     cell: ({ row }) => <StatusBadge monthIndex={11} value={row.original.dec} />,
   },
+  {
+    accessorKey: "resteAPayer",
+    header: "Reste à payer",
+    cell: ({ row }) => (
+      <div className="flex h-10 w-full items-center justify-center">
+        <div className="flex flex-col items-center">
+          <span
+            className={`text-[11px] font-bold ${row.original.resteAPayer > 0 ? "text-rose-600" : "text-emerald-600"}`}
+          >
+            {row.original.resteAPayer.toLocaleString()}
+            <span className="ml-[1px] text-[8px] opacity-70 uppercase">DH</span>
+          </span>
+        </div>
+      </div>
+    ),
+  },
 ];
 
 export function ContributionsYearTable({ data }: { data: RowData[] }) {
@@ -276,15 +293,18 @@ export function ContributionsYearTable({ data }: { data: RowData[] }) {
                     className={[
                       "h-10 whitespace-nowrap border-b border-zinc-200 text-[10px] font-bold uppercase tracking-[0.12em] text-zinc-500",
                       index === 0 ? "sticky left-0 z-30 bg-zinc-50" : "",
-                      index === 1 ? "sticky left-[132px] z-30 bg-zinc-50" : "",
+                      index === 1 ? "sticky left-[120px] z-30 bg-zinc-50 border-r border-zinc-100" : "",
                       index >= 2 ? "px-0 text-center" : "",
+                      index === 14 ? "bg-zinc-100/50" : "",
                     ].join(" ")}
                     style={
                       index === 0
-                        ? { width: 132, minWidth: 132, maxWidth: 132 }
+                        ? { width: 120, minWidth: 120, maxWidth: 120 }
                         : index === 1
-                          ? { width: 240, minWidth: 240, maxWidth: 240 }
-                          : { width: 72, minWidth: 72, maxWidth: 72 }
+                          ? { width: 210, minWidth: 210, maxWidth: 210 }
+                          : index === 14
+                            ? { width: 90, minWidth: 90, maxWidth: 90 }
+                            : { width: 64, minWidth: 64, maxWidth: 64 }
                     }
                   >
                     {header.isPlaceholder
@@ -319,18 +339,21 @@ export function ContributionsYearTable({ data }: { data: RowData[] }) {
                         "h-10 align-middle border-b border-zinc-100 py-1",
                         index === 0 ? "sticky left-0 z-20 bg-inherit pl-4" : "",
                         index === 1
-                          ? "sticky left-[132px] z-20 bg-inherit pl-4"
+                          ? "sticky left-[120px] z-20 bg-inherit pl-4 border-r border-zinc-100"
                           : "",
                         index >= 2 ? "p-0 text-center" : "",
+                        index === 14 ? "bg-zinc-50/30 font-bold" : "",
                       ].join(" ")}
                       style={
                         index === 0
-                          ? { width: 132, minWidth: 132, maxWidth: 132 }
+                          ? { width: 120, minWidth: 120, maxWidth: 120 }
                           : index === 1
-                            ? { width: 240, minWidth: 240, maxWidth: 240 }
+                            ? { width: 210, minWidth: 210, maxWidth: 210 }
                             : index === 14
-                              ? { width: 60, minWidth: 60, maxWidth: 60 }
-                              : { width: 72, minWidth: 72, maxWidth: 72 }
+                              ? { width: 90, minWidth: 90, maxWidth: 90 }
+                              : index === 15
+                                ? { width: 60, minWidth: 60, maxWidth: 60 }
+                                : { width: 64, minWidth: 64, maxWidth: 64 }
                       }
                     >
                       {flexRender(
