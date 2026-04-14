@@ -82,6 +82,7 @@ enum PaymentMethod {
   TRANSFER
   CHECK
   DEBIT
+  INTERNAL_TRANSFER
 }
 
 model Owner {

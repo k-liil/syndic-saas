@@ -59,6 +59,14 @@ export const PAGE_VISIBILITY_REGISTRY: PageRegistryItem[] = [
     roles: { SUPER_ADMIN: true, MANAGER: true, OWNER: true },
   },
   {
+    title: "Transferts",
+    href: "/ops/transfers",
+    icon: "ArrowRightLeft",
+    section: "operations",
+    defaultEnabled: true,
+    roles: { SUPER_ADMIN: true, MANAGER: true, OWNER: false },
+  },
+  {
     title: "Budgets",
     href: "/ops/budgets",
     icon: "BarChart3",

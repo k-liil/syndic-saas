@@ -6,6 +6,7 @@ import { usePathname } from "next/navigation";
 import { useSession } from "next-auth/react";
 import {
   AlertCircle,
+  ArrowRightLeft,
   Banknote,
   BarChart3,
   Building2,
@@ -28,6 +29,7 @@ import { PAGE_VISIBILITY_REGISTRY, type PageVisibilityRecord, roleCanSeePage } f
 
 const ICONS: Record<string, ElementType> = {
   AlertCircle,
+  ArrowRightLeft,
   Banknote,
   BarChart3,
   Building2,
