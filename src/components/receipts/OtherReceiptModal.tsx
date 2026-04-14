@@ -75,7 +75,7 @@ export function OtherReceiptModal({
       setDescription(receipt.description ?? "");
       setAmount(String(receipt.amount ?? ""));
       setMethod(receipt.method ?? "CASH");
-      setDate(String(receipt.date).slice(0, 10));
+      setDate(receipt.date ? String(receipt.date).slice(0, 10) : getTodayInputVal());
       setBankName(receipt.bankName ?? "");
       setBankId(receipt.bankId ?? "");
       setBankRef(receipt.bankRef ?? "");

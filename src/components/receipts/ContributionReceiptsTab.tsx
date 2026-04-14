@@ -519,7 +519,7 @@ export function ContributionReceiptsTab({
 
     setDetail(data);
     setEditMethod(data.method);
-    setEditDate(data.date.slice(0, 10));
+    setEditDate(data.date ? String(data.date).slice(0, 10) : getTodayInputVal());
     setEditAmount(String(data.amount));
     setEditBank(data.bankName ?? "");
     setEditBankId(data.bankId ?? "");
@@ -552,7 +552,7 @@ export function ContributionReceiptsTab({
     setUnits([]);
     setAmount(String(data.amount ?? ""));
     setMethod(data.method);
-    setDate(String(data.date).slice(0, 10));
+    setDate(data.date ? String(data.date).slice(0, 10) : getTodayInputVal());
     setNote(data.note ?? "");
     setBankName(data.bankName ?? "");
     setBankId(data.bankId ?? "");
