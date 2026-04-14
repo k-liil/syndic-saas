@@ -736,7 +736,7 @@ export function ContributionReceiptsTab({
   async function submit(stayOpen = false) {
     if (busy) return;
     if (!editingReceiptId && (!unitId || Number(amount) <= 0)) return;
-    if ((method === "TRANSFER" || method === "CHECK") && !bankName.trim())
+    if ((method === "TRANSFER" || method === "CHECK" || method === "BANK_DEPOSIT") && !bankName.trim())
       return;
     if (method === "CHECK" && !checkNumber.trim()) return;
 
@@ -1669,7 +1669,7 @@ export function ContributionReceiptsTab({
                     !bankName.trim()) ||
                   (method === "CHECK" && !checkNumber.trim())
                 }
-                className="flex flex-1 items-center justify-center gap-2 rounded-md border border-zinc-200 bg-white h-12 text-sm font-medium text-zinc-900 transition hover:bg-zinc-50 disabled:opacity-50"
+                className="flex flex-1 items-center justify-center gap-2 rounded-md border border-indigo-200 bg-indigo-50/50 h-12 text-sm font-medium text-indigo-700 transition hover:bg-indigo-50 hover:border-indigo-300 disabled:opacity-50"
               >
                 {busy ? "Enregistrement..." : "Encaisser et créer un autre"}
               </button>
