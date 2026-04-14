@@ -10,7 +10,7 @@ const nextConfig = {
             value: "syndic-saas-production.up.railway.app",
           },
         ],
-        destination: "https://syndicly.ma/:path*",
+        destination: "https://www.syndicly.ma/:path*",
         permanent: true,
       },
     ];
