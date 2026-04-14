@@ -41,6 +41,7 @@ export async function GET(
         GROUP BY ra2."dueId"
       )
       SELECT 
+        r.id as "r_id", r."receiptNumber" as "r_number", r.date as "r_date", r.amount as "r_amount",
         r.method as "r_method", r.note as "r_note", r."bankName" as "r_bankName", r."bankRef" as "r_bankRef", r."bankId" as "r_bankId",
         r."unallocatedAmount" as "r_unallocated",
         o.id as "o_id", o.name as "o_name", o."firstName" as "o_firstName", o.cin as "o_cin", o.email as "o_email", o.phone as "o_phone",
