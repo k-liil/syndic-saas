@@ -451,7 +451,7 @@ model AppSettings {
   id         String @id @default(uuid())
   organizationId String
   organization   Organization @relation(fields: [organizationId], references: [id], onDelete: Cascade)
-  brandName  String @default("Syndic")
+  brandName  String @default("Syndicly")
   brandColor String @default("#4f46e5")
 
   startYear  Int @default(2026)

@@ -174,7 +174,7 @@ export default function SettingsPage() {
     if (!s) return false;
 
     return (
-      brandName !== (s.brandName ?? "Syndic") ||
+      brandName !== (s.brandName ?? "Syndicly") ||
       brandColor !== (s.brandColor ?? "#4f46e5") ||
       startYear !== Number(s.startYear ?? 2026) ||
       startMonth !== Number(s.startMonth ?? 1) ||
@@ -263,7 +263,7 @@ export default function SettingsPage() {
     const json = await res.json();
 
     setS(json);
-    setBrandName(json.brandName ?? "Syndic");
+    setBrandName(json.brandName ?? "Syndicly");
     setBrandColor(json.brandColor ?? "#4f46e5");
     setStartYear(Number(json.startYear ?? 2026));
     setStartMonth(Number(json.startMonth ?? 1));

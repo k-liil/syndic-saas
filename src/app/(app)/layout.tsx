@@ -38,7 +38,7 @@ export default async function AppLayout({
 
   return (
     <OrgProvider initialOrgs={initialOrgs} initialOrgId={initialOrgId}>
-      <AppShell brandName={settings?.brandName ?? "Syndic"}>
+      <AppShell brandName={settings?.brandName ?? "Syndicly"}>
         {children}
       </AppShell>
     </OrgProvider>
