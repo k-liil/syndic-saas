@@ -7,7 +7,7 @@ const nextConfig = {
         has: [
           {
             type: "host",
-            value: "syndic-saas-production.up.railway.app",
+            value: "syndicly-production.up.railway.app",
           },
         ],
         destination: "https://www.syndicly.ma/:path*",
