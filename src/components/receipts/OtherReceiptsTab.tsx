@@ -9,6 +9,7 @@ import { Modal } from "@/components/ui/Modal";
 import { canManage } from "@/lib/roles";
 import { useApiUrl } from "@/lib/org-context";
 import { Upload, PlusCircle, Trash2 } from "lucide-react";
+import { formatDate } from "@/lib/date-utils";
 
 type Method = "CASH" | "TRANSFER" | "CHECK";
 type OtherReceiptType = "RENT" | "OTHER";
@@ -26,9 +27,7 @@ type OtherReceipt = {
   note?: string | null;
 };
 
-function fmtDate(d: string) {
-  return new Date(d).toLocaleDateString("fr-FR");
-}
+// Relied on central utility
 
 function fmtElapsed(ms: number) {
   const totalSeconds = Math.max(0, Math.floor(ms / 1000));
@@ -498,7 +497,7 @@ export function OtherReceiptsTab({
                     </TD>
                   )}
                   <TD className="font-semibold text-zinc-900">{r.receiptNumber}</TD>
-                  <TD className="text-zinc-600">{fmtDate(r.date)}</TD>
+                  <TD className="text-zinc-600">{formatDate(r.date)}</TD>
                   <TD>
                     <span className={`inline-flex rounded-md px-2 py-0.5 text-[10px] font-bold uppercase tracking-wider ${
                       r.type === "RENT" ? "bg-blue-100 text-blue-700" : "bg-purple-100 text-purple-700"

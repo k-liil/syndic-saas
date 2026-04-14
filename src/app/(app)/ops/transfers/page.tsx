@@ -13,6 +13,7 @@ import {
   Loader2,
   Plus
 } from "lucide-react";
+import { DateInput } from "@/components/ui/DateInput";
 
 type Bank = {
   id: string;
@@ -191,14 +192,10 @@ export default function TransferPage() {
               <div className="space-y-2">
                 <label className="text-xs font-bold uppercase tracking-wider text-zinc-400">Date de l'opération</label>
                 <div className="relative">
-                  <input
-                    type="date"
-                    required
+                  <DateInput
                     value={date}
                     onChange={(e) => setDate(e.target.value)}
-                    className="w-full h-12 bg-white border border-zinc-200 rounded-lg px-10 focus:outline-none focus:ring-2 focus:ring-sky-500/20 focus:border-sky-500 transition"
                   />
-                  <Calendar className="absolute left-3.5 top-1/2 -translate-y-1/2 text-zinc-400" size={16} />
                 </div>
               </div>
             </div>

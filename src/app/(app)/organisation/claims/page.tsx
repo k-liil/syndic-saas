@@ -6,6 +6,7 @@ import { MessageSquare, Plus, Search, Clock, CheckCircle2, AlertCircle, ChevronR
 import { Modal } from "@/components/ui/Modal";
 import { useApiUrl } from "@/lib/org-context";
 import { canManage, isSuperAdmin } from "@/lib/roles";
+import { formatDate } from "@/lib/date-utils";
 
 type Claim = {
   id: string;
@@ -433,7 +434,7 @@ export default function ClaimsPage() {
                       ) : null}
                     </div>
                     <span className="whitespace-nowrap text-[11px] font-medium text-slate-400">
-                      {new Date(claim.createdAt).toLocaleDateString("fr-FR", { day: "numeric", month: "short" })}
+                      {formatDate(claim.createdAt)}
                     </span>
                   </div>
 
@@ -625,7 +626,7 @@ export default function ClaimsPage() {
                 <h2 className="mt-3 text-xl font-bold text-slate-900">{selectedClaim.title}</h2>
                 <div className="mt-1 flex items-center gap-3 text-xs text-slate-500">
                   <span>
-                    Soumise le {new Date(selectedClaim.createdAt).toLocaleDateString("fr-FR")} a{" "}
+                    Soumise le {formatDate(selectedClaim.createdAt)} a{" "}
                     {new Date(selectedClaim.createdAt).toLocaleTimeString("fr-FR", { hour: "2-digit", minute: "2-digit" })}
                   </span>
                 </div>
@@ -677,7 +678,7 @@ export default function ClaimsPage() {
                         <span className="font-semibold text-slate-800">
                           {getCommentAuthorLabel(claimComment)}
                         </span>
-                        <span>{new Date(claimComment.createdAt).toLocaleDateString("fr-FR")}</span>
+                        <span>{formatDate(claimComment.createdAt)}</span>
                         <span>
                           {new Date(claimComment.createdAt).toLocaleTimeString("fr-FR", {
                             hour: "2-digit",

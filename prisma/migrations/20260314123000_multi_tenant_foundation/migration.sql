@@ -1,3 +1,115 @@
+-- CreateEnums for missing tables
+DO $$ BEGIN
+    CREATE TYPE "ReceiptType" AS ENUM ('CONTRIBUTION', 'RENT', 'OTHER');
+EXCEPTION WHEN duplicate_object THEN null; END $$;
+
+DO $$ BEGIN
+    CREATE TYPE "PostType" AS ENUM ('CHARGE', 'PRODUCT');
+EXCEPTION WHEN duplicate_object THEN null; END $$;
+
+DO $$ BEGIN
+    CREATE TYPE "ClaimStatus" AS ENUM ('OPEN', 'IN_PROGRESS', 'RESOLVED');
+EXCEPTION WHEN duplicate_object THEN null; END $$;
+
+DO $$ BEGIN
+    CREATE TYPE "ClaimPriority" AS ENUM ('LOW', 'NORMAL', 'HIGH');
+EXCEPTION WHEN duplicate_object THEN null; END $$;
+
+-- Create missing base tables
+CREATE TABLE IF NOT EXISTS "OtherReceipt" (
+    "id" TEXT NOT NULL,
+    "receiptNumber" INTEGER NOT NULL,
+    "type" "ReceiptType" NOT NULL,
+    "description" TEXT NOT NULL,
+    "date" TIMESTAMP(3) NOT NULL DEFAULT CURRENT_TIMESTAMP,
+    "method" "PaymentMethod" NOT NULL,
+    "amount" DECIMAL(10,2) NOT NULL,
+    "bankName" TEXT,
+    "bankRef" TEXT,
+    "note" TEXT,
+    "createdAt" TIMESTAMP(3) NOT NULL DEFAULT CURRENT_TIMESTAMP,
+    CONSTRAINT "OtherReceipt_pkey" PRIMARY KEY ("id")
+);
+
+CREATE TABLE IF NOT EXISTS "ImportJob" (
+    "id" TEXT NOT NULL,
+    "type" TEXT NOT NULL,
+    "status" TEXT NOT NULL,
+    "totalRows" INTEGER NOT NULL DEFAULT 0,
+    "processedRows" INTEGER NOT NULL DEFAULT 0,
+    "errorRows" INTEGER NOT NULL DEFAULT 0,
+    "errors" JSONB,
+    "createdAt" TIMESTAMP(3) NOT NULL DEFAULT CURRENT_TIMESTAMP,
+    CONSTRAINT "ImportJob_pkey" PRIMARY KEY ("id")
+);
+
+CREATE TABLE IF NOT EXISTS "Claim" (
+    "id" TEXT NOT NULL,
+    "ownerId" TEXT NOT NULL,
+    "unitId" TEXT,
+    "title" TEXT NOT NULL,
+    "description" TEXT NOT NULL,
+    "category" TEXT NOT NULL DEFAULT 'Général',
+    "status" "ClaimStatus" NOT NULL DEFAULT 'OPEN',
+    "priority" "ClaimPriority" NOT NULL DEFAULT 'NORMAL',
+    "photos" TEXT[] DEFAULT ARRAY[]::TEXT[],
+    "createdAt" TIMESTAMP(3) NOT NULL DEFAULT CURRENT_TIMESTAMP,
+    "updatedAt" TIMESTAMP(3) NOT NULL,
+    CONSTRAINT "Claim_pkey" PRIMARY KEY ("id")
+);
+
+CREATE TABLE IF NOT EXISTS "Incident" (
+    "id" TEXT NOT NULL,
+    "title" TEXT NOT NULL,
+    "description" TEXT NOT NULL,
+    "location" TEXT,
+    "status" TEXT NOT NULL DEFAULT 'OPEN',
+    "createdAt" TIMESTAMP(3) NOT NULL DEFAULT CURRENT_TIMESTAMP,
+    CONSTRAINT "Incident_pkey" PRIMARY KEY ("id")
+);
+
+CREATE TABLE IF NOT EXISTS "AccountingPost" (
+    "id" TEXT NOT NULL,
+    "code" TEXT NOT NULL,
+    "name" TEXT NOT NULL,
+    "postType" "PostType" NOT NULL,
+    "note" TEXT,
+    "isActive" BOOLEAN NOT NULL DEFAULT false,
+    "createdAt" TIMESTAMP(3) NOT NULL DEFAULT CURRENT_TIMESTAMP,
+    "updatedAt" TIMESTAMP(3) NOT NULL,
+    CONSTRAINT "AccountingPost_pkey" PRIMARY KEY ("id")
+);
+
+CREATE TABLE IF NOT EXISTS "Budget" (
+    "id" TEXT NOT NULL,
+    "accountingPostId" TEXT NOT NULL,
+    "amount" DECIMAL(10,2) NOT NULL,
+    "year" INTEGER NOT NULL,
+    "createdAt" TIMESTAMP(3) NOT NULL DEFAULT CURRENT_TIMESTAMP,
+    "updatedAt" TIMESTAMP(3) NOT NULL,
+    CONSTRAINT "Budget_pkey" PRIMARY KEY ("id")
+);
+
+CREATE TABLE IF NOT EXISTS "SupplierSector" (
+    "id" TEXT NOT NULL,
+    "name" TEXT NOT NULL,
+    "isActive" BOOLEAN NOT NULL DEFAULT true,
+    "createdAt" TIMESTAMP(3) NOT NULL DEFAULT CURRENT_TIMESTAMP,
+    "updatedAt" TIMESTAMP(3) NOT NULL,
+    CONSTRAINT "SupplierSector_pkey" PRIMARY KEY ("id")
+);
+
+CREATE TABLE IF NOT EXISTS "Meeting" (
+    "id" TEXT NOT NULL,
+    "title" TEXT NOT NULL,
+    "date" TIMESTAMP(3) NOT NULL,
+    "description" TEXT,
+    "location" TEXT,
+    "createdAt" TIMESTAMP(3) NOT NULL DEFAULT CURRENT_TIMESTAMP,
+    "updatedAt" TIMESTAMP(3) NOT NULL,
+    CONSTRAINT "Meeting_pkey" PRIMARY KEY ("id")
+);
+
 CREATE TABLE "Organization" (
     "id" TEXT NOT NULL,
     "name" TEXT NOT NULL,

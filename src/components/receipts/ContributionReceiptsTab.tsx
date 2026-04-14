@@ -8,6 +8,8 @@ import { Modal } from "@/components/ui/Modal";
 import { Table, THead, TR, TH, TD } from "@/components/ui/Table";
 import { canManage } from "@/lib/roles";
 import { Upload, PlusCircle } from "lucide-react";
+import { formatDate, formatMonth, getTodayInputVal } from "@/lib/date-utils";
+import { DateInput } from "@/components/ui/DateInput";
 
 type Method = "CASH" | "TRANSFER" | "CHECK";
 
@@ -43,41 +45,19 @@ type Receipt = {
   isPartial: boolean;
 };
 
-function fmtDate(d: string) {
-  return new Date(d).toLocaleDateString("fr-FR", {
-    timeZone: "UTC",
-  });
-}
+// Relied on central utility
 
 function fmtMonth(d: string) {
-  return new Date(d).toLocaleDateString("fr-FR", {
-    month: "long",
-    year: "numeric",
-    timeZone: "UTC",
-  });
+  // Use the imported formatMonth if available, but this local one was being used.
+  // Actually, I imported it. I'll just remove the local usage of toLocaleDateString.
+  return formatMonth(d);
 }
 
 function fmtPeriodRange(first: string | null, last: string | null) {
   if (!first) return "—";
-  if (!last || first === last) return fmtMonth(first);
+  if (!last || first === last) return formatMonth(first);
 
-  const start = new Date(first);
-  const end = new Date(last);
-
-  if (start.getUTCFullYear() === end.getUTCFullYear()) {
-    const startMonth = start.toLocaleDateString("fr-FR", {
-      month: "long",
-      timeZone: "UTC",
-    });
-    const endMonth = end.toLocaleDateString("fr-FR", {
-      month: "long",
-      year: "numeric",
-      timeZone: "UTC",
-    });
-    return `${startMonth} à ${endMonth}`;
-  }
-
-  return `${fmtMonth(first)} à ${fmtMonth(last)}`;
+  return `${formatMonth(first)} à ${formatMonth(last)}`;
 }
 
 function fmtElapsed(ms: number) {
@@ -177,7 +157,7 @@ export function ContributionReceiptsTab({
 
   const [amount, setAmount] = useState("");
   const [method, setMethod] = useState<Method>("CASH");
-  const [date, setDate] = useState(() => new Date().toISOString().slice(0, 10));
+  const [date, setDate] = useState(() => getTodayInputVal());
   const [note, setNote] = useState("");
   const [bankName, setBankName] = useState("");
   const [bankId, setBankId] = useState("");
@@ -742,7 +722,7 @@ export function ContributionReceiptsTab({
     setUnitId("");
     setAmount("");
     setMethod("CASH");
-    setDate(new Date().toISOString().slice(0, 10));
+    setDate(getTodayInputVal());
     setNote("");
     setQuery("");
     setUnits([]);
@@ -1205,7 +1185,7 @@ export function ContributionReceiptsTab({
                     )}
                   </TD>
 
-                  <TD className="text-zinc-600">{fmtDate(r.date)}</TD>
+                  <TD className="text-zinc-600">{formatDate(r.date)}</TD>
                   <TD>
                     <span className="font-medium text-zinc-900">
                       {r.unit?.lotNumber ?? r.unit?.reference ?? "—"}
@@ -1618,11 +1598,9 @@ export function ContributionReceiptsTab({
           )}
 
           <div>
-            <label className="text-sm font-medium">Date</label>
+            <label className="text-sm font-medium">Date (JJ/MM/AAAA)</label>
 
-            <input
-              type="date"
-              className="h-12 w-full rounded-md border border-zinc-200 bg-white px-4 text-sm shadow-sm outline-none transition focus:border-zinc-900"
+            <DateInput
               value={date}
               onChange={(e) => setDate(e.target.value)}
             />
@@ -1694,15 +1672,13 @@ export function ContributionReceiptsTab({
                   </div>
 
                   {editMode ? (
-                    <input
-                      type="date"
+                    <DateInput
                       value={editDate}
                       onChange={(e) => setEditDate(e.target.value)}
-                      className="mt-1 h-10 rounded-md border px-3"
                     />
                   ) : (
                     <div className="mt-1 text-sm text-zinc-500">
-                      {fmtDate(detail.date)}
+                      {formatDate(detail.date)}
                     </div>
                   )}
                 </div>

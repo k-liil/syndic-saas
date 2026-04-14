@@ -23,6 +23,7 @@ import {
   PageLoggerToggle,
   PageLoggerPanel,
 } from "@/components/ui/PageLogger";
+import { formatDate, formatMonth } from "@/lib/date-utils";
 
 export function AllocationAuditContent() {
   const { org } = useOrganization();
@@ -153,12 +154,7 @@ export function AllocationAuditContent() {
     }
   };
 
-  const formatDate = (date: string) => {
-    return new Date(date).toLocaleDateString("fr-FR", {
-      month: "long",
-      year: "numeric",
-    });
-  };
+  // local formatDate removed in favor of central utility
 
   return (
     <div className="space-y-6">
@@ -288,7 +284,7 @@ export function AllocationAuditContent() {
                         className="hover:bg-slate-50/50 transition-colors"
                       >
                         <td className="px-5 py-4 font-medium text-slate-900">
-                          {formatDate(due.period)}
+                          {formatMonth(due.period)}
                         </td>
                         <td className="px-5 py-4 text-slate-600">
                           {due.amountDue} DH
@@ -344,7 +340,7 @@ export function AllocationAuditContent() {
                           </div>
                           <div>
                             <p className="text-xs text-slate-400 font-medium">
-                              {new Date(r.date).toLocaleDateString("fr-FR")}
+                              {formatDate(r.date)}
                             </p>
                             <p className="text-sm font-bold text-slate-900">
                               {r.amount} DH
@@ -371,7 +367,7 @@ export function AllocationAuditContent() {
                                 key={a.id}
                                 className="inline-flex gap-3 items-center rounded-md bg-indigo-50/50 border border-indigo-100 px-2 py-1 text-[10px] font-medium text-indigo-700"
                               >
-                                {formatDate(
+                                {formatMonth(
                                   auditData.dues.find(
                                     (d: any) => d.id === a.dueId,
                                   )?.period,

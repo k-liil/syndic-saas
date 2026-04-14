@@ -3,6 +3,8 @@
 import { useEffect, useState } from "react";
 import { Modal } from "@/components/ui/Modal";
 import { useApiUrl } from "@/lib/org-context";
+import { DateInput } from "@/components/ui/DateInput";
+import { getTodayInputVal } from "@/lib/date-utils";
 
 type Method = "CASH" | "TRANSFER" | "CHECK";
 type OtherReceiptType = "RENT" | "OTHER";
@@ -45,7 +47,7 @@ export function OtherReceiptModal({
   const [description, setDescription] = useState("");
   const [amount, setAmount] = useState("");
   const [method, setMethod] = useState<Method>("CASH");
-  const [date, setDate] = useState(new Date().toISOString().slice(0, 10));
+  const [date, setDate] = useState(() => getTodayInputVal());
   const [bankName, setBankName] = useState("");
   const [bankId, setBankId] = useState("");
   const [bankRef, setBankRef] = useState("");
@@ -62,7 +64,7 @@ export function OtherReceiptModal({
       setDescription("");
       setAmount("");
       setMethod("CASH");
-      setDate(new Date().toISOString().slice(0, 10));
+      setDate(getTodayInputVal());
       setBankName("");
       setBankId("");
       setBankRef("");
@@ -198,10 +200,8 @@ export function OtherReceiptModal({
         </div>
 
         <div>
-          <label className="text-sm font-medium">Date</label>
-          <input
-            type="date"
-            className="h-10 w-full rounded-md border px-3"
+          <label className="text-sm font-medium">Date (JJ/MM/AAAA)</label>
+          <DateInput
             value={date}
             onChange={(e) => setDate(e.target.value)}
           />

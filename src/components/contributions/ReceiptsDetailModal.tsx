@@ -4,6 +4,7 @@ import { useEffect, useState } from "react";
 import { Modal } from "../ui/Modal";
 import { useApiUrl } from "@/lib/org-context";
 import { FileText, Calendar, Wallet, Receipt as ReceiptIcon, ArrowRight } from "lucide-react";
+import { formatDate } from "@/lib/date-utils";
 
 type Receipt = {
   id: string;
@@ -90,7 +91,7 @@ export function ReceiptsDetailModal({
                     <td className="px-4 py-3 whitespace-nowrap">
                       <div className="flex items-center gap-2">
                         <Calendar className="h-3.5 w-3.5 text-zinc-400" />
-                        <span>{new Date(r.date).toLocaleDateString("fr-FR")}</span>
+                        <span>{formatDate(r.date)}</span>
                       </div>
                     </td>
                     <td className="px-4 py-3 text-zinc-600 font-mono text-xs">

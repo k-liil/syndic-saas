@@ -6,6 +6,7 @@ import { canManageUsers, getRoleLabel } from "@/lib/roles";
 import { Table, THead, TR, TH, TD, TableBody } from "@/components/ui/Table";
 import { Modal } from "@/components/ui/Modal";
 import { Plus, Settings, X, Shield, User, Mail, Calendar, Key, Building2, PlusCircle } from "lucide-react";
+import { formatDate } from "@/lib/date-utils";
 
 type UserOrg = {
   organizationId: string;
@@ -297,7 +298,7 @@ export default function UsersPage() {
                   </span>
                 </TD>
                 <TD className="text-zinc-600 font-medium">{user.email}</TD>
-                <TD className="text-zinc-500">{new Date(user.createdAt).toLocaleDateString("fr-FR")}</TD>
+                <TD className="text-zinc-500">{formatDate(user.createdAt)}</TD>
                 <TD className="text-right">
                   <button className="flex items-center gap-2 p-2 text-zinc-400 group-hover:text-indigo-600 transition">
                     <Settings size={18} />
@@ -440,7 +441,7 @@ export default function UsersPage() {
               <div className="flex flex-col gap-1">
                 <span className="text-[10px] font-bold text-zinc-400 uppercase tracking-widest">Membre depuis</span>
                 <div className="flex items-center gap-2 text-zinc-500 text-sm">
-                  <Calendar size={14} className="text-zinc-400" /> {new Date(selectedUser.createdAt).toLocaleDateString("fr-FR")}
+                  <Calendar size={14} className="text-zinc-400" /> {formatDate(selectedUser.createdAt)}
                 </div>
               </div>
             </div>

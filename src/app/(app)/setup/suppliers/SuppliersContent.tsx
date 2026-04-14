@@ -6,6 +6,7 @@ import { useSession } from "next-auth/react";
 import { useApiUrl, useOrgId } from "@/lib/org-context";
 import { canManage } from "@/lib/roles";
 import { Building2, Mail, MapPin, Pencil, Phone, Plus, Trash2, User, X, PlusCircle } from "lucide-react";
+import { formatDate } from "@/lib/date-utils";
 
 type Supplier = {
   id: string;
@@ -331,9 +332,7 @@ const SuppliersContent = forwardRef<SuppliersPageHandle, SuppliersPageProps>(
       }).format(amount) + " MAD";
     }
 
-    function formatDate(value: string) {
-      return new Date(value).toLocaleDateString("fr-FR");
-    }
+    // Relied on central utility
 
     async function openSupplierDetail(supplier: Supplier) {
       const res = await fetch(apiUrl(`/api/suppliers/${supplier.id}`));

@@ -10,6 +10,7 @@ import { canAccessSettings } from "@/lib/roles";
 import { useApiUrl } from "@/lib/org-context";
 import { Save, Loader2, ArrowRight, Activity, HandCoins, Building2, UserRound, Trash2, Pencil, Plus, PlusCircle } from "lucide-react";
 import { Modal } from "@/components/ui/Modal";
+import { formatMonth } from "@/lib/date-utils";
 
 type Settings = {
   id: string;
@@ -433,8 +434,7 @@ export default function SettingsPage() {
   }
 
   function formatPeriod(dateStr: string) {
-    const d = new Date(dateStr);
-    return `${d.toLocaleDateString("fr-FR", { month: "2-digit", year: "numeric" })}`;
+    return formatMonth(dateStr);
   }
 
   useEffect(() => {
