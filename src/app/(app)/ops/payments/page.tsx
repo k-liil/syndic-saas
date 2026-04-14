@@ -8,6 +8,7 @@ import { canManage } from "@/lib/roles";
 import { useApiUrl } from "@/lib/org-context";
 import { useActiveYear } from "@/lib/use-active-year";
 import { getSuggestedPaymentPostCode } from "@/lib/payment-accounting-posts";
+import { toDisplayDate } from "@/lib/date-utils";
 
 type Supplier = {
   id: string;
@@ -1099,10 +1100,18 @@ function toggleSelect(id: string) {
                     type="button"
                     onClick={() => {
                       setMethod("BANK_DEPOSIT");
-                      const today = new Date().toLocaleDateString("fr-FR");
-                      const feeText = `Paiement de 1 dirham pour les frais de timbre à la date du ${today}`;
+                      const totalWithFee = (Number(amount) || 0) + 1;
+                      const displayDate = toDisplayDate(date);
+                      const feeText = `Versement d'un montant de ${totalWithFee} DH avec une retenue de 1 DH pour les frais de timbre à la date du ${displayDate}`;
+                      
                       if (!note.includes("frais de timbre")) {
                         setNote(prev => prev ? `${prev}\n${feeText}` : feeText);
+                      } else {
+                        setNote(prev => {
+                          const lines = prev.split("\n");
+                          const filtered = lines.filter(l => !l.includes("frais de timbre"));
+                          return [...filtered, feeText].join("\n").trim();
+                        });
                       }
                     }}
                     className={`rounded-md border p-3 text-left shadow-sm transition ${
