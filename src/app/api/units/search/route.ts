@@ -68,7 +68,9 @@ ownerships: {
     reference: u.reference,
     type: u.type,
     buildingName: u.building?.name ?? null,
-    ownerName: u.ownerships[0]?.owner?.name ?? null,
+    ownerName: [u.ownerships[0]?.owner?.firstName, u.ownerships[0]?.owner?.name]
+      .filter(Boolean)
+      .join(" ") || null,
   }));
 
   return NextResponse.json(result);

@@ -1447,11 +1447,11 @@ export function ContributionReceiptsTab({
                     <button
                       key={u.id}
                       type="button"
-                      onClick={() => {
-                        setUnitId(u.id);
-                        setQuery(`${u.lotNumber} • ${u.ownerName ?? ""}`);
-                        setUnits([]);
-                      }}
+                        onClick={() => {
+                          setUnitId(u.id);
+                          setQuery(`${u.lotNumber || u.reference} • ${u.ownerName ?? ""}`);
+                          setUnits([]);
+                        }}
                       className="group block w-full rounded-md border border-zinc-200 bg-white px-3 py-3 text-left transition hover:border-zinc-300 hover:bg-zinc-50"
                     >
                       <div className="flex items-start justify-between gap-3">

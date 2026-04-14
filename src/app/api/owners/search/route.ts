@@ -50,10 +50,11 @@ export async function GET(req: Request) {
   const result = owners.flatMap((o: any) =>
     o.ownerships.map((own: any) => ({
       id: own.unit.id,
+      lotNumber: own.unit.lotNumber,
       reference: own.unit.reference,
       type: own.unit.type,
       buildingName: own.unit.building?.name ?? null,
-      ownerName: o.name,
+      ownerName: [o.firstName, o.name].filter(Boolean).join(" "),
     }))
   );
 
