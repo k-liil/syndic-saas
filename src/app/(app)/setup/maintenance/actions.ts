@@ -192,7 +192,7 @@ export async function getFiscalYearsAudit() {
     const auditData: any[] = [];
 
     for (const org of orgs) {
-      const startYear = org.settings[0]?.startYear || 2026;
+      const startYear = (org.settings as any)?.startYear || 2026;
       
       for (const fy of org.fiscalYears) {
         // Count dependencies for this year
@@ -252,7 +252,7 @@ export async function deleteFiscalYearSafe(fyId: string) {
 
     if (!fy) return { ok: false, error: "Exercice introuvable" };
 
-    const startYear = fy.organization.settings[0]?.startYear || 2026;
+    const startYear = (fy.organization.settings as any)?.startYear || 2026;
     if (fy.year === startYear) {
       return { ok: false, error: "Impossible de supprimer l'exercice de démarrage de l'organisation." };
     }
