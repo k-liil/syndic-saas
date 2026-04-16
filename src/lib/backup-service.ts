@@ -1,7 +1,9 @@
-import { execFileSync, spawnSync } from 'child_process';
+import { PrismaClient } from '@prisma/client';
 import fs from 'fs';
 import path from 'path';
 import zlib from 'zlib';
+
+const prisma = new PrismaClient();
 
 export interface GitHubBackup {
   name: string;
@@ -19,40 +21,62 @@ export class BackupService {
     return {
       token: process.env.BACKUP_GITHUB_TOKEN,
       repo: process.env.BACKUP_GITHUB_REPO,
-      dbUrl: process.env.BACKUP_DATABASE_URL || process.env.DIRECT_URL || process.env.DATABASE_URL,
-      appDbUrl: process.env.DATABASE_URL,
-      pgDumpPath: process.env.PG_DUMP_PATH,
     };
   }
 
-  private static resolvePgDumpPath() {
-    const { pgDumpPath } = this.config;
-    const candidates = [
-      pgDumpPath,
-      'pg_dump',
-      '/usr/bin/pg_dump',
-      '/usr/local/bin/pg_dump',
-      '/bin/pg_dump',
-    ].filter(Boolean) as string[];
+  /**
+   * Generates a SQL dump for a specific organization by exporting rows from all tables
+   * that have an organizationId column.
+   */
+  private static async generateTenantDump(organizationId: string): Promise<string> {
+    const org = await prisma.organization.findUnique({
+      where: { id: organizationId },
+      select: { slug: true }
+    });
 
-    for (const candidate of candidates) {
-      try {
-        const probe = spawnSync(candidate, ['--version'], { stdio: 'pipe', encoding: 'utf8' });
-        if (probe.status === 0) {
-          console.log(`[BACKUP_LOG] pg_dump found at: ${candidate}`);
-          return candidate;
-        }
-      } catch {
-        // Try next candidate
+    if (!org) throw new Error("Organization not found");
+
+    // Get all tables that have an organizationId column
+    const tablesResult = await prisma.$queryRaw<any[]>`
+      SELECT table_name 
+      FROM information_schema.columns 
+      WHERE column_name = 'organizationId' 
+      AND table_schema = 'public'
+    `;
+
+    const tableNames = tablesResult.map(r => r.table_name);
+    let sqlDump = `-- Backup for organization: ${org.slug} (${organizationId})\n`;
+    sqlDump += `-- Date: ${new Date().toISOString()}\n\n`;
+
+    for (const tableName of tableNames) {
+      // Fetch rows for this organization
+      const rows = await prisma.$queryRawUnsafe<any[]>(
+        `SELECT * FROM "${tableName}" WHERE "organizationId" = $1`,
+        organizationId
+      );
+
+      if (rows.length === 0) continue;
+
+      sqlDump += `-- Table: ${tableName}\n`;
+      for (const row of rows) {
+        const columns = Object.keys(row).map(c => `"${c}"`).join(', ');
+        const values = Object.values(row).map(v => {
+          if (v === null) return 'NULL';
+          if (v instanceof Date) return `'${v.toISOString()}'`;
+          if (typeof v === 'string') return `'${v.replace(/'/g, "''")}'`;
+          if (typeof v === 'object') return `'${JSON.stringify(v).replace(/'/g, "''")}'`;
+          return v;
+        }).join(', ');
+
+        sqlDump += `INSERT INTO "${tableName}" (${columns}) VALUES (${values});\n`;
       }
+      sqlDump += `\n`;
     }
 
-    throw new Error(
-      "pg_dump introuvable sur le serveur. Ajoute PostgreSQL au runtime ou configure PG_DUMP_PATH (ex: /usr/bin/pg_dump)."
-    );
+    return sqlDump;
   }
 
-  static async listBackups(): Promise<GitHubBackup[]> {
+  static async listBackups(organizationId?: string): Promise<GitHubBackup[]> {
     const { token, repo } = this.config;
     if (!token || !repo) return [];
 
@@ -66,99 +90,129 @@ export class BackupService {
       });
 
       if (!response.ok) return [];
-      const files = await response.json();
-      return Array.isArray(files) ? files.filter(f => f.name.endsWith('.sql.gz')) : [];
+      const files: any[] = await response.json();
+      
+      let backups = Array.isArray(files) ? files.filter(f => f.name.endsWith('.sql.gz')) : [];
+      
+      // If organizationId is provided, filter by prefix in filename
+      if (organizationId) {
+        const org = await prisma.organization.findUnique({ where: { id: organizationId }, select: { slug: true } });
+        if (org) {
+          const prefix = `${org.slug}-`;
+          backups = backups.filter(b => b.name.startsWith(prefix));
+        }
+      }
+
+      return backups;
     } catch (e) {
       console.error('[BACKUP_LOG] Failed to list backups:', e);
       return [];
     }
   }
 
-  static async triggerManualBackup() {
-    console.log("[BACKUP_LOG] Triggering pg_dump backup...");
-    const { token, repo, dbUrl, appDbUrl } = this.config;
-    if (!token || !repo || !dbUrl) throw new Error("Configuration de sauvegarde manquante.");
+  static async triggerOrganizationBackup(organizationId: string, isManual = false) {
+    const { token, repo } = this.config;
+    if (!token || !repo) throw new Error("GitHub Configuration missing.");
+
+    const org = await prisma.organization.findUnique({ where: { id: organizationId } });
+    if (!org) throw new Error("Organization not found.");
 
     const date = new Date().toISOString().split('T')[0];
     const time = new Date().getTime();
-    const fileName = `manual-backup-${date}-${time}.sql`;
-    const filePath = path.join('/tmp', fileName);
+    const prefix = isManual ? 'manual-' : '';
+    const zippedName = `${org.slug}-${prefix}backup-${date}-${time}.sql.gz`;
+    const tempPath = path.join('/tmp', zippedName);
 
     try {
-      if (appDbUrl?.includes('pgbouncer=true')) {
-        console.warn("[BACKUP_LOG] DATABASE_URL points to pgbouncer pooler. Using BACKUP_DATABASE_URL or DIRECT_URL is recommended for pg_dump.");
-      }
+      // 1. Generate Dump
+      const sqlDump = await this.generateTenantDump(organizationId);
+      const gzBuffer = zlib.gzipSync(Buffer.from(sqlDump), { level: 9 });
 
-      // 1. Locate pg_dump and write SQL dump directly to file
-      const pgDumpBin = this.resolvePgDumpPath();
-      const dumpFd = fs.openSync(filePath, 'w');
-      try {
-        execFileSync(pgDumpBin, [dbUrl], { stdio: ['ignore', dumpFd, 'pipe'] });
-      } finally {
-        fs.closeSync(dumpFd);
-      }
-
-      // 2. Compress with Node.js to avoid relying on external gzip binary
-      const zippedPath = `${filePath}.gz`;
-      const zippedName = `${fileName}.gz`;
-      const sqlBuffer = fs.readFileSync(filePath);
-      const gzBuffer = zlib.gzipSync(sqlBuffer, { level: 9 });
-      fs.writeFileSync(zippedPath, gzBuffer);
-      fs.unlinkSync(filePath);
-
-      // 3. Upload
-      const content = fs.readFileSync(zippedPath).toString('base64');
+      // 2. Upload to GitHub
+      const content = gzBuffer.toString('base64');
       const payload = JSON.stringify({
-        message: `Manual backup ${date}`,
+        message: `Backup for ${org.slug} - ${date}`,
         content,
       });
-      console.log(`[BACKUP_LOG] Upload size (base64 body): ${Buffer.byteLength(payload)} bytes`);
 
-      let lastError: unknown = null;
-      for (let attempt = 1; attempt <= 3; attempt++) {
-        try {
-          console.log(`[BACKUP_LOG] GitHub upload attempt ${attempt}/3...`);
-          const response = await fetch(`https://api.github.com/repos/${repo}/contents/backups/${zippedName}`, {
-            method: 'PUT',
-            headers: {
-              'Authorization': `token ${token}`,
-              'Accept': 'application/vnd.github+json',
-              'X-GitHub-Api-Version': '2022-11-28',
-              'User-Agent': 'syndicly-backup-bot',
-              'Content-Type': 'application/json',
-            },
-            body: payload,
-            signal: AbortSignal.timeout(60_000),
+      const response = await fetch(`https://api.github.com/repos/${repo}/contents/backups/${zippedName}`, {
+        method: 'PUT',
+        headers: {
+          'Authorization': `token ${token}`,
+          'Accept': 'application/vnd.github+json',
+          'X-GitHub-Api-Version': '2022-11-28',
+          'User-Agent': 'syndicly-backup-bot',
+          'Content-Type': 'application/json',
+        },
+        body: payload,
+      });
+
+      if (!response.ok) {
+        const errorText = await response.text();
+        throw new Error(`GitHub Upload failed: ${errorText}`);
+      }
+
+      // 3. Update Schedule & Audit
+      await prisma.backupAudit.create({
+        data: {
+          organizationId,
+          fileName: zippedName,
+          status: 'SUCCESS',
+          sizeBytes: gzBuffer.length,
+        }
+      });
+
+      if (!isManual) {
+        const schedule = await prisma.backupSchedule.findUnique({ where: { organizationId } });
+        if (schedule) {
+          const nextRun = new Date(Date.now() + schedule.frequency * 60000);
+          await prisma.backupSchedule.update({
+            where: { id: schedule.id },
+            data: {
+              lastRunAt: new Date(),
+              nextRunAt: nextRun
+            }
           });
-
-          if (!response.ok) {
-            const body = await response.text();
-            throw new Error(`GitHub upload failed (${response.status}): ${body.slice(0, 500)}`);
-          }
-
-          console.log("[BACKUP_LOG] GitHub upload successful.");
-          lastError = null;
-          break;
-        } catch (error) {
-          lastError = error;
-          console.error(`[BACKUP_LOG] GitHub upload attempt ${attempt} failed:`, error);
-          if (attempt < 3) {
-            await new Promise((resolve) => setTimeout(resolve, attempt * 1500));
-          }
         }
       }
 
-      if (lastError) {
-        throw lastError;
-      }
-
-      // Cleanup
-      fs.unlinkSync(zippedPath);
       return { success: true, fileName: zippedName };
-
     } catch (error: any) {
-      console.error('[BACKUP_LOG] Manual backup failed:', error);
+      console.error(`[BACKUP_LOG] Backup failed for ${org.slug}:`, error);
+      
+      await prisma.backupAudit.create({
+        data: {
+          organizationId,
+          fileName: zippedName,
+          status: 'ERROR',
+          errorMsg: error.message || String(error),
+        }
+      });
+
       throw error;
+    }
+  }
+
+  static async processHeartbeat() {
+    console.log("[BACKUP_LOG] Processing Heartbeat...");
+    const now = new Date();
+
+    const schedulesToRun = await prisma.backupSchedule.findMany({
+      where: {
+        isActive: true,
+        nextRunAt: { lte: now }
+      }
+    });
+
+    console.log(`[BACKUP_LOG] Found ${schedulesToRun.length} schedules to process.`);
+
+    for (const schedule of schedulesToRun) {
+      try {
+        await this.triggerOrganizationBackup(schedule.organizationId);
+        console.log(`[BACKUP_LOG] Automatic backup completed for org ${schedule.organizationId}`);
+      } catch (error) {
+        console.error(`[BACKUP_LOG] Failed automatic backup for org ${schedule.organizationId}:`, error);
+      }
     }
   }
 }

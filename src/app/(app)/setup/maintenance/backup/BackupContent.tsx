@@ -4,10 +4,13 @@ import { useState, useEffect } from "react";
 import { 
   getBackupsAction, 
   triggerManualBackupAction, 
-  getBackupConfigAction 
+  getBackupConfigAction,
+  getOrganizationsAction,
+  getBackupScheduleAction,
+  updateBackupScheduleAction,
+  getBackupAuditAction
 } from "./actions";
 import { GitHubBackup } from "@/lib/backup-service";
-import { Table, THead, TR, TH, TD } from "@/components/ui/Table";
 import { 
   Database, 
   Download, 
@@ -17,19 +20,37 @@ import {
   AlertCircle,
   Github,
   RefreshCw,
-  Calendar
+  Calendar,
+  Settings2,
+  Clock,
+  History,
+  ShieldCheck,
+  Search
 } from "lucide-react";
 
 export default function BackupContent() {
+  const [organizations, setOrganizations] = useState<any[]>([]);
+  const [selectedOrgId, setSelectedOrgId] = useState<string>("");
   const [backups, setBackups] = useState<GitHubBackup[]>([]);
   const [config, setConfig] = useState<{ hasToken: boolean; repo: string } | null>(null);
+  const [schedule, setSchedule] = useState<any>(null);
+  const [audits, setAudits] = useState<any[]>([]);
+  
   const [loading, setLoading] = useState(true);
   const [isBackingUp, setIsBackingUp] = useState(false);
+  const [isSavingSchedule, setIsSavingSchedule] = useState(false);
   const [statusMsg, setStatusMsg] = useState<{ type: 'success' | 'error' | 'info'; text: string } | null>(null);
+  const [searchTerm, setSearchTerm] = useState("");
 
   useEffect(() => {
-    loadData();
+    init();
   }, []);
+
+  useEffect(() => {
+    if (selectedOrgId) {
+      loadOrgData(selectedOrgId);
+    }
+  }, [selectedOrgId]);
 
   const showStatus = (text: string, type: 'success' | 'error' | 'info' = 'info') => {
     setStatusMsg({ text, type });
@@ -38,35 +59,52 @@ export default function BackupContent() {
     }
   };
 
-  const loadData = async () => {
+  const init = async () => {
     setLoading(true);
     try {
-      const [files, cfg] = await Promise.all([
-        getBackupsAction(),
+      const [orgs, cfg] = await Promise.all([
+        getOrganizationsAction(),
         getBackupConfigAction()
       ]);
-      
-      // Sort once on load
-      const sortedFiles = Array.isArray(files) 
-        ? [...files].sort((a, b) => b.name.localeCompare(a.name))
-        : [];
-        
-      setBackups(sortedFiles);
+      setOrganizations(orgs);
       setConfig(cfg);
+      if (orgs.length > 0) {
+        setSelectedOrgId(orgs[0].id);
+      }
     } catch (error) {
-      showStatus("Impossible de charger les données.", "error");
+      showStatus("Impossible de charger les organisations.", "error");
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  const loadOrgData = async (orgId: string) => {
+    setLoading(true);
+    try {
+      const [files, sched, logs] = await Promise.all([
+        getBackupsAction(orgId),
+        getBackupScheduleAction(orgId),
+        getBackupAuditAction(orgId)
+      ]);
+      
+      setBackups(files || []);
+      setSchedule(sched || { frequency: 1440, isActive: true });
+      setAudits(logs || []);
+    } catch (error) {
+      showStatus("Erreur lors du chargement des données de l'organisation.", "error");
     } finally {
       setLoading(false);
     }
   };
 
   const handleManualBackup = async () => {
+    if (!selectedOrgId) return;
     setIsBackingUp(true);
-    showStatus("Sauvegarde en cours sur GitHub...", "info");
+    showStatus("Exportation et sauvegarde en cours...", "info");
     try {
-      await triggerManualBackupAction();
+      await triggerManualBackupAction(selectedOrgId);
       showStatus("Sauvegarde réussie !", "success");
-      await loadData();
+      await loadOrgData(selectedOrgId);
     } catch (error: any) {
       showStatus(error.message || "La sauvegarde a échoué.", "error");
     } finally {
@@ -74,41 +112,74 @@ export default function BackupContent() {
     }
   };
 
+  const handleUpdateSchedule = async () => {
+    if (!selectedOrgId) return;
+    setIsSavingSchedule(true);
+    try {
+      await updateBackupScheduleAction(selectedOrgId, schedule.frequency, schedule.isActive);
+      showStatus("Planning mis à jour.", "success");
+    } catch (error) {
+      showStatus("Erreur lors de la mise à jour du planning.", "error");
+    } finally {
+      setIsSavingSchedule(false);
+    }
+  };
+
   const formatSize = (bytes: number) => {
-    if (bytes === 0) return "0 B";
+    if (!bytes) return "0 B";
     const k = 1024;
     const sizes = ["B", "KB", "MB", "GB"];
     const i = Math.floor(Math.log(bytes) / Math.log(k));
     return parseFloat((bytes / Math.pow(k, i)).toFixed(2)) + " " + sizes[i];
   };
 
-  const formatDate = (dateStr: string) => {
-    if (!dateStr) return "--";
-    try {
-      // GitHub file names are like backup-2026-03-29-123456.sql.gz
-      const parts = dateStr.replace('backup-', '').replace('manual-backup-', '').split('-');
-      if (parts.length >= 3) {
-        return `${parts[2].substring(0,2)}/${parts[1]}/${parts[0]}`;
-      }
-      return dateStr;
-    } catch (e) {
-      return dateStr;
-    }
-  };
+  const filteredOrgs = organizations.filter(o => 
+    o.name.toLowerCase().includes(searchTerm.toLowerCase()) || 
+    o.slug.toLowerCase().includes(searchTerm.toLowerCase())
+  );
 
   return (
     <div className="space-y-6">
+      {/* Header */}
       <div className="flex flex-col md:flex-row md:items-center justify-between gap-4">
         <div>
-          <h1 className="text-2xl font-bold text-zinc-900">Gestion des Sauvegardes</h1>
+          <h1 className="text-2xl font-bold text-zinc-900 flex items-center gap-3">
+            <ShieldCheck className="h-7 w-7 text-indigo-600" />
+            Super-Admin Backups
+          </h1>
           <p className="text-sm text-zinc-500">
-            Historique et déclenchement manuel des sauvegardes GitHub.
+            Gestion multi-tenant des sauvegardes et planifications automatiques.
           </p>
         </div>
-        <button onClick={handleManualBackup} 
-          disabled={isBackingUp || !config?.hasToken}
-          className="flex items-center gap-2 rounded-md bg-gradient-to-r from-indigo-500 to-blue-600 px-4 py-2.5 text-sm font-medium text-white shadow-sm transition-all hover:from-indigo-600 hover:to-blue-700 disabled:opacity-50 active:scale-95"
-        >{isBackingUp ? ( <RefreshCw className="h-4 w-4 animate-spin" /> ) : ( <Plus className="h-4 w-4" /> )} {isBackingUp ? "Traitement..." : "Sauvegarder maintenant"}</button>
+        <div className="flex items-center gap-3">
+          <div className="relative">
+            <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-zinc-400" />
+            <input 
+              type="text" 
+              placeholder="Rechercher org..." 
+              value={searchTerm}
+              onChange={(e) => setSearchTerm(e.target.value)}
+              className="pl-9 pr-4 py-2 text-sm border border-zinc-200 rounded-md focus:outline-none focus:ring-2 focus:ring-indigo-500 w-[200px]"
+            />
+          </div>
+          <select 
+            value={selectedOrgId}
+            onChange={(e) => setSelectedOrgId(e.target.value)}
+            className="rounded-md border border-zinc-200 bg-white px-3 py-2 text-sm font-medium shadow-sm focus:outline-none focus:ring-2 focus:ring-indigo-500"
+          >
+            {filteredOrgs.map(org => (
+              <option key={org.id} value={org.id}>{org.name}</option>
+            ))}
+          </select>
+          <button 
+            onClick={handleManualBackup} 
+            disabled={isBackingUp || !config?.hasToken || !selectedOrgId}
+            className="flex items-center gap-2 rounded-md bg-indigo-600 px-4 py-2 text-sm font-medium text-white shadow-sm hover:bg-indigo-700 disabled:opacity-50 transition-all active:scale-95"
+          >
+            {isBackingUp ? <RefreshCw className="h-4 w-4 animate-spin" /> : <Plus className="h-4 w-4" />}
+            {isBackingUp ? "Exportation..." : "Backup Manuel"}
+          </button>
+        </div>
       </div>
 
       {statusMsg && (
@@ -124,136 +195,169 @@ export default function BackupContent() {
         </div>
       )}
 
-      <div className="grid grid-cols-1 md:grid-cols-3 gap-5">
-        <div className="rounded-md border border-zinc-200 bg-white p-5 shadow-sm">
-          <div className="flex items-center gap-3 mb-3">
-            <div className="p-2 bg-zinc-50 rounded-lg">
-              <Github className="h-5 w-5 text-zinc-600" />
-            </div>
-            <div>
-              <p className="text-xs font-medium text-zinc-500 uppercase tracking-wider">Répertoire</p>
-              <p className="text-sm font-bold text-zinc-900 truncate max-w-[150px]" title={config?.repo || "Non configuré"}>
-                {config?.repo || "Chargement..."}
-              </p>
-            </div>
-          </div>
-          <span className={`inline-flex gap-3 items-center rounded-md px-2.5 py-0.5 text-xs font-semibold ${
-            config?.hasToken ? "bg-emerald-50 text-emerald-600" : "bg-red-50 text-red-600"
-          }`}>
-            {config ? (config.hasToken ? "Connecté" : "Déconnecté") : "..."}
-          </span>
-        </div>
-
-        <div className="rounded-md border border-zinc-200 bg-white p-5 shadow-sm">
-          <div className="flex items-center gap-3 mb-3">
-            <div className="p-2 bg-indigo-50 rounded-lg">
-              <Database className="h-5 w-5 text-indigo-600" />
-            </div>
-            <div>
-              <p className="text-xs font-medium text-zinc-500 uppercase tracking-wider">Dernier Backup</p>
-              <p className="text-xl font-bold text-zinc-900">
-                {backups.length > 0 ? formatDate(backups[0].name) : "--"}
-              </p>
-            </div>
-          </div>
-          <p className="text-xs text-zinc-400">
-            {backups.length} fichier(s) archivé(s)
-          </p>
-        </div>
-
-        <div className="rounded-md border border-zinc-200 bg-white p-5 shadow-sm">
-          <div className="flex items-center gap-3 mb-3">
-            <div className="p-2 bg-emerald-50 rounded-lg">
-              <CheckCircle2 className="h-5 w-5 text-emerald-600" />
-            </div>
-            <div>
-              <p className="text-xs font-medium text-zinc-500 uppercase tracking-wider">Planification</p>
-              <p className="text-xl font-bold text-zinc-900">Quotidienne</p>
-            </div>
-          </div>
-          <p className="text-xs text-zinc-400">
-            Rétention : 30 jours
-          </p>
-        </div>
-      </div>
-
-      <div className="rounded-md border border-zinc-200 bg-white shadow-sm overflow-hidden">
-        <div className="p-5 border-b border-zinc-100 flex items-center justify-between bg-zinc-50/30">
-          <h3 className="font-bold text-zinc-900">Historique des sauvegardes</h3>
-          <RefreshCw 
-            className={`h-4 w-4 text-zinc-400 cursor-pointer hover:text-indigo-600 transition-colors ${loading ? 'animate-spin' : ''}`} 
-            onClick={loadData}
-          />
-        </div>
+      {/* Main Grid */}
+      <div className="grid grid-cols-1 lg:grid-cols-12 gap-6">
         
-        <div className="overflow-x-auto w-full">
-          <table className="w-full text-sm text-left">
-            <thead className="bg-zinc-50 border-b border-zinc-100">
-              <tr>
-                <th className="px-5 py-3 font-semibold text-zinc-600">Fichier</th>
-                <th className="px-5 py-3 font-semibold text-zinc-600">Date</th>
-                <th className="px-5 py-3 font-semibold text-zinc-600">Taille</th>
-                <th className="px-5 py-3 font-semibold text-zinc-600 text-right">Action</th>
-              </tr>
-            </thead>
-            <tbody>
-              {(loading && backups.length === 0) ? (
-                <tr>
-                  <td colSpan={4} className="text-center py-12 text-zinc-400 italic">
-                    Chargement de l'historique depuis GitHub...
-                  </td>
-                </tr>
-              ) : backups.length === 0 ? (
-                <tr>
-                  <td colSpan={4} className="text-center py-12 text-zinc-400">
-                    <div className="flex flex-col items-center gap-2">
-                      <AlertCircle className="h-8 w-8 text-zinc-200" />
-                      <p>Aucune sauvegarde trouvée dans le répertoire `/backups`</p>
-                    </div>
-                  </td>
-                </tr>
+        {/* Left Column: Config & Statistics */}
+        <div className="lg:col-span-4 space-y-6">
+          <div className="rounded-xl border border-zinc-200 bg-white p-5 shadow-sm space-y-4">
+            <h3 className="font-bold text-zinc-900 flex items-center gap-2 text-sm uppercase tracking-wider text-zinc-500">
+              <Settings2 className="h-4 w-4" />
+              Planification Automatique
+            </h3>
+            
+            <div className="space-y-4">
+              <div className="flex items-center justify-between">
+                <span className="text-sm font-medium text-zinc-700">Service Actif</span>
+                <button 
+                  onClick={() => setSchedule({...schedule, isActive: !schedule.isActive})}
+                  className={`relative inline-flex h-6 w-11 items-center rounded-full transition-colors ${schedule?.isActive ? 'bg-indigo-600' : 'bg-zinc-200'}`}
+                >
+                  <span className={`inline-block h-4 w-4 transform rounded-full bg-white transition-transform ${schedule?.isActive ? 'translate-x-6' : 'translate-x-1'}`} />
+                </button>
+              </div>
+
+              <div className="space-y-2">
+                <label className="text-xs font-semibold text-zinc-500">FRÉQUENCE (MINUTES)</label>
+                <select 
+                  value={schedule?.frequency || 1440}
+                  onChange={(e) => setSchedule({...schedule, frequency: parseInt(e.target.value)})}
+                  className="w-full rounded-md border border-zinc-200 px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-indigo-500"
+                >
+                  <option value={60}>Chaque heure</option>
+                  <option value={360}>Toutes les 6 heures</option>
+                  <option value={720}>Toutes les 12 heures</option>
+                  <option value={1440}>Quotidien (24h)</option>
+                  <option value={10080}>Hebdomadaire (7j)</option>
+                </select>
+              </div>
+
+              <button 
+                onClick={handleUpdateSchedule}
+                disabled={isSavingSchedule}
+                className="w-full rounded-md bg-zinc-900 py-2 text-sm font-semibold text-white hover:bg-zinc-800 disabled:opacity-50 transition-colors"
+              >
+                {isSavingSchedule ? "Enregistrement..." : "Appliquer le planning"}
+              </button>
+            </div>
+
+            {schedule?.nextRunAt && (
+              <div className="mt-4 pt-4 border-t border-zinc-100 flex items-center gap-2 text-xs text-zinc-500">
+                <Clock className="h-3 w-3" />
+                Prochain passage : {new Date(schedule.nextRunAt).toLocaleString()}
+              </div>
+            )}
+          </div>
+
+          <div className="rounded-xl border border-zinc-200 bg-white p-5 shadow-sm space-y-4">
+            <h3 className="font-bold text-zinc-900 flex items-center gap-2 text-sm uppercase tracking-wider text-zinc-500">
+              <History className="h-4 w-4" />
+              Historique Récent (Audits)
+            </h3>
+            <div className="space-y-3">
+              {audits.length === 0 ? (
+                <p className="text-xs text-zinc-400 italic">Aucun log récent.</p>
               ) : (
-                backups.map((b) => (
-                  <tr key={b.sha} className="border-b border-zinc-50 hover:bg-zinc-50/50 transition-colors">
-                    <td className="px-5 py-4 font-medium text-zinc-900">
-                      <div className="flex items-center gap-3 font-mono text-xs">
-                        <HardDrive className="h-4 w-4 text-zinc-400" />
-                        {b.name}
-                      </div>
-                    </td>
-                    <td className="px-5 py-4 text-zinc-500 whitespace-nowrap">
-                      <div className="flex items-center gap-2">
-                        <Calendar className="h-3.5 w-3.5" />
-                        {formatDate(b.name)}
-                      </div>
-                    </td>
-                    <td className="px-5 py-4 text-zinc-500">{formatSize(b.size)}</td>
-                    <td className="px-5 py-4 text-right">
-                      <a 
-                        href={`/api/backups/download?file=${encodeURIComponent(b.name)}`}
-                        download={b.name}
-                        className="inline-flex gap-3 items-center gap-1.5 rounded-lg bg-zinc-100 px-3 py-1.5 text-xs font-bold text-zinc-700 hover:bg-zinc-200 transition-colors"
-                      >
-                        <Download className="h-3.5 w-3.5" />
-                        Télécharger
-                      </a>
-                    </td>
-                  </tr>
+                audits.map((log) => (
+                  <div key={log.id} className="flex items-start gap-3 p-2 rounded-lg hover:bg-zinc-50 group transition-colors">
+                    <div className={`mt-1 p-1 rounded-full ${log.status === 'SUCCESS' ? 'bg-emerald-100' : 'bg-red-100'}`}>
+                      {log.status === 'SUCCESS' ? <CheckCircle2 className="h-3 w-3 text-emerald-600" /> : <AlertCircle className="h-3 w-3 text-red-600" />}
+                    </div>
+                    <div className="flex-1 min-w-0">
+                      <p className="text-xs font-medium text-zinc-900 truncate">{log.fileName}</p>
+                      <p className="text-[10px] text-zinc-400">{new Date(log.createdAt).toLocaleString()} • {formatSize(log.sizeBytes)}</p>
+                      {log.errorMsg && <p className="text-[10px] text-red-500 mt-0.5 mt-0.5 line-clamp-1">{log.errorMsg}</p>}
+                    </div>
+                  </div>
                 ))
               )}
-            </tbody>
-          </table>
+            </div>
+          </div>
         </div>
+
+        {/* Right Column: File List */}
+        <div className="lg:col-span-8">
+          <div className="rounded-xl border border-zinc-200 bg-white shadow-sm overflow-hidden flex flex-col h-full">
+            <div className="p-5 border-b border-zinc-100 flex items-center justify-between bg-zinc-50/30">
+              <h3 className="font-bold text-zinc-900 flex items-center gap-2">
+                <Github className="h-5 w-5 text-indigo-600" />
+                Dépôt GitHub : {config?.repo}
+              </h3>
+              <RefreshCw 
+                className={`h-4 w-4 text-zinc-400 cursor-pointer hover:text-indigo-600 transition-colors ${loading ? 'animate-spin' : ''}`} 
+                onClick={() => selectedOrgId && loadOrgData(selectedOrgId)}
+              />
+            </div>
+            
+            <div className="flex-1 overflow-x-auto">
+              <table className="w-full text-sm text-left border-collapse">
+                <thead className="bg-zinc-50 border-b border-zinc-100 sticky top-0">
+                  <tr>
+                    <th className="px-5 py-3 font-semibold text-zinc-500">Archive</th>
+                    <th className="px-5 py-3 font-semibold text-zinc-500">Type</th>
+                    <th className="px-5 py-3 font-semibold text-zinc-500">Taille</th>
+                    <th className="px-5 py-3 font-semibold text-zinc-500 text-right">Action</th>
+                  </tr>
+                </thead>
+                <tbody>
+                  {loading && backups.length === 0 ? (
+                    <tr>
+                      <td colSpan={4} className="text-center py-20">
+                        <RefreshCw className="h-8 w-8 text-indigo-200 animate-spin mx-auto mb-3" />
+                        <p className="text-zinc-400 italic">Synchronisation avec GitHub...</p>
+                      </td>
+                    </tr>
+                  ) : backups.length === 0 ? (
+                    <tr>
+                      <td colSpan={4} className="text-center py-20 text-zinc-400">
+                        <HardDrive className="h-10 w-10 text-zinc-100 mx-auto mb-3" />
+                        <p>Aucune archive trouvée pour cette organisation.</p>
+                      </td>
+                    </tr>
+                  ) : (
+                    backups.map((b) => (
+                      <tr key={b.sha} className="border-b border-zinc-50 hover:bg-zinc-50/50 transition-colors">
+                        <td className="px-5 py-4 min-w-[200px]">
+                          <div className="flex flex-col">
+                            <span className="font-medium text-zinc-900 font-mono text-xs">{b.name}</span>
+                            <span className="text-[10px] text-zinc-400 mt-1 flex items-center gap-1 uppercase tracking-tighter">
+                              <Calendar className="h-2.5 w-2.5" />
+                              {b.name.includes('manual') ? 'Manuel' : 'Automatique'}
+                            </span>
+                          </div>
+                        </td>
+                        <td className="px-5 py-4 text-zinc-500">
+                           <span className="px-2 py-0.5 rounded bg-zinc-100 text-[10px] font-bold text-zinc-600">SQL GZ</span>
+                        </td>
+                        <td className="px-5 py-4 text-zinc-500 font-medium">{formatSize(b.size)}</td>
+                        <td className="px-5 py-4 text-right">
+                          <a 
+                            href={`/api/backups/download?file=${encodeURIComponent(b.name)}`}
+                            download={b.name}
+                            className="inline-flex items-center gap-2 rounded-lg bg-zinc-900 px-3 py-1.5 text-xs font-bold text-white hover:bg-zinc-800 transition-all active:scale-95"
+                          >
+                            <Download className="h-3.5 w-3.5" />
+                            Récupérer
+                          </a>
+                        </td>
+                      </tr>
+                    ))
+                  )}
+                </tbody>
+              </table>
+            </div>
+          </div>
+        </div>
+
       </div>
 
-      {config && !config.hasToken && !loading && (
-        <div className="p-4 rounded-md border border-red-200 bg-red-50 text-red-800 flex items-start gap-4">
+      {config && !config.hasToken && (
+        <div className="p-4 rounded-xl border border-red-200 bg-red-50 text-red-800 flex items-start gap-4">
           <AlertCircle className="h-5 w-5 shrink-0 mt-0.5" />
           <div className="space-y-1">
-            <h5 className="font-bold">Configuration Incomplète</h5>
+            <h5 className="font-bold uppercase tracking-wider text-xs">Alerte Configuration</h5>
             <p className="text-sm opacity-90">
-              Les variables <code className="bg-red-100 rounded px-1">BACKUP_GITHUB_TOKEN</code> et <code className="bg-red-100 rounded px-1">BACKUP_GITHUB_REPO</code> marquent l'emplacement de vos sauvegardes. 
-              Veuillez les configurer sur Railway pour activer ce service.
+              Le jeton GitHub n'est pas configuré. Les sauvegardes vers le dépôt externe sont désactivées.
             </p>
           </div>
         </div>

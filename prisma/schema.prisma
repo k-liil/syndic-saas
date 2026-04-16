@@ -1,59 +1,701 @@
 generator client {
-  provider = "prisma-client-js"
+  provider      = "prisma-client-js"
   binaryTargets = ["native", "debian-openssl-3.0.x"]
 }
 
 datasource db {
   provider = "postgresql"
   url      = env("DATABASE_URL")
-  // directUrl = env("DIRECT_URL")
 }
 
 model Organization {
-  id        String   @id @default(cuid())
-  name      String
-  slug      String   @unique
-  isActive  Boolean  @default(true)
-
-  address    String?
-  city       String?
-  zipCode    String?
-  email      String?
-  phone      String?
-  landTitle  String?
-  srmContact String?
-  rib        String?
-  logoUrl    String?
-  logoSize   String?
-
-  createdAt DateTime @default(now())
-  updatedAt DateTime @updatedAt
-
-  userOrganizations UserOrganization[]
-  owners            Owner[]
-  buildings         Building[]
-  units             Unit[]
-  ownerships        Ownership[]
-  monthlyDues       MonthlyDue[]
-  payments          Payment[]
-  receipts          Receipt[]
-  otherReceipts     OtherReceipt[]
-  settings          AppSettings[]
-  fiscalYears       FiscalYear[]
-  internalBanks     InternalBank[]
-  suppliers         Supplier[]
-  supplierSectors   SupplierSector[]
-  accountingPosts   AccountingPost[]
-  budgets           Budget[]
-  importJobs        ImportJob[]
-  contributionGroups ContributionGroup[]
-  contributionPeriods ContributionPeriod[]
-  claims            Claim[]
-  claimComments     ClaimComment[]
-  incidents         Incident[]
-  meetings          Meeting[]
+  id                    String                 @id @default(cuid())
+  name                  String
+  slug                  String                 @unique
+  isActive              Boolean                @default(true)
+  address               String?
+  city                  String?
+  zipCode               String?
+  email                 String?
+  phone                 String?
+  landTitle             String?
+  srmContact            String?
+  rib                   String?
+  logoUrl               String?
+  logoSize              String?
+  createdAt             DateTime               @default(now())
+  updatedAt             DateTime               @updatedAt
+  accountingPosts       AccountingPost[]
+  settings              AppSettings?
+  budgets               Budget[]
+  buildings             Building[]
+  claims                Claim[]
+  claimComments         ClaimComment[]
+  contributionGroups    ContributionGroup[]
+  contributionPeriods   ContributionPeriod[]
   digitalVaultDocuments DigitalVaultDocument[]
-  notifications     Notification[]
+  fiscalYears           FiscalYear[]
+  importJobs            ImportJob[]
+  incidents             Incident[]
+  internalBanks         InternalBank[]
+  meetings              Meeting[]
+  monthlyDues           MonthlyDue[]
+  notifications         Notification[]
+  otherReceipts         OtherReceipt[]
+  owners                Owner[]
+  ownerships            Ownership[]
+  payments              Payment[]
+  receipts              Receipt[]
+  suppliers             Supplier[]
+  supplierSectors       SupplierSector[]
+  units                 Unit[]
+  userOrganizations     UserOrganization[]
+  backupSchedule        BackupSchedule?
+  backupAudits          BackupAudit[]
+}
+
+model Owner {
+  id             String       @id @default(uuid())
+  organizationId String
+  cin            String?
+  firstName      String?
+  name           String
+  email          String?
+  phone          String?
+  notes          String?
+  createdAt      DateTime     @default(now())
+  userId         String?      @unique
+  claims         Claim[]
+  organization   Organization @relation(fields: [organizationId], references: [id], onDelete: Cascade)
+  user           User?        @relation(fields: [userId], references: [id])
+  ownerships     Ownership[]
+  receipts       Receipt[]
+
+  @@unique([organizationId, cin])
+  @@index([organizationId])
+  @@index([userId])
+}
+
+model Building {
+  id             String       @id @default(uuid())
+  organizationId String
+  name           String
+  address        String?
+  createdAt      DateTime     @default(now())
+  organization   Organization @relation(fields: [organizationId], references: [id], onDelete: Cascade)
+  receipts       Receipt[]
+  units          Unit[]
+
+  @@unique([organizationId, name])
+  @@index([organizationId])
+}
+
+model Unit {
+  id                  String                  @id @default(uuid())
+  organizationId      String
+  lotNumber           String?
+  reference           String
+  type                UnitType
+  isActive            Boolean                 @default(true)
+  createdAt           DateTime                @default(now())
+  buildingId          String?
+  floor               Int?
+  surface             Decimal?                @db.Decimal(10, 2)
+  overrideStart       Boolean                 @default(false)
+  startYear           Int?
+  startMonth          Int?
+  parentUnitId        String?
+  claims              Claim[]
+  groupUnits          ContributionGroupUnit[]
+  contributionPeriods ContributionPeriod[]
+  dues                MonthlyDue[]
+  ownerships          Ownership[]
+  receipts            Receipt[]
+  building            Building?               @relation(fields: [buildingId], references: [id])
+  organization        Organization            @relation(fields: [organizationId], references: [id], onDelete: Cascade)
+  parentUnit          Unit?                   @relation("UnitParent", fields: [parentUnitId], references: [id])
+  children            Unit[]                  @relation("UnitParent")
+
+  @@unique([organizationId, lotNumber])
+  @@index([buildingId])
+  @@index([organizationId])
+  @@index([parentUnitId])
+  @@index([lotNumber])
+}
+
+model ContributionGroup {
+  id             String                  @id @default(cuid())
+  organizationId String
+  name           String
+  isActive       Boolean                 @default(true)
+  createdAt      DateTime                @default(now())
+  updatedAt      DateTime                @updatedAt
+  defaultAmount  Decimal?                @db.Decimal(10, 2)
+  organization   Organization            @relation(fields: [organizationId], references: [id], onDelete: Cascade)
+  units          ContributionGroupUnit[]
+  periods        ContributionPeriod[]
+
+  @@index([organizationId])
+}
+
+model ContributionGroupUnit {
+  id      String            @id @default(cuid())
+  groupId String
+  unitId  String
+  group   ContributionGroup @relation(fields: [groupId], references: [id], onDelete: Cascade)
+  unit    Unit              @relation(fields: [unitId], references: [id], onDelete: Cascade)
+
+  @@unique([groupId, unitId])
+  @@index([groupId])
+  @@index([unitId])
+}
+
+model ContributionPeriod {
+  id               String             @id @default(uuid())
+  organizationId   String
+  contributionType ContributionType
+  groupId          String?
+  unitId           String?
+  startPeriod      DateTime
+  endPeriod        DateTime?
+  amount           Decimal            @db.Decimal(10, 2)
+  createdAt        DateTime           @default(now())
+  updatedAt        DateTime           @updatedAt
+  group            ContributionGroup? @relation(fields: [groupId], references: [id], onDelete: Cascade)
+  organization     Organization       @relation(fields: [organizationId], references: [id], onDelete: Cascade)
+  unit             Unit?              @relation(fields: [unitId], references: [id], onDelete: Cascade)
+
+  @@index([organizationId])
+  @@index([contributionType])
+  @@index([groupId])
+  @@index([unitId])
+  @@index([startPeriod])
+}
+
+model Ownership {
+  id             String       @id @default(uuid())
+  organizationId String
+  ownerId        String
+  unitId         String
+  startDate      DateTime     @default(now())
+  endDate        DateTime?
+  organization   Organization @relation(fields: [organizationId], references: [id], onDelete: Cascade)
+  owner          Owner        @relation(fields: [ownerId], references: [id])
+  unit           Unit         @relation(fields: [unitId], references: [id])
+
+  @@index([organizationId])
+  @@index([ownerId])
+  @@index([unitId])
+}
+
+model MonthlyDue {
+  id                 String              @id @default(uuid())
+  organizationId     String
+  unitId             String
+  period             DateTime
+  amountDue          Decimal             @db.Decimal(10, 2)
+  paidAmount         Decimal             @default(0) @db.Decimal(10, 2)
+  status             DueStatus           @default(UNPAID)
+  createdAt          DateTime            @default(now())
+  updatedAt          DateTime            @updatedAt
+  organization       Organization        @relation(fields: [organizationId], references: [id], onDelete: Cascade)
+  unit               Unit                @relation(fields: [unitId], references: [id])
+  receiptAllocations ReceiptAllocation[]
+
+  @@unique([organizationId, unitId, period])
+  @@index([organizationId])
+  @@index([unitId, organizationId, period])
+  @@index([period])
+  @@index([status])
+}
+
+model Payment {
+  id               String          @id @default(uuid())
+  organizationId   String
+  paymentNumber    Int             @default(autoincrement())
+  supplierId       String
+  accountingPostId String?
+  date             DateTime        @default(now())
+  method           PaymentMethod
+  amount           Decimal         @db.Decimal(10, 2)
+  note             String?
+  attachments      Json            @default("[]")
+  bankName         String?
+  bankRef          String?
+  createdAt        DateTime        @default(now())
+  bankId           String?
+  accountingPost   AccountingPost? @relation(fields: [accountingPostId], references: [id])
+  bank             InternalBank?   @relation(fields: [bankId], references: [id])
+  organization     Organization    @relation(fields: [organizationId], references: [id], onDelete: Cascade)
+  supplier         Supplier        @relation(fields: [supplierId], references: [id])
+
+  @@unique([organizationId, paymentNumber])
+  @@index([organizationId])
+  @@index([supplierId])
+  @@index([accountingPostId])
+  @@index([date])
+  @@index([paymentNumber])
+}
+
+model Receipt {
+  id                String              @id @default(uuid())
+  organizationId    String
+  receiptNumber     Int
+  type              ReceiptType         @default(CONTRIBUTION)
+  buildingId        String
+  ownerId           String
+  unitId            String?
+  date              DateTime            @default(now())
+  method            PaymentMethod
+  amount            Decimal             @db.Decimal(10, 2)
+  note              String?
+  bankName          String?
+  bankRef           String?
+  unallocatedAmount Int                 @default(0)
+  createdAt         DateTime            @default(now())
+  bankId            String?
+  bank              InternalBank?       @relation(fields: [bankId], references: [id])
+  building          Building            @relation(fields: [buildingId], references: [id])
+  organization      Organization        @relation(fields: [organizationId], references: [id], onDelete: Cascade)
+  owner             Owner               @relation(fields: [ownerId], references: [id])
+  unit              Unit?               @relation(fields: [unitId], references: [id])
+  allocations       ReceiptAllocation[]
+
+  @@unique([organizationId, receiptNumber])
+  @@index([organizationId])
+  @@index([buildingId])
+  @@index([ownerId])
+  @@index([unitId])
+  @@index([unitId, type, date])
+  @@index([date])
+  @@index([receiptNumber])
+  @@index([type, date, receiptNumber])
+  @@index([buildingId, type, date])
+  @@index([ownerId, type, date])
+  @@index([method, type, date])
+  @@index([organizationId, type, date])
+}
+
+model ReceiptAllocation {
+  id        String     @id @default(uuid())
+  receiptId String
+  dueId     String
+  amount    Decimal    @db.Decimal(10, 2)
+  due       MonthlyDue @relation(fields: [dueId], references: [id])
+  receipt   Receipt    @relation(fields: [receiptId], references: [id])
+
+  @@index([receiptId])
+  @@index([dueId])
+}
+
+model User {
+  id            String             @id @default(cuid())
+  name          String?
+  email         String             @unique
+  emailVerified DateTime?
+  image         String?
+  passwordHash  String?
+  role          UserRole           @default(OPERATOR)
+  isActive      Boolean            @default(true)
+  createdAt     DateTime           @default(now())
+  updatedAt     DateTime           @updatedAt
+  accounts      Account[]
+  claimComments ClaimComment[]
+  notifications Notification[]
+  owner         Owner?
+  sessions      Session[]
+  organizations UserOrganization[]
+}
+
+model UserOrganization {
+  id             String       @id @default(cuid())
+  userId         String
+  organizationId String
+  role           UserRole     @default(OPERATOR)
+  createdAt      DateTime     @default(now())
+  organization   Organization @relation(fields: [organizationId], references: [id], onDelete: Cascade)
+  user           User         @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@unique([userId, organizationId])
+  @@index([userId])
+  @@index([organizationId])
+}
+
+model Account {
+  id                String  @id @default(cuid())
+  userId            String
+  type              String
+  provider          String
+  providerAccountId String
+  refresh_token     String?
+  access_token      String?
+  expires_at        Int?
+  token_type        String?
+  scope             String?
+  id_token          String?
+  session_state     String?
+  user              User    @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@unique([provider, providerAccountId])
+  @@index([userId])
+}
+
+model Session {
+  id           String   @id @default(cuid())
+  sessionToken String   @unique
+  userId       String
+  expires      DateTime
+  user         User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@index([userId])
+}
+
+model VerificationToken {
+  identifier String
+  token      String   @unique
+  expires    DateTime
+
+  @@unique([identifier, token])
+}
+
+model AppSettings {
+  id                 String           @id @default(uuid())
+  organizationId     String           @unique
+  brandName          String           @default("Syndicly")
+  brandColor         String           @default("#4f46e5")
+  startYear          Int              @default(2026)
+  startMonth         Int              @default(1)
+  receiptStartNumber Int              @default(1)
+  receiptUsePrefix   Boolean          @default(false)
+  receiptPrefix      String?
+  paymentStartNumber Int              @default(1)
+  paymentUsePrefix   Boolean          @default(false)
+  paymentPrefix      String?
+  openingCashBalance Decimal          @default(0) @db.Decimal(12, 2)
+  openingBankBalance Decimal          @default(0) @db.Decimal(12, 2)
+  contributionType   ContributionType @default(GLOBAL_FIXED)
+  globalFixedAmount  Decimal?         @db.Decimal(10, 2)
+  createdAt          DateTime         @default(now())
+  updatedAt          DateTime         @updatedAt
+  organization       Organization     @relation(fields: [organizationId], references: [id], onDelete: Cascade)
+
+  @@index([organizationId])
+}
+
+model FiscalYear {
+  id             String       @id @default(uuid())
+  organizationId String
+  year           Int
+  startsAt       DateTime
+  endsAt         DateTime
+  createdAt      DateTime     @default(now())
+  organization   Organization @relation(fields: [organizationId], references: [id], onDelete: Cascade)
+
+  @@unique([organizationId, year])
+  @@index([organizationId])
+  @@index([year])
+}
+
+model InternalBank {
+  id             String         @id @default(cuid())
+  organizationId String
+  name           String
+  isActive       Boolean        @default(true)
+  createdAt      DateTime       @default(now())
+  updatedAt      DateTime       @updatedAt
+  openingBalance Decimal        @default(0) @db.Decimal(12, 2)
+  organization   Organization   @relation(fields: [organizationId], references: [id], onDelete: Cascade)
+  otherReceipts  OtherReceipt[]
+  payments       Payment[]
+  receipts       Receipt[]
+
+  @@index([organizationId])
+}
+
+model Supplier {
+  id             String       @id @default(cuid())
+  organizationId String
+  name           String
+  sector         String?
+  contactName    String?
+  phone          String?
+  email          String?
+  address        String?
+  note           String?
+  photoUrl       String?
+  isActive       Boolean      @default(true)
+  createdAt      DateTime     @default(now())
+  updatedAt      DateTime     @updatedAt
+  payments       Payment[]
+  organization   Organization @relation(fields: [organizationId], references: [id], onDelete: Cascade)
+
+  @@index([organizationId])
+}
+
+model SupplierSector {
+  id             String       @id @default(cuid())
+  organizationId String
+  name           String
+  isActive       Boolean      @default(true)
+  createdAt      DateTime     @default(now())
+  updatedAt      DateTime     @updatedAt
+  organization   Organization @relation(fields: [organizationId], references: [id], onDelete: Cascade)
+
+  @@index([organizationId])
+}
+
+model AccountingPost {
+  id             String       @id @default(cuid())
+  organizationId String
+  code           String
+  name           String
+  postType       PostType
+  note           String?
+  isActive       Boolean      @default(false)
+  createdAt      DateTime     @default(now())
+  updatedAt      DateTime     @updatedAt
+  organization   Organization @relation(fields: [organizationId], references: [id], onDelete: Cascade)
+  budgets        Budget[]
+  payments       Payment[]
+
+  @@unique([organizationId, code])
+  @@index([organizationId])
+  @@index([postType])
+}
+
+model Budget {
+  id               String         @id @default(cuid())
+  organizationId   String
+  accountingPostId String
+  year             Int
+  amount           Decimal        @db.Decimal(10, 2)
+  isActive         Boolean        @default(true)
+  createdAt        DateTime       @default(now())
+  updatedAt        DateTime       @updatedAt
+  accountingPost   AccountingPost @relation(fields: [accountingPostId], references: [id])
+  organization     Organization   @relation(fields: [organizationId], references: [id], onDelete: Cascade)
+
+  @@unique([organizationId, accountingPostId, year])
+  @@index([organizationId])
+  @@index([accountingPostId])
+  @@index([year])
+}
+
+model OtherReceipt {
+  id             String        @id @default(uuid())
+  organizationId String
+  receiptNumber  Int
+  type           ReceiptType
+  description    String
+  date           DateTime      @default(now())
+  method         PaymentMethod
+  amount         Decimal       @db.Decimal(10, 2)
+  bankName       String?
+  bankRef        String?
+  note           String?
+  createdAt      DateTime      @default(now())
+  bankId         String?
+  bank           InternalBank? @relation(fields: [bankId], references: [id])
+  organization   Organization  @relation(fields: [organizationId], references: [id], onDelete: Cascade)
+
+  @@unique([organizationId, receiptNumber])
+  @@index([organizationId])
+  @@index([date])
+  @@index([receiptNumber])
+}
+
+model ImportJob {
+  id             String       @id @default(uuid())
+  organizationId String
+  type           String
+  totalRows      Int
+  processed      Int          @default(0)
+  status         String       @default("running")
+  createdAt      DateTime     @default(now())
+  updatedAt      DateTime     @updatedAt
+  organization   Organization @relation(fields: [organizationId], references: [id], onDelete: Cascade)
+
+  @@index([organizationId])
+}
+
+model DigitalVaultDocument {
+  id                String       @id @default(uuid())
+  organizationId    String
+  name              String
+  category          String
+  fileName          String
+  fileUrl           String
+  mimeType          String
+  sizeBytes         Int
+  tags              String[]     @default([])
+  isVisibleToOwners Boolean      @default(false)
+  documentDate      DateTime?
+  createdAt         DateTime     @default(now())
+  updatedAt         DateTime     @updatedAt
+  organization      Organization @relation(fields: [organizationId], references: [id], onDelete: Cascade)
+
+  @@index([organizationId])
+  @@index([category])
+  @@index([isVisibleToOwners])
+  @@index([documentDate])
+}
+
+model Claim {
+  id             String         @id @default(uuid())
+  organizationId String
+  ownerId        String
+  unitId         String?
+  title          String
+  description    String
+  category       String         @default("Général")
+  status         ClaimStatus    @default(OPEN)
+  priority       ClaimPriority  @default(NORMAL)
+  photos         String[]       @default([])
+  createdAt      DateTime       @default(now())
+  updatedAt      DateTime       @updatedAt
+  organization   Organization   @relation(fields: [organizationId], references: [id], onDelete: Cascade)
+  owner          Owner          @relation(fields: [ownerId], references: [id])
+  unit           Unit?          @relation(fields: [unitId], references: [id])
+  comments       ClaimComment[]
+  notifications  Notification[]
+
+  @@index([organizationId])
+  @@index([ownerId])
+  @@index([unitId])
+}
+
+model ClaimComment {
+  id             String       @id @default(uuid())
+  claimId        String
+  organizationId String
+  userId         String
+  message        String
+  createdAt      DateTime     @default(now())
+  claim          Claim        @relation(fields: [claimId], references: [id], onDelete: Cascade)
+  organization   Organization @relation(fields: [organizationId], references: [id], onDelete: Cascade)
+  user           User         @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@index([claimId, createdAt])
+  @@index([organizationId, createdAt])
+  @@index([userId, createdAt])
+}
+
+model Notification {
+  id             String       @id @default(uuid())
+  userId         String
+  organizationId String
+  claimId        String?
+  type           String
+  title          String
+  message        String?
+  link           String?
+  isRead         Boolean      @default(false)
+  createdAt      DateTime     @default(now())
+  readAt         DateTime?
+  claim          Claim?       @relation(fields: [claimId], references: [id])
+  organization   Organization @relation(fields: [organizationId], references: [id], onDelete: Cascade)
+  user           User         @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@index([userId, organizationId, isRead, createdAt])
+  @@index([organizationId, createdAt])
+  @@index([claimId])
+}
+
+model Incident {
+  id             String       @id @default(uuid())
+  organizationId String
+  title          String
+  description    String
+  location       String?
+  status         String       @default("OPEN")
+  createdAt      DateTime     @default(now())
+  updatedAt      DateTime     @updatedAt
+  organization   Organization @relation(fields: [organizationId], references: [id], onDelete: Cascade)
+
+  @@index([organizationId])
+}
+
+model Meeting {
+  id                 String              @id @default(uuid())
+  organizationId     String
+  title              String
+  date               DateTime
+  type               MeetingType         @default(ORDINARY)
+  status             MeetingStatus       @default(SCHEDULED)
+  description        String?
+  location           String?
+  convocationSentAt  DateTime?
+  minutesGeneratedAt DateTime?
+  createdAt          DateTime            @default(now())
+  updatedAt          DateTime            @updatedAt
+  organization       Organization        @relation(fields: [organizationId], references: [id], onDelete: Cascade)
+  documents          MeetingDocument[]
+  resolutions        MeetingResolution[]
+
+  @@index([organizationId])
+}
+
+model MeetingResolution {
+  id           String                  @id @default(uuid())
+  meetingId    String
+  title        String
+  description  String?
+  voteRule     MeetingVoteRule
+  status       MeetingResolutionStatus @default(PENDING)
+  votesFor     Int                     @default(0)
+  votesAgainst Int                     @default(0)
+  abstentions  Int                     @default(0)
+  orderIndex   Int                     @default(0)
+  createdAt    DateTime                @default(now())
+  updatedAt    DateTime                @updatedAt
+  meeting      Meeting                 @relation(fields: [meetingId], references: [id], onDelete: Cascade)
+
+  @@index([meetingId, orderIndex])
+}
+
+model MeetingDocument {
+  id              String                    @id @default(uuid())
+  meetingId       String
+  type            MeetingDocumentType
+  sourceType      MeetingDocumentSourceType @default(UPLOAD)
+  title           String
+  fileName        String?
+  fileUrl         String?
+  mimeType        String?
+  sizeBytes       Int                       @default(0)
+  vaultDocumentId String?
+  createdAt       DateTime                  @default(now())
+  updatedAt       DateTime                  @updatedAt
+  meeting         Meeting                   @relation(fields: [meetingId], references: [id], onDelete: Cascade)
+
+  @@index([meetingId, type])
+  @@index([vaultDocumentId])
+}
+
+model PageVisibilitySetting {
+  id         String   @id @default(cuid())
+  href       String   @unique
+  title      String
+  section    String
+  icon       String
+  isEnabled  Boolean  @default(true)
+  superAdmin Boolean  @default(true)
+  admin      Boolean  @default(true)
+  manager    Boolean  @default(true)
+  operator   Boolean  @default(true)
+  viewer     Boolean  @default(true)
+  owner      Boolean  @default(false)
+  createdAt  DateTime @default(now())
+  updatedAt  DateTime @updatedAt
+
+  @@index([section])
+  @@index([isEnabled])
+}
+
+model SystemSettings {
+  id            String   @id @default(cuid())
+  prismaLogging Boolean  @default(true)
+  updatedAt     DateTime @updatedAt
 }
 
 enum UserRole {
@@ -82,31 +724,8 @@ enum PaymentMethod {
   TRANSFER
   CHECK
   DEBIT
-  BANK_DEPOSIT
   INTERNAL_TRANSFER
-}
-
-model Owner {
-  id        String   @id @default(uuid())
-  organizationId String
-  organization   Organization @relation(fields: [organizationId], references: [id], onDelete: Cascade)
-  cin       String?
-  firstName String?
-  name      String
-  email     String?
-  phone     String?
-  notes     String?
-  createdAt DateTime @default(now())
-  userId    String?  @unique
-  user      User?    @relation(fields: [userId], references: [id])
-
-  receipts   Receipt[]
-  ownerships Ownership[]
-  claims     Claim[]
-
-  @@unique([organizationId, cin])
-  @@index([organizationId])
-  @@index([userId])
+  BANK_DEPOSIT
 }
 
 enum ReceiptType {
@@ -115,617 +734,15 @@ enum ReceiptType {
   OTHER
 }
 
-model Building {
-  id        String   @id @default(uuid())
-  organizationId String
-  organization   Organization @relation(fields: [organizationId], references: [id], onDelete: Cascade)
-  name      String
-  address   String?
-  createdAt DateTime @default(now())
-
-  units    Unit[]
-  receipts Receipt[]
-
-  @@unique([organizationId, name])
-  @@index([organizationId])
-}
-
 enum ContributionType {
   GLOBAL_FIXED
   GROUP_FIXED
   SURFACE
 }
 
-model Unit {
-  id        String   @id @default(uuid())
-  organizationId String
-  organization   Organization @relation(fields: [organizationId], references: [id], onDelete: Cascade)
-  lotNumber String?
-  reference String
-  type      UnitType
-  isActive  Boolean  @default(true)
-  createdAt DateTime @default(now())
-
-  buildingId String?
-  building   Building? @relation(fields: [buildingId], references: [id])
-
-  floor   Int?
-  surface Decimal? @db.Decimal(10,2)
-
-  overrideStart Boolean @default(false)
-  startYear     Int?
-  startMonth    Int?
-
-  dues             MonthlyDue[]
-
-  parentUnitId String?
-  parentUnit   Unit?   @relation("UnitParent", fields: [parentUnitId], references: [id])
-  children     Unit[]  @relation("UnitParent")
-
-  ownerships Ownership[]
-  receipts   Receipt[]
-  groupUnits  ContributionGroupUnit[]
-  contributionPeriods ContributionPeriod[]
-  claims              Claim[]
-
-  @@unique([organizationId, lotNumber])
-  @@index([buildingId])
-  @@index([organizationId])
-  @@index([parentUnitId])
-  @@index([lotNumber])
-}
-
-model ContributionGroup {
-  id        String   @id @default(cuid())
-  organizationId String
-  organization   Organization @relation(fields: [organizationId], references: [id], onDelete: Cascade)
-  name      String
-  defaultAmount Decimal? @db.Decimal(10, 2)
-  isActive  Boolean  @default(true)
-  createdAt DateTime @default(now())
-  updatedAt DateTime @updatedAt
-
-  units    ContributionGroupUnit[]
-  periods  ContributionPeriod[]
-
-  @@index([organizationId])
-}
-
-model ContributionGroupUnit {
-  id      String @id @default(cuid())
-  groupId String
-  group   ContributionGroup @relation(fields: [groupId], references: [id], onDelete: Cascade)
-  unitId  String
-  unit    Unit   @relation(fields: [unitId], references: [id], onDelete: Cascade)
-
-  @@unique([groupId, unitId])
-  @@index([groupId])
-  @@index([unitId])
-}
-
-model ContributionPeriod {
-  id     String @id @default(uuid())
-  organizationId String
-  organization   Organization @relation(fields: [organizationId], references: [id], onDelete: Cascade)
-
-  contributionType ContributionType
-
-  groupId String?
-  group   ContributionGroup? @relation(fields: [groupId], references: [id], onDelete: Cascade)
-
-  unitId String?
-  unit   Unit?   @relation(fields: [unitId], references: [id], onDelete: Cascade)
-
-  startPeriod DateTime
-  endPeriod   DateTime?
-
-  amount Decimal @db.Decimal(10,2)
-
-  createdAt DateTime @default(now())
-  updatedAt DateTime @updatedAt
-
-  @@index([organizationId])
-  @@index([contributionType])
-  @@index([groupId])
-  @@index([unitId])
-  @@index([startPeriod])
-}
-
-model Ownership {
-  id        String    @id @default(uuid())
-  organizationId String
-  organization   Organization @relation(fields: [organizationId], references: [id], onDelete: Cascade)
-  ownerId   String
-  unitId    String
-  startDate DateTime  @default(now())
-  endDate   DateTime?
-
-  owner Owner @relation(fields: [ownerId], references: [id])
-  unit  Unit  @relation(fields: [unitId], references: [id])
-
-  @@index([organizationId])
-  @@index([ownerId])
-  @@index([unitId])
-}
-
-model MonthlyDue {
-  id     String @id @default(uuid())
-  organizationId String
-  organization   Organization @relation(fields: [organizationId], references: [id], onDelete: Cascade)
-  unitId String
-  unit   Unit   @relation(fields: [unitId], references: [id])
-
-  period     DateTime
-  amountDue  Decimal @db.Decimal(10,2)
-  paidAmount Decimal @db.Decimal(10,2)       @default(0)
-  status     DueStatus @default(UNPAID)
-
-  createdAt DateTime @default(now())
-  updatedAt DateTime @updatedAt
-
-  receiptAllocations ReceiptAllocation[]
-
-  @@unique([organizationId, unitId, period])
-  @@index([organizationId])
-  @@index([unitId, organizationId, period])
-  @@index([period])
-  @@index([status])
-}
-
-model Payment {
-  id String @id @default(uuid())
-
-  organizationId String
-  organization   Organization @relation(fields: [organizationId], references: [id], onDelete: Cascade)
-  paymentNumber Int @default(autoincrement())
-
-  supplierId String
-  supplier   Supplier @relation(fields: [supplierId], references: [id])
-
-  accountingPostId String?
-  accountingPost   AccountingPost? @relation(fields: [accountingPostId], references: [id])
-
-  date   DateTime      @default(now())
-  method PaymentMethod
-  amount Decimal @db.Decimal(10,2)
-  note   String?
-  attachments Json @default("[]")
-
-  bankName String?
-  bankRef  String?
-
-  bankId   String?
-  bank     InternalBank? @relation(fields: [bankId], references: [id])
-
-  createdAt DateTime @default(now())
-
-  @@unique([organizationId, paymentNumber])
-  @@index([organizationId])
-  @@index([supplierId])
-  @@index([accountingPostId])
-  @@index([date])
-  @@index([paymentNumber])
-}
-
-model Receipt {
-  id String @id @default(uuid())
-
-  organizationId String
-  organization   Organization @relation(fields: [organizationId], references: [id], onDelete: Cascade)
-  receiptNumber Int
-  type          ReceiptType @default(CONTRIBUTION)
-
-  buildingId String
-  building   Building @relation(fields: [buildingId], references: [id])
-
-  ownerId String
-  owner   Owner  @relation(fields: [ownerId], references: [id])
-
-  unitId String?
-  unit   Unit?   @relation(fields: [unitId], references: [id])
-
-  date DateTime @default(now())
-
-  method PaymentMethod
-  amount Decimal @db.Decimal(10,2)
-  note   String?
-
-  bankName String?
-  bankRef  String?
-
-  bankId   String?
-  bank     InternalBank? @relation(fields: [bankId], references: [id])
-
-  unallocatedAmount Int @default(0)
-
-  allocations ReceiptAllocation[]
-
-  createdAt DateTime @default(now())
-
-  @@unique([organizationId, receiptNumber])
-  @@index([organizationId])
-  @@index([buildingId])
-  @@index([ownerId])
-  @@index([unitId])
-  @@index([unitId, type, date])
-  @@index([date])
-  @@index([receiptNumber])
-  @@index([type, date, receiptNumber])
-  @@index([buildingId, type, date])
-  @@index([ownerId, type, date])
-  @@index([method, type, date])
-  @@index([organizationId, type, date])
-}
-
-model ReceiptAllocation {
-  id String @id @default(uuid())
-
-  receiptId String
-  receipt   Receipt @relation(fields: [receiptId], references: [id])
-
-  dueId String
-  due   MonthlyDue @relation(fields: [dueId], references: [id])
-
-  amount Decimal @db.Decimal(10,2)
-
-  @@index([receiptId])
-  @@index([dueId])
-}
-
-model User {
-  id            String    @id @default(cuid())
-  name          String?
-  email         String    @unique
-  emailVerified DateTime?
-  image         String?
-
-  passwordHash String?
-  role         UserRole @default(OPERATOR)
-  isActive     Boolean  @default(true)
-
-  accounts Account[]
-  sessions Session[]
-
-  createdAt DateTime @default(now())
-  updatedAt DateTime @updatedAt
-
-  organizations UserOrganization[]
-  owner         Owner?
-  notifications Notification[]
-  claimComments ClaimComment[]
-}
-
-model UserOrganization {
-  id        String @id @default(cuid())
-  userId    String
-  user      User   @relation(fields: [userId], references: [id], onDelete: Cascade)
-  organizationId String
-  organization Organization @relation(fields: [organizationId], references: [id], onDelete: Cascade)
-  role      UserRole @default(OPERATOR)
-  createdAt DateTime @default(now())
-
-  @@unique([userId, organizationId])
-  @@index([userId])
-  @@index([organizationId])
-}
-
-model Account {
-  id                String  @id @default(cuid())
-  userId            String
-  type              String
-  provider          String
-  providerAccountId String
-  refresh_token     String?
-  access_token      String?
-  expires_at        Int?
-  token_type        String?
-  scope             String?
-  id_token          String?
-  session_state     String?
-
-  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
-
-  @@unique([provider, providerAccountId])
-  @@index([userId])
-}
-
-model Session {
-  id           String   @id @default(cuid())
-  sessionToken String   @unique
-  userId       String
-  expires      DateTime
-
-  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
-
-  @@index([userId])
-}
-
-model VerificationToken {
-  identifier String
-  token      String   @unique
-  expires    DateTime
-
-  @@unique([identifier, token])
-}
-
-model AppSettings {
-  id         String @id @default(uuid())
-  organizationId String
-  organization   Organization @relation(fields: [organizationId], references: [id], onDelete: Cascade)
-  brandName  String @default("Syndicly")
-  brandColor String @default("#4f46e5")
-
-  startYear  Int @default(2026)
-  startMonth Int @default(1)
-
-  receiptStartNumber Int     @default(1)
-  receiptUsePrefix   Boolean @default(false)
-  receiptPrefix      String?
-
-  paymentStartNumber Int     @default(1)
-  paymentUsePrefix   Boolean @default(false)
-  paymentPrefix      String?
-
-  openingCashBalance Decimal @default(0) @db.Decimal(12,2)
-  openingBankBalance Decimal @default(0) @db.Decimal(12,2)
-
-  contributionType    ContributionType @default(GLOBAL_FIXED)
-  globalFixedAmount  Decimal? @db.Decimal(10,2)
-
-  createdAt DateTime @default(now())
-  updatedAt DateTime @updatedAt
-
-  @@unique([organizationId])
-  @@index([organizationId])
-}
-
-model FiscalYear {
-  id String @id @default(uuid())
-  organizationId String
-  organization   Organization @relation(fields: [organizationId], references: [id], onDelete: Cascade)
-
-  year Int
-
-  startsAt DateTime
-  endsAt   DateTime
-
-  createdAt DateTime @default(now())
-
-  @@unique([organizationId, year])
-  @@index([organizationId])
-  @@index([year])
-}
-
-model InternalBank {
-  id        String   @id @default(cuid())
-  organizationId String
-  organization   Organization @relation(fields: [organizationId], references: [id], onDelete: Cascade)
-  name      String
-  isActive  Boolean  @default(true)
-  openingBalance Decimal @default(0) @db.Decimal(12,2)
-  createdAt DateTime @default(now())
-  updatedAt DateTime @updatedAt
-
-  receipts      Receipt[]
-  otherReceipts OtherReceipt[]
-  payments      Payment[]
-
-  @@index([organizationId])
-}
-
-model Supplier {
-  id       String  @id @default(cuid())
-  organizationId String
-  organization   Organization @relation(fields: [organizationId], references: [id], onDelete: Cascade)
-  name     String
-  sector   String?
-  contactName String?
-  phone    String?
-  email    String?
-  address  String?
-  note     String?
-  photoUrl String?
-  isActive Boolean @default(true)
-
-  payments Payment[]
-
-  createdAt DateTime @default(now())
-  updatedAt DateTime @updatedAt
-
-  @@index([organizationId])
-}
-
-model SupplierSector {
-  id             String       @id @default(cuid())
-  organizationId String
-  organization   Organization @relation(fields: [organizationId], references: [id], onDelete: Cascade)
-  name           String
-  isActive       Boolean      @default(true)
-  createdAt      DateTime     @default(now())
-  updatedAt      DateTime     @updatedAt
-
-  @@index([organizationId])
-}
-
 enum PostType {
   CHARGE
   PRODUCT
-}
-
-model AccountingPost {
-  id       String  @id @default(cuid())
-  organizationId String
-  organization   Organization @relation(fields: [organizationId], references: [id], onDelete: Cascade)
-  code     String
-  name     String
-  postType PostType
-  note     String?
-  isActive Boolean @default(false)
-
-  payments Payment[]
-  budgets  Budget[]
-
-  createdAt DateTime @default(now())
-  updatedAt DateTime @updatedAt
-
-  @@unique([organizationId, code])
-  @@index([organizationId])
-  @@index([postType])
-}
-
-model Budget {
-  id       String  @id @default(cuid())
-  organizationId String
-  organization   Organization @relation(fields: [organizationId], references: [id], onDelete: Cascade)
-  accountingPostId String
-  accountingPost   AccountingPost @relation(fields: [accountingPostId], references: [id])
-  year     Int
-  amount   Decimal @db.Decimal(10,2)
-  isActive Boolean @default(true)
-
-  createdAt DateTime @default(now())
-  updatedAt DateTime @updatedAt
-
-  @@unique([organizationId, accountingPostId, year])
-  @@index([organizationId])
-  @@index([accountingPostId])
-  @@index([year])
-}
-
-model OtherReceipt {
-  id String @id @default(uuid())
-
-  organizationId String
-  organization   Organization @relation(fields: [organizationId], references: [id], onDelete: Cascade)
-  receiptNumber Int
-
-  type ReceiptType
-
-  description String
-
-  date DateTime @default(now())
-
-  method PaymentMethod
-
-  amount Decimal @db.Decimal(10,2)
-
-  bankName String?
-  bankRef  String?
-
-  bankId   String?
-  bank     InternalBank? @relation(fields: [bankId], references: [id])
-
-  note String?
-
-  createdAt DateTime @default(now())
-
-  @@unique([organizationId, receiptNumber])
-  @@index([organizationId])
-  @@index([date])
-  @@index([receiptNumber])
-}
-
-model ImportJob {
-  id        String   @id @default(uuid())
-  organizationId String
-  organization   Organization @relation(fields: [organizationId], references: [id], onDelete: Cascade)
-  type      String
-  totalRows Int
-  processed Int      @default(0)
-  status    String   @default("running") // running | done | error
-  createdAt DateTime @default(now())
-  updatedAt DateTime @updatedAt
-
-  @@index([organizationId])
-}
-
-model DigitalVaultDocument {
-  id String @id @default(uuid())
-
-  organizationId String
-  organization   Organization @relation(fields: [organizationId], references: [id], onDelete: Cascade)
-
-  name       String
-  category   String
-  fileName   String
-  fileUrl    String @db.Text
-  mimeType   String
-  sizeBytes  Int
-  tags       String[] @default([])
-  isVisibleToOwners Boolean @default(false)
-  documentDate DateTime?
-
-  createdAt DateTime @default(now())
-  updatedAt DateTime @updatedAt
-
-  @@index([organizationId])
-  @@index([category])
-  @@index([isVisibleToOwners])
-  @@index([documentDate])
-}
-
-model Claim {
-  id             String       @id @default(uuid())
-  organizationId String
-  organization   Organization @relation(fields: [organizationId], references: [id], onDelete: Cascade)
-  ownerId        String
-  owner          Owner        @relation(fields: [ownerId], references: [id])
-  unitId         String?
-  unit           Unit?        @relation(fields: [unitId], references: [id])
-  
-  title          String
-  description    String
-  category       String       @default("Général")
-  status         ClaimStatus  @default(OPEN)
-  priority       ClaimPriority @default(NORMAL)
-  photos         String[]     @default([])
-  notifications  Notification[]
-  comments       ClaimComment[]
-  
-  createdAt      DateTime     @default(now())
-  updatedAt      DateTime     @updatedAt
-
-  @@index([organizationId])
-  @@index([ownerId])
-  @@index([unitId])
-}
-
-model ClaimComment {
-  id             String       @id @default(uuid())
-  claimId         String
-  claim           Claim        @relation(fields: [claimId], references: [id], onDelete: Cascade)
-  organizationId  String
-  organization    Organization @relation(fields: [organizationId], references: [id], onDelete: Cascade)
-  userId          String
-  user            User         @relation(fields: [userId], references: [id], onDelete: Cascade)
-  message         String       @db.Text
-  createdAt       DateTime     @default(now())
-
-  @@index([claimId, createdAt])
-  @@index([organizationId, createdAt])
-  @@index([userId, createdAt])
-}
-
-model Notification {
-  id             String       @id @default(uuid())
-  userId         String
-  user           User         @relation(fields: [userId], references: [id], onDelete: Cascade)
-  organizationId String
-  organization   Organization @relation(fields: [organizationId], references: [id], onDelete: Cascade)
-  claimId        String?
-  claim          Claim?       @relation(fields: [claimId], references: [id], onDelete: SetNull)
-
-  type           String
-  title          String
-  message        String?      @db.Text
-  link           String?
-  isRead         Boolean      @default(false)
-  createdAt      DateTime     @default(now())
-  readAt         DateTime?
-
-  @@index([userId, organizationId, isRead, createdAt])
-  @@index([organizationId, createdAt])
-  @@index([claimId])
 }
 
 enum ClaimStatus {
@@ -738,41 +755,6 @@ enum ClaimPriority {
   LOW
   NORMAL
   HIGH
-}
-
-model Incident {
-  id             String       @id @default(uuid())
-  organizationId String
-  organization   Organization @relation(fields: [organizationId], references: [id], onDelete: Cascade)
-  title          String
-  description    String
-  location       String?      // Apartment or Common Area
-  status         String       @default("OPEN")
-  createdAt      DateTime     @default(now())
-  updatedAt      DateTime     @updatedAt
-
-  @@index([organizationId])
-}
-
-model Meeting {
-  id             String       @id @default(uuid())
-  organizationId String
-  organization   Organization @relation(fields: [organizationId], references: [id], onDelete: Cascade)
-  title          String
-  date           DateTime
-  type           MeetingType   @default(ORDINARY)
-  status         MeetingStatus @default(SCHEDULED)
-  description    String?
-  location       String?
-  convocationSentAt DateTime?
-  minutesGeneratedAt DateTime?
-  createdAt      DateTime     @default(now())
-  updatedAt      DateTime     @updatedAt
-
-  resolutions    MeetingResolution[]
-  documents      MeetingDocument[]
-
-  @@index([organizationId])
 }
 
 enum MeetingType {
@@ -811,64 +793,31 @@ enum MeetingDocumentSourceType {
   VAULT
 }
 
-model MeetingResolution {
-  id          String                  @id @default(uuid())
-  meetingId   String
-  meeting     Meeting                 @relation(fields: [meetingId], references: [id], onDelete: Cascade)
-  title       String
-  description String?
-  voteRule    MeetingVoteRule
-  status      MeetingResolutionStatus @default(PENDING)
-  votesFor    Int                     @default(0)
-  votesAgainst Int                    @default(0)
-  abstentions Int                     @default(0)
-  orderIndex  Int                     @default(0)
-  createdAt   DateTime                @default(now())
-  updatedAt   DateTime                @updatedAt
+model BackupSchedule {
+  id             String       @id @default(cuid())
+  organizationId String       @unique
+  organization   Organization @relation(fields: [organizationId], references: [id], onDelete: Cascade)
+  frequency      Int          @default(1440) // frequency in minutes (default 24h = 1440)
+  isActive       Boolean      @default(true)
+  lastRunAt      DateTime?
+  nextRunAt      DateTime?
+  createdAt      DateTime     @default(now())
+  updatedAt      DateTime     @updatedAt
 
-  @@index([meetingId, orderIndex])
+  @@index([organizationId])
+  @@index([isActive, nextRunAt])
 }
 
-model MeetingDocument {
-  id             String                    @id @default(uuid())
-  meetingId      String
-  meeting        Meeting                   @relation(fields: [meetingId], references: [id], onDelete: Cascade)
-  type           MeetingDocumentType
-  sourceType     MeetingDocumentSourceType @default(UPLOAD)
-  title          String
-  fileName       String?
-  fileUrl        String?                   @db.Text
-  mimeType       String?
-  sizeBytes      Int                       @default(0)
-  vaultDocumentId String?
-  createdAt      DateTime                  @default(now())
-  updatedAt      DateTime                  @updatedAt
+model BackupAudit {
+  id             String       @id @default(cuid())
+  organizationId String
+  organization   Organization @relation(fields: [organizationId], references: [id], onDelete: Cascade)
+  fileName       String
+  status         String       // "SUCCESS" | "ERROR"
+  errorMsg       String?
+  sizeBytes      Int          @default(0)
+  createdAt      DateTime     @default(now())
 
-  @@index([meetingId, type])
-  @@index([vaultDocumentId])
-}
-
-model PageVisibilitySetting {
-  id         String   @id @default(cuid())
-  href       String   @unique
-  title      String
-  section    String
-  icon       String
-  isEnabled  Boolean  @default(true)
-  superAdmin Boolean  @default(true)
-  admin      Boolean  @default(true)
-  manager    Boolean  @default(true)
-  operator   Boolean  @default(true)
-  viewer     Boolean  @default(true)
-  owner      Boolean  @default(false)
-  createdAt  DateTime @default(now())
-  updatedAt  DateTime @updatedAt
-
-  @@index([section])
-  @@index([isEnabled])
-}
-model SystemSettings {
-  id            String   @id @default(cuid())
-  prismaLogging Boolean  @default(true)
-  updatedAt     DateTime @updatedAt
+  @@index([organizationId])
+  @@index([createdAt])
 }
