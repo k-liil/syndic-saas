@@ -833,7 +833,7 @@ export function ContributionReceiptsTab({
         setUnits([]);
         // We keep method, date and bank selection for convenience
       }
-      await loadReceipts();
+      loadReceipts();
     } finally {
       setBusy(false);
     }

@@ -103,6 +103,8 @@ export async function reallocateUnitContributions(
 
   let cursor = new Date(startPeriod);
   let createdCount = 0;
+  const duesToCreate: any[] = [];
+
   while (cursor <= targetPeriod) {
     const { amount } = getApplicableContribution(
       unit as any,
@@ -111,24 +113,26 @@ export async function reallocateUnitContributions(
       globalPeriods,
     );
     if (amount > 0) {
-      const res = await tx.monthlyDue.createMany({
-        data: [
-          {
-            organizationId,
-            unitId,
-            period: new Date(cursor),
-            amountDue: amount,
-            paidAmount: 0,
-            status: DueStatus.UNPAID,
-          },
-        ],
-        skipDuplicates: true,
+      duesToCreate.push({
+        organizationId,
+        unitId,
+        period: new Date(cursor),
+        amountDue: amount,
+        paidAmount: 0,
+        status: DueStatus.UNPAID,
       });
-      createdCount += res.count;
     }
     cursor.setUTCMonth(cursor.getUTCMonth() + 1);
   }
-  log(`Généré ${createdCount} dettes mensuelles manquantes.`);
+
+  if (duesToCreate.length > 0) {
+    const res = await tx.monthlyDue.createMany({
+      data: duesToCreate,
+      skipDuplicates: true,
+    });
+    createdCount = res.count;
+  }
+  log(`Généré ${createdCount} dettes mensuelles manquantes (batch).`);
 
   // 1.5 Fetch current dues and receipts for reallocation
 
