@@ -535,7 +535,7 @@ await tx.fiscalYear.upsert({
         monthsTouched: new Set(
           periods.map((p) => p.toISOString().slice(0, 7))
         ).size,
-        unallocatedAmount: finalReceiptState?.unallocatedAmount ?? remaining,
+        unallocatedAmount: finalReceiptState?.unallocatedAmount ?? 0,
       };
     }, { maxWait: 15000, timeout: 60000 });
 
