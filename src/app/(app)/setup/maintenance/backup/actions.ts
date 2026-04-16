@@ -37,13 +37,17 @@ export async function getBackupConfigAction() {
   return config;
 }
 
-import { PrismaClient } from "@prisma/client";
-const prisma = new PrismaClient();
+import { prisma } from "@/lib/prisma";
 
 export async function getBackupScheduleAction(organizationId: string) {
-  return await prisma.backupSchedule.findUnique({
-    where: { organizationId }
-  });
+  try {
+    return await prisma.backupSchedule.findUnique({
+      where: { organizationId }
+    });
+  } catch (error) {
+    console.error("[BACKUP_LOG] Error in getBackupScheduleAction:", error);
+    return null;
+  }
 }
 
 export async function updateBackupScheduleAction(
@@ -51,27 +55,42 @@ export async function updateBackupScheduleAction(
   frequency: number, 
   isActive: boolean
 ) {
-  const nextRunAt = new Date(Date.now() + frequency * 60000);
-  
-  return await prisma.backupSchedule.upsert({
-    where: { organizationId },
-    update: { frequency, isActive, nextRunAt },
-    create: { organizationId, frequency, isActive, nextRunAt }
-  });
+  try {
+    const nextRunAt = new Date(Date.now() + frequency * 60000);
+    
+    return await prisma.backupSchedule.upsert({
+      where: { organizationId },
+      update: { frequency, isActive, nextRunAt },
+      create: { organizationId, frequency, isActive, nextRunAt }
+    });
+  } catch (error) {
+    console.error("[BACKUP_LOG] Error in updateBackupScheduleAction:", error);
+    throw new Error("Impossible de mettre à jour le planning.");
+  }
 }
 
 export async function getBackupAuditAction(organizationId: string) {
-  return await prisma.backupAudit.findMany({
-    where: { organizationId },
-    orderBy: { createdAt: 'desc' },
-    take: 10
-  });
+  try {
+    return await prisma.backupAudit.findMany({
+      where: { organizationId },
+      orderBy: { createdAt: 'desc' },
+      take: 10
+    });
+  } catch (error) {
+    console.error("[BACKUP_LOG] Error in getBackupAuditAction:", error);
+    return [];
+  }
 }
 
 export async function getOrganizationsAction() {
-  return await prisma.organization.findMany({
-    where: { isActive: true },
-    select: { id: true, name: true, slug: true },
-    orderBy: { name: 'asc' }
-  });
+  try {
+    return await prisma.organization.findMany({
+      where: { isActive: true },
+      select: { id: true, name: true, slug: true },
+      orderBy: { name: 'asc' }
+    });
+  } catch (error) {
+    console.error("[BACKUP_LOG] Error in getOrganizationsAction:", error);
+    return [];
+  }
 }

@@ -1,9 +1,9 @@
-import { PrismaClient } from '@prisma/client';
+import { prisma } from '@/lib/prisma';
 import fs from 'fs';
 import path from 'path';
 import zlib from 'zlib';
 
-const prisma = new PrismaClient();
+// Use the shared prisma instance
 
 export interface GitHubBackup {
   name: string;
