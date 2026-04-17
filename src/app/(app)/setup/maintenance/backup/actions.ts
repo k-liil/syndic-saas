@@ -90,7 +90,6 @@ export async function getBackupAuditAction(organizationId: string) {
     return audits.map(a => ({
       ...a,
       createdAt: a.createdAt.toISOString(),
-      updatedAt: a.updatedAt.toISOString(),
     }));
   } catch (error) {
     console.error("[BACKUP_LOG] Error in getBackupAuditAction:", error);

@@ -222,8 +222,11 @@ export default function BackupContent() {
                 <select 
                   value={schedule?.frequency || 1440}
                   onChange={(e) => setSchedule({...schedule, frequency: parseInt(e.target.value)})}
-                  className="w-full rounded-md border border-zinc-200 px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-indigo-500"
+                  className="w-full rounded-md border border-zinc-200 px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-indigo-500 font-medium"
                 >
+                  <option value={5}>Toutes les 5 minutes</option>
+                  <option value={15}>Toutes les 15 minutes</option>
+                  <option value={30}>Toutes les 30 minutes</option>
                   <option value={60}>Chaque heure</option>
                   <option value={360}>Toutes les 6 heures</option>
                   <option value={720}>Toutes les 12 heures</option>
