@@ -127,3 +127,26 @@ export async function getOrganizationsAction() {
     return [];
   }
 }
+export async function getAllBackupSchedulesAction() {
+  try {
+    const schedules = await prisma.backupSchedule.findMany({
+      include: {
+        organization: {
+          select: { name: true, slug: true }
+        }
+      },
+      orderBy: { organization: { name: 'asc' } }
+    });
+    
+    return schedules.map(s => ({
+      ...s,
+      lastRunAt: s.lastRunAt?.toISOString() || null,
+      nextRunAt: s.nextRunAt?.toISOString() || null,
+      createdAt: s.createdAt.toISOString(),
+      updatedAt: s.updatedAt.toISOString(),
+    }));
+  } catch (error) {
+    console.error("[BACKUP_LOG] Error in getAllBackupSchedulesAction:", error);
+    return [];
+  }
+}

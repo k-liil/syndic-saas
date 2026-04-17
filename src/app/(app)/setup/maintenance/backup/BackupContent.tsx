@@ -9,7 +9,8 @@ import {
   getBackupScheduleAction,
   updateBackupScheduleAction,
   getBackupAuditAction,
-  getSystemBackupHealthAction
+  getSystemBackupHealthAction,
+  getAllBackupSchedulesAction
 } from "./actions";
 import { GitHubBackup } from "@/lib/backup-service";
 import { 
@@ -41,6 +42,7 @@ export default function BackupContent() {
   const [schedule, setSchedule] = useState<any>({ frequency: 1440, isActive: false });
   const [audits, setAudits] = useState<any[]>([]);
   const [systemHealth, setSystemHealth] = useState<{ lastHeartbeatAt: string | null }>({ lastHeartbeatAt: null });
+  const [allSchedules, setAllSchedules] = useState<any[]>([]);
   
   const [loading, setLoading] = useState(true);
   const [isBackingUp, setIsBackingUp] = useState(false);
@@ -68,14 +70,16 @@ export default function BackupContent() {
   const init = async () => {
     setLoading(true);
     try {
-      const [orgs, cfg, health] = await Promise.all([
+      const [orgs, cfg, health, allScheds] = await Promise.all([
         getOrganizationsAction(),
         getBackupConfigAction(),
-        getSystemBackupHealthAction()
+        getSystemBackupHealthAction(),
+        getAllBackupSchedulesAction()
       ]);
       setOrganizations(orgs);
       setConfig(cfg);
       setSystemHealth(health);
+      setAllSchedules(allScheds);
       if (orgs.length > 0) {
         setSelectedOrgId(orgs[0].id);
       }
@@ -126,6 +130,9 @@ export default function BackupContent() {
     try {
       await updateBackupScheduleAction(selectedOrgId, schedule.frequency || 1440, !!schedule.isActive);
       showStatus("Planning mis à jour.", "success");
+      // Refresh global list after update
+      const allScheds = await getAllBackupSchedulesAction();
+      setAllSchedules(allScheds);
     } catch (error: any) {
       showStatus(error.message || "Erreur lors de la mise à jour du planning.", "error");
     } finally {
@@ -315,6 +322,56 @@ export default function BackupContent() {
                 Prochain passage : {new Date(schedule.nextRunAt).toLocaleString()}
               </div>
             )}
+          </div>
+
+          {/* New Global Overview Card */}
+          <div className="rounded-xl border border-zinc-200 bg-white p-5 shadow-sm space-y-4">
+            <h3 className="font-bold text-zinc-900 flex items-center gap-2 text-sm uppercase tracking-wider text-zinc-500">
+              <History className="h-4 w-4" />
+              Vue d'ensemble des plannings
+            </h3>
+            <div className="space-y-3 max-h-[400px] overflow-y-auto pr-2 custom-scrollbar">
+              {allSchedules.length === 0 ? (
+                <p className="text-xs text-zinc-400 italic">Aucune planification trouvée.</p>
+              ) : (
+                allSchedules.map((s) => (
+                  <div 
+                    key={s.id} 
+                    onClick={() => setSelectedOrgId(s.organizationId)}
+                    className={`p-3 rounded-lg border cursor-pointer transition-all hover:border-indigo-300 ${
+                      selectedOrgId === s.organizationId ? 'border-indigo-500 bg-indigo-50/30' : 'border-zinc-100 bg-white'
+                    }`}
+                  >
+                    <div className="flex items-center justify-between mb-1">
+                      <span className="text-xs font-bold text-zinc-900 truncate pr-2">
+                        {s.organization?.name}
+                      </span>
+                      <span className={`px-1.5 py-0.5 rounded text-[8px] font-bold uppercase ${
+                        s.isActive ? 'bg-emerald-100 text-emerald-700' : 'bg-red-100 text-red-700'
+                      }`}>
+                        {s.isActive ? 'Actif' : 'Off'}
+                      </span>
+                    </div>
+                    <div className="flex items-center justify-between text-[10px] text-zinc-500">
+                      <span className="flex items-center gap-1">
+                        <Clock className="h-2.5 w-2.5" />
+                        {s.frequency === 1440 ? '24h' : 
+                         s.frequency === 10080 ? '7j' : 
+                         `${s.frequency}m`}
+                      </span>
+                      {s.nextRunAt && (
+                        <span className={`flex items-center gap-1 ${
+                          new Date(s.nextRunAt).getTime() < Date.now() + 60 * 60 * 1000 ? 'text-amber-600 font-bold' : ''
+                        }`}>
+                          <Calendar className="h-2.5 w-2.5" />
+                          {new Date(s.nextRunAt).toLocaleDateString()} {new Date(s.nextRunAt).toLocaleTimeString([], {hour: '2-digit', minute:'2-digit'})}
+                        </span>
+                      )}
+                    </div>
+                  </div>
+                ))
+              )}
+            </div>
           </div>
 
           <div className="rounded-xl border border-zinc-200 bg-white p-5 shadow-sm space-y-4">
