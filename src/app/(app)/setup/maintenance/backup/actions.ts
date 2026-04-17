@@ -78,9 +78,9 @@ export async function updateBackupScheduleAction(
       createdAt: res.createdAt.toISOString(),
       updatedAt: res.updatedAt.toISOString(),
     };
-  } catch (error) {
+  } catch (error: any) {
     console.error("[BACKUP_LOG] Error in updateBackupScheduleAction:", error);
-    throw new Error("Impossible de mettre à jour le planning.");
+    throw new Error(`Erreur SQL : ${error.message || String(error)}`);
   }
 }
 
@@ -95,9 +95,9 @@ export async function getBackupAuditAction(organizationId: string) {
       ...a,
       createdAt: a.createdAt.toISOString(),
     }));
-  } catch (error) {
+  } catch (error: any) {
     console.error("[BACKUP_LOG] Error in getBackupAuditAction:", error);
-    return [];
+    throw new Error(`Erreur Audit SQL : ${error.message || String(error)}`);
   }
 }
 

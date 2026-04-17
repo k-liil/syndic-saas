@@ -90,8 +90,8 @@ export default function BackupContent() {
       setBackups(files || []);
       setSchedule(sched || { frequency: 1440, isActive: true });
       setAudits(logs || []);
-    } catch (error) {
-      showStatus("Erreur lors du chargement des données de l'organisation.", "error");
+    } catch (error: any) {
+      showStatus(error.message || "Erreur lors du chargement des données de l'organisation.", "error");
     } finally {
       setLoading(false);
     }
