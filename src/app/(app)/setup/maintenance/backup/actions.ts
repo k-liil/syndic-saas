@@ -49,6 +49,8 @@ export async function getBackupScheduleAction(organizationId: string) {
       ...sched,
       lastRunAt: sched.lastRunAt?.toISOString() || null,
       nextRunAt: sched.nextRunAt?.toISOString() || null,
+      createdAt: sched.createdAt.toISOString(),
+      updatedAt: sched.updatedAt.toISOString(),
     };
   } catch (error) {
     console.error("[BACKUP_LOG] Error in getBackupScheduleAction:", error);
@@ -73,6 +75,8 @@ export async function updateBackupScheduleAction(
       ...res,
       lastRunAt: res.lastRunAt?.toISOString() || null,
       nextRunAt: res.nextRunAt?.toISOString() || null,
+      createdAt: res.createdAt.toISOString(),
+      updatedAt: res.updatedAt.toISOString(),
     };
   } catch (error) {
     console.error("[BACKUP_LOG] Error in updateBackupScheduleAction:", error);
