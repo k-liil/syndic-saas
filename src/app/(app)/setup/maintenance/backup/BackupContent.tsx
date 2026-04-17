@@ -33,7 +33,7 @@ export default function BackupContent() {
   const [selectedOrgId, setSelectedOrgId] = useState<string>("");
   const [backups, setBackups] = useState<GitHubBackup[]>([]);
   const [config, setConfig] = useState<{ hasToken: boolean; repo: string } | null>(null);
-  const [schedule, setSchedule] = useState<any>(null);
+  const [schedule, setSchedule] = useState<any>({ frequency: 1440, isActive: false });
   const [audits, setAudits] = useState<any[]>([]);
   
   const [loading, setLoading] = useState(true);
@@ -113,10 +113,10 @@ export default function BackupContent() {
   };
 
   const handleUpdateSchedule = async () => {
-    if (!selectedOrgId) return;
+    if (!selectedOrgId || !schedule) return;
     setIsSavingSchedule(true);
     try {
-      await updateBackupScheduleAction(selectedOrgId, schedule.frequency, schedule.isActive);
+      await updateBackupScheduleAction(selectedOrgId, schedule.frequency || 1440, !!schedule.isActive);
       showStatus("Planning mis à jour.", "success");
     } catch (error: any) {
       showStatus(error.message || "Erreur lors de la mise à jour du planning.", "error");
