@@ -9,7 +9,7 @@
   "scripts": {
     "dev": "next dev --turbo",
     "build": "DATABASE_URL=\"postgresql://postgres:postgres@localhost:5432/postgres\" prisma generate && next build",
-    "start": "npx prisma db push --accept-data-loss && next start",
+    "start": "next start",
     "lint": "eslint",
     "seed": "prisma db seed",
     "prisma:migrate": "prisma migrate dev",
