@@ -118,8 +118,8 @@ export default function BackupContent() {
     try {
       await updateBackupScheduleAction(selectedOrgId, schedule.frequency, schedule.isActive);
       showStatus("Planning mis à jour.", "success");
-    } catch (error) {
-      showStatus("Erreur lors de la mise à jour du planning.", "error");
+    } catch (error: any) {
+      showStatus(error.message || "Erreur lors de la mise à jour du planning.", "error");
     } finally {
       setIsSavingSchedule(false);
     }
