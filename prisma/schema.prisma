@@ -693,9 +693,10 @@ model PageVisibilitySetting {
 }
 
 model SystemSettings {
-  id            String   @id @default(cuid())
-  prismaLogging Boolean  @default(true)
-  updatedAt     DateTime @updatedAt
+  id                    String   @id @default(cuid())
+  prismaLogging         Boolean  @default(true)
+  lastBackupHeartbeatAt DateTime?
+  updatedAt             DateTime @updatedAt
 }
 
 enum UserRole {

@@ -8,7 +8,8 @@ import {
   getOrganizationsAction,
   getBackupScheduleAction,
   updateBackupScheduleAction,
-  getBackupAuditAction
+  getBackupAuditAction,
+  getSystemBackupHealthAction
 } from "./actions";
 import { GitHubBackup } from "@/lib/backup-service";
 import { 
@@ -25,16 +26,21 @@ import {
   Clock,
   History,
   ShieldCheck,
-  Search
+  Search,
+  Activity,
+  ExternalLink,
+  Copy,
+  Info
 } from "lucide-react";
 
 export default function BackupContent() {
   const [organizations, setOrganizations] = useState<any[]>([]);
   const [selectedOrgId, setSelectedOrgId] = useState<string>("");
   const [backups, setBackups] = useState<GitHubBackup[]>([]);
-  const [config, setConfig] = useState<{ hasToken: boolean; repo: string } | null>(null);
+  const [config, setConfig] = useState<{ hasToken: boolean; repo: string; heartbeatToken?: string } | null>(null);
   const [schedule, setSchedule] = useState<any>({ frequency: 1440, isActive: false });
   const [audits, setAudits] = useState<any[]>([]);
+  const [systemHealth, setSystemHealth] = useState<{ lastHeartbeatAt: string | null }>({ lastHeartbeatAt: null });
   
   const [loading, setLoading] = useState(true);
   const [isBackingUp, setIsBackingUp] = useState(false);
@@ -62,12 +68,14 @@ export default function BackupContent() {
   const init = async () => {
     setLoading(true);
     try {
-      const [orgs, cfg] = await Promise.all([
+      const [orgs, cfg, health] = await Promise.all([
         getOrganizationsAction(),
-        getBackupConfigAction()
+        getBackupConfigAction(),
+        getSystemBackupHealthAction()
       ]);
       setOrganizations(orgs);
       setConfig(cfg);
+      setSystemHealth(health);
       if (orgs.length > 0) {
         setSelectedOrgId(orgs[0].id);
       }
@@ -131,6 +139,12 @@ export default function BackupContent() {
     const sizes = ["B", "KB", "MB", "GB"];
     const i = Math.floor(Math.log(bytes) / Math.log(k));
     return parseFloat((bytes / Math.pow(k, i)).toFixed(2)) + " " + sizes[i];
+  };
+  
+  const copyHeartbeatUrl = () => {
+    const url = `${window.location.origin}/api/backups/heartbeat?token=${config?.heartbeatToken}`;
+    navigator.clipboard.writeText(url);
+    showStatus("URL copiée dans le presse-papier", "success");
   };
 
   const filteredOrgs = organizations.filter(o => 
@@ -200,6 +214,57 @@ export default function BackupContent() {
         
         {/* Left Column: Config & Statistics */}
         <div className="lg:col-span-4 space-y-6">
+          <div className="rounded-xl border border-zinc-200 bg-white p-5 shadow-sm space-y-4">
+            <h3 className="font-bold text-zinc-900 flex items-center gap-2 text-sm uppercase tracking-wider text-zinc-500">
+              <Activity className="h-4 w-4" />
+              État du Moteur (Heartbeat)
+            </h3>
+            
+            <div className="space-y-3">
+              <div className="flex items-center justify-between">
+                <span className="text-sm font-medium text-zinc-700">Statut du Moteur</span>
+                <span className={`px-2 py-0.5 rounded-full text-[10px] font-bold ${
+                  systemHealth.lastHeartbeatAt && (Date.now() - new Date(systemHealth.lastHeartbeatAt).getTime() < 10 * 60000)
+                  ? 'bg-emerald-100 text-emerald-700'
+                  : 'bg-red-100 text-red-700'
+                }`}>
+                  {systemHealth.lastHeartbeatAt && (Date.now() - new Date(systemHealth.lastHeartbeatAt).getTime() < 10 * 60000)
+                    ? 'ACTIF'
+                    : 'INACTIF / HORS LIGNE'}
+                </span>
+              </div>
+              
+              <div className="text-xs text-zinc-500 flex flex-col gap-1">
+                <span>Dernier passage détecté :</span>
+                <span className="font-medium text-zinc-900">
+                  {systemHealth.lastHeartbeatAt ? new Date(systemHealth.lastHeartbeatAt).toLocaleString() : 'Jamais'}
+                </span>
+              </div>
+
+              <div className="pt-2 border-t border-zinc-100">
+                <p className="text-[10px] text-zinc-400 mb-2 leading-relaxed italic">
+                  Pour activer les sauvegardes automatiques, configurez une tâche Cron (ex: Railway, cron-job.org) sur cette URL :
+                </p>
+                <div className="flex gap-2">
+                  <button 
+                    onClick={copyHeartbeatUrl}
+                    className="flex-1 flex items-center justify-center gap-2 rounded-md bg-zinc-100 px-3 py-1.5 text-[10px] font-bold text-zinc-700 hover:bg-zinc-200 transition-colors"
+                  >
+                    <Copy className="h-3 w-3" />
+                    Copier URL de Trigger
+                  </button>
+                  <a 
+                    href="https://docs.railway.app/guides/cron-jobs" 
+                    target="_blank"
+                    className="flex items-center justify-center gap-2 rounded-md border border-zinc-200 px-2 py-1.5 text-zinc-400 hover:text-indigo-600 transition-colors"
+                  >
+                    <ExternalLink className="h-3 w-3" />
+                  </a>
+                </div>
+              </div>
+            </div>
+          </div>
+
           <div className="rounded-xl border border-zinc-200 bg-white p-5 shadow-sm space-y-4">
             <h3 className="font-bold text-zinc-900 flex items-center gap-2 text-sm uppercase tracking-wider text-zinc-500">
               <Settings2 className="h-4 w-4" />

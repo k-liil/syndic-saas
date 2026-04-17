@@ -29,12 +29,26 @@ export async function triggerManualBackupAction(organizationId: string) {
 }
 
 export async function getBackupConfigAction() {
-  console.log("[BACKUP_LOG] Getting backup config...");
   const config = {
     hasToken: Boolean(process.env.BACKUP_GITHUB_TOKEN),
     repo: process.env.BACKUP_GITHUB_REPO || "Non configuré",
+    heartbeatToken: process.env.BACKUP_HEARTBEAT_TOKEN || 'syndic-heartbeat-default'
   };
   return config;
+}
+
+export async function getSystemBackupHealthAction() {
+  try {
+    const settings = await prisma.systemSettings.findUnique({
+      where: { id: 'singleton' }
+    });
+    return {
+      lastHeartbeatAt: settings?.lastBackupHeartbeatAt?.toISOString() || null,
+    };
+  } catch (error) {
+    console.error("[BACKUP_LOG] Error in getSystemBackupHealthAction:", error);
+    return { lastHeartbeatAt: null };
+  }
 }
 
 import { prisma } from "@/lib/prisma";

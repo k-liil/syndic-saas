@@ -1,5 +1,6 @@
 import { NextResponse } from 'next/server';
 import { BackupService } from '@/lib/backup-service';
+import { prisma } from '@/lib/prisma';
 
 /**
  * GET /api/backups/heartbeat?token=...
@@ -18,6 +19,14 @@ export async function GET(request: Request) {
   }
 
   try {
+    // 1. Log the heartbeat pulse in SystemSettings
+    await prisma.systemSettings.upsert({
+      where: { id: 'singleton' }, // Assuming a singleton record or just using a fixed ID
+      update: { lastBackupHeartbeatAt: new Date() },
+      create: { id: 'singleton', lastBackupHeartbeatAt: new Date() }
+    });
+
+    // 2. Process backups
     await BackupService.processHeartbeat();
     return NextResponse.json({ success: true, timestamp: new Date().toISOString() });
   } catch (error: any) {
