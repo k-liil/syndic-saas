@@ -11,10 +11,13 @@ export async function GET(request: Request) {
   const { searchParams } = new URL(request.url);
   const token = searchParams.get('token');
 
+  console.log(`[API_HEARTBEAT] Received pulse at ${new Date().toISOString()}`);
+
   // Simple token protection (can be set in env)
   const expectedToken = process.env.BACKUP_HEARTBEAT_TOKEN || 'syndic-heartbeat-default';
   
   if (token !== expectedToken) {
+    console.warn(`[API_HEARTBEAT] Unauthorized access attempt with token: ${token?.substring(0, 3)}...`);
     return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
   }
 
