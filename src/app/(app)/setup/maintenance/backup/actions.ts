@@ -41,9 +41,15 @@ import { prisma } from "@/lib/prisma";
 
 export async function getBackupScheduleAction(organizationId: string) {
   try {
-    return await prisma.backupSchedule.findUnique({
+    const sched = await prisma.backupSchedule.findUnique({
       where: { organizationId }
     });
+    if (!sched) return null;
+    return {
+      ...sched,
+      lastRunAt: sched.lastRunAt?.toISOString() || null,
+      nextRunAt: sched.nextRunAt?.toISOString() || null,
+    };
   } catch (error) {
     console.error("[BACKUP_LOG] Error in getBackupScheduleAction:", error);
     return null;
@@ -58,11 +64,16 @@ export async function updateBackupScheduleAction(
   try {
     const nextRunAt = new Date(Date.now() + frequency * 60000);
     
-    return await prisma.backupSchedule.upsert({
+    const res = await prisma.backupSchedule.upsert({
       where: { organizationId },
       update: { frequency, isActive, nextRunAt },
       create: { organizationId, frequency, isActive, nextRunAt }
     });
+    return {
+      ...res,
+      lastRunAt: res.lastRunAt?.toISOString() || null,
+      nextRunAt: res.nextRunAt?.toISOString() || null,
+    };
   } catch (error) {
     console.error("[BACKUP_LOG] Error in updateBackupScheduleAction:", error);
     throw new Error("Impossible de mettre à jour le planning.");
@@ -71,11 +82,16 @@ export async function updateBackupScheduleAction(
 
 export async function getBackupAuditAction(organizationId: string) {
   try {
-    return await prisma.backupAudit.findMany({
+    const audits = await prisma.backupAudit.findMany({
       where: { organizationId },
       orderBy: { createdAt: 'desc' },
       take: 10
     });
+    return audits.map(a => ({
+      ...a,
+      createdAt: a.createdAt.toISOString(),
+      updatedAt: a.updatedAt.toISOString(),
+    }));
   } catch (error) {
     console.error("[BACKUP_LOG] Error in getBackupAuditAction:", error);
     return [];
