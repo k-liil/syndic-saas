@@ -799,6 +799,7 @@ model BackupSchedule {
   organizationId String       @unique
   organization   Organization @relation(fields: [organizationId], references: [id], onDelete: Cascade)
   frequency      Int          @default(1440) // frequency in minutes (default 24h = 1440)
+  retentionCount Int          @default(10)   // number of backups to keep
   isActive       Boolean      @default(true)
   lastRunAt      DateTime?
   nextRunAt      DateTime?

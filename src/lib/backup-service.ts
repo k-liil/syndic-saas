@@ -110,6 +110,61 @@ export class BackupService {
     }
   }
 
+  static async deleteBackup(filePath: string, sha: string): Promise<boolean> {
+    const { token, repo } = this.config;
+    if (!token || !repo) return false;
+
+    try {
+      const response = await fetch(`https://api.github.com/repos/${repo}/contents/${filePath}`, {
+        method: 'DELETE',
+        headers: {
+          'Authorization': `token ${token}`,
+          'Accept': 'application/vnd.github.v3+json',
+          'Content-Type': 'application/json',
+          'User-Agent': 'syndicly-backup-bot',
+        },
+        body: JSON.stringify({
+          message: `Automatic retention: deleting old backup ${filePath}`,
+          sha: sha
+        })
+      });
+
+      return response.ok;
+    } catch (e) {
+      console.error('[BACKUP_LOG] Failed to delete backup:', e);
+      return false;
+    }
+  }
+
+  static async enforceRetention(organizationId: string) {
+    try {
+      const schedule = await prisma.backupSchedule.findUnique({
+        where: { organizationId },
+        select: { retentionCount: true }
+      });
+
+      const limit = schedule?.retentionCount || 10;
+      const backups = await this.listBackups(organizationId);
+
+      if (backups.length > limit) {
+        console.log(`[BACKUP_LOG] Enforcing retention for org ${organizationId}: ${backups.length} backups found, limit is ${limit}.`);
+        
+        // Sort by name (timestamp is at the end) - name-backup-date-timestamp.sql.gz
+        // GitHub usually returns them sorted, but let's be safe.
+        const sorted = backups.sort((a, b) => a.name.localeCompare(b.name));
+        
+        const toDelete = sorted.slice(0, backups.length - limit);
+        
+        for (const file of toDelete) {
+          console.log(`[BACKUP_LOG] Deleting old backup: ${file.name}`);
+          await this.deleteBackup(file.path, file.sha);
+        }
+      }
+    } catch (error) {
+      console.error('[BACKUP_LOG] Failed to enforce retention:', error);
+    }
+  }
+
   static async triggerOrganizationBackup(organizationId: string, isManual = false) {
     const { token, repo } = this.config;
     if (!token || !repo) throw new Error("GitHub Configuration missing.");
@@ -175,6 +230,9 @@ export class BackupService {
           });
         }
       }
+
+      // 4. Enforce Retention
+      await this.enforceRetention(organizationId);
 
       return { success: true, fileName: zippedName };
     } catch (error: any) {

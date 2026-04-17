@@ -65,6 +65,7 @@ export async function getBackupScheduleAction(organizationId: string) {
       nextRunAt: sched.nextRunAt?.toISOString() || null,
       createdAt: sched.createdAt.toISOString(),
       updatedAt: sched.updatedAt.toISOString(),
+      retentionCount: sched.retentionCount || 10,
     };
   } catch (error) {
     console.error("[BACKUP_LOG] Error in getBackupScheduleAction:", error);
@@ -75,15 +76,16 @@ export async function getBackupScheduleAction(organizationId: string) {
 export async function updateBackupScheduleAction(
   organizationId: string, 
   frequency: number, 
-  isActive: boolean
+  isActive: boolean,
+  retentionCount: number = 10
 ) {
   try {
     const nextRunAt = new Date(Date.now() + frequency * 60000);
     
     const res = await prisma.backupSchedule.upsert({
       where: { organizationId },
-      update: { frequency, isActive, nextRunAt },
-      create: { organizationId, frequency, isActive, nextRunAt }
+      update: { frequency, isActive, nextRunAt, retentionCount },
+      create: { organizationId, frequency, isActive, nextRunAt, retentionCount }
     });
     return {
       ...res,
@@ -91,6 +93,7 @@ export async function updateBackupScheduleAction(
       nextRunAt: res.nextRunAt?.toISOString() || null,
       createdAt: res.createdAt.toISOString(),
       updatedAt: res.updatedAt.toISOString(),
+      retentionCount: res.retentionCount || 10,
     };
   } catch (error: any) {
     console.error("[BACKUP_LOG] Error in updateBackupScheduleAction:", error);
@@ -124,29 +127,6 @@ export async function getOrganizationsAction() {
     });
   } catch (error) {
     console.error("[BACKUP_LOG] Error in getOrganizationsAction:", error);
-    return [];
-  }
-}
-export async function getAllBackupSchedulesAction() {
-  try {
-    const schedules = await prisma.backupSchedule.findMany({
-      include: {
-        organization: {
-          select: { name: true, slug: true }
-        }
-      },
-      orderBy: { organization: { name: 'asc' } }
-    });
-    
-    return schedules.map(s => ({
-      ...s,
-      lastRunAt: s.lastRunAt?.toISOString() || null,
-      nextRunAt: s.nextRunAt?.toISOString() || null,
-      createdAt: s.createdAt.toISOString(),
-      updatedAt: s.updatedAt.toISOString(),
-    }));
-  } catch (error) {
-    console.error("[BACKUP_LOG] Error in getAllBackupSchedulesAction:", error);
     return [];
   }
 }
