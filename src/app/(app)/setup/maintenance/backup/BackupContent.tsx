@@ -421,14 +421,15 @@ export default function BackupContent() {
                     </tr>
                   ) : backups.length === 0 ? (
                     <tr>
-                      <td colSpan={4} className="text-center py-20 text-zinc-400">
+                      <td colSpan={6} className="text-center py-20 text-zinc-400">
                         <HardDrive className="h-10 w-10 text-zinc-100 mx-auto mb-3" />
                         <p>Aucune archive trouvée pour cette organisation.</p>
                       </td>
                     </tr>
                   ) : (
-                    backups.map((b) => (
+                    backups.map((b, idx) => (
                       <tr key={b.sha} className="border-b border-zinc-50 hover:bg-zinc-50/50 transition-colors">
+                        <td className="px-5 py-4 text-zinc-400 font-mono text-xs">{backups.length - idx}</td>
                         <td className="px-5 py-4 min-w-[200px]">
                           <div className="flex flex-col">
                             <span className="font-medium text-zinc-900 font-mono text-xs">{b.name}</span>
@@ -446,7 +447,12 @@ export default function BackupContent() {
                                  const tsStr = b.name.split('-').pop()?.replace('.sql.gz', '');
                                  const ts = Number(tsStr);
                                  if (!ts) return '';
-                                 return new Date(ts).toLocaleTimeString('fr-FR', { hour: '2-digit', minute: '2-digit', second: '2-digit', hour12: false });
+                                 return new Date(ts).toLocaleTimeString('fr-FR', { 
+                                   hour: '2-digit', 
+                                   minute: '2-digit', 
+                                   second: '2-digit', 
+                                   hourCycle: 'h23' 
+                                 });
                                })()}
                              </span>
                            </div>

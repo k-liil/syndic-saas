@@ -22,14 +22,14 @@ export function Modal({
   return (
     <div className="fixed inset-0" style={{ zIndex }}>
       <div className="absolute inset-0 bg-black/30" onClick={onClose} />
-      <div className={`absolute left-1/2 top-1/2 -translate-x-1/2 -translate-y-1/2 rounded-md border border-zinc-200 bg-white shadow-xl ${containerClassName}`}>
-        <div className="flex items-center justify-between border-b border-zinc-100 px-5 py-4">
+      <div className={`absolute left-1/2 top-1/2 -translate-x-1/2 -translate-y-1/2 rounded-md border border-zinc-200 bg-white shadow-xl max-h-[95vh] flex flex-col ${containerClassName}`}>
+        <div className="flex items-center justify-between border-b border-zinc-100 px-5 py-4 shrink-0">
           <div className="text-sm font-semibold">{title}</div>
           <button onClick={onClose} className="flex items-center gap-2 rounded-md px-2 py-1 text-sm hover:bg-zinc-50">
             ✕
           </button>
         </div>
-        <div className="p-5">{children}</div>
+        <div className="p-5 overflow-y-auto min-h-0 flex-1">{children}</div>
       </div>
     </div>
   );

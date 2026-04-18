@@ -25,6 +25,8 @@ export class BackupService {
     };
   }
 
+  private static runningOrgs = new Set<string>();
+
   /**
    * Generates a SQL dump for a specific organization by exporting rows from all tables
    * that have an organizationId column.
@@ -210,10 +212,26 @@ export class BackupService {
     const { token, repo } = this.config;
     if (!token || !repo) throw new Error("GitHub Configuration missing.");
 
-    const org = await prisma.organization.findUnique({ where: { id: organizationId } });
-    if (!org) throw new Error("Organization not found.");
+      const org = await prisma.organization.findUnique({ where: { id: organizationId } });
+      if (!org) throw new Error("Organization not found.");
 
-    const date = new Date().toISOString().split('T')[0];
+      // 0. Update Schedule FIRST to prevent concurrent triggers if this takes time
+      if (!isManual) {
+        const schedule = await prisma.backupSchedule.findUnique({ where: { organizationId } });
+        if (schedule) {
+          const nextRun = new Date(Date.now() + schedule.frequency * 60000);
+          await prisma.backupSchedule.update({
+            where: { id: schedule.id },
+            data: {
+              lastRunAt: new Date(),
+              nextRunAt: nextRun
+            }
+          });
+          console.log(`[BACKUP_LOG] Scheduled next run for ${org.slug} at ${nextRun.toISOString()}`);
+        }
+      }
+
+      const date = new Date().toISOString().split('T')[0];
     const time = new Date().getTime();
     const prefix = isManual ? 'manual-' : '';
     const zippedName = `${org.slug}-${prefix}backup-${date}-${time}.sql.gz`;
@@ -258,20 +276,6 @@ export class BackupService {
         }
       });
 
-      if (!isManual) {
-        const schedule = await prisma.backupSchedule.findUnique({ where: { organizationId } });
-        if (schedule) {
-          const nextRun = new Date(Date.now() + schedule.frequency * 60000);
-          await prisma.backupSchedule.update({
-            where: { id: schedule.id },
-            data: {
-              lastRunAt: new Date(),
-              nextRunAt: nextRun
-            }
-          });
-        }
-      }
-
       // 4. Enforce Retention
       await this.enforceRetention(organizationId);
 
@@ -306,11 +310,19 @@ export class BackupService {
     console.log(`[BACKUP_LOG] Found ${schedulesToRun.length} schedules to process.`);
 
     for (const schedule of schedulesToRun) {
+      if (this.runningOrgs.has(schedule.organizationId)) {
+        console.log(`[BACKUP_LOG] Org ${schedule.organizationId} already has a backup in progress. Skipping.`);
+        continue;
+      }
+
       try {
+        this.runningOrgs.add(schedule.organizationId);
         await this.triggerOrganizationBackup(schedule.organizationId);
         console.log(`[BACKUP_LOG] Automatic backup completed for org ${schedule.organizationId}`);
       } catch (error) {
         console.error(`[BACKUP_LOG] Failed automatic backup for org ${schedule.organizationId}:`, error);
+      } finally {
+        this.runningOrgs.delete(schedule.organizationId);
       }
     }
   }

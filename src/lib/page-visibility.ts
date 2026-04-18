@@ -210,6 +210,14 @@ export const PAGE_VISIBILITY_REGISTRY: PageRegistryItem[] = [
     defaultEnabled: true,
     roles: { SUPER_ADMIN: true, MANAGER: false, OWNER: false },
   },
+  {
+    title: "Gestion des sauvegardes",
+    href: "/setup/maintenance/backup",
+    icon: "Shield",
+    section: "administration",
+    defaultEnabled: true,
+    roles: { SUPER_ADMIN: true, MANAGER: false, OWNER: false },
+  },
 ];
 
 export type PageVisibilityRecord = {
