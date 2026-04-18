@@ -1,3 +1,5 @@
+"use server";
+
 import { BackupService, GitHubBackup } from "@/lib/backup-service";
 import { logAction } from "@/lib/audit-service";
 import { revalidatePath } from "next/cache";
