@@ -130,3 +130,17 @@ export async function getOrganizationsAction() {
     return [];
   }
 }
+
+export async function deleteBackupAction(filePath: string, sha: string) {
+  try {
+    console.log(`[BACKUP_LOG] Deleting backup: ${filePath}...`);
+    const success = await BackupService.deleteBackup(filePath, sha);
+    if (!success) throw new Error("La suppression GitHub a échoué.");
+    
+    revalidatePath("/setup/maintenance/backup");
+    return { success: true };
+  } catch (error: any) {
+    console.error("[BACKUP_LOG] Error in deleteBackupAction:", error);
+    throw new Error(error.message || "Impossible de supprimer la sauvegarde.");
+  }
+}

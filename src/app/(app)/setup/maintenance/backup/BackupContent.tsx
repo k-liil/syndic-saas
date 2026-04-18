@@ -9,7 +9,8 @@ import {
   getBackupScheduleAction,
   updateBackupScheduleAction,
   getBackupAuditAction,
-  getSystemBackupHealthAction
+  getSystemBackupHealthAction,
+  deleteBackupAction
 } from "./actions";
 import { GitHubBackup } from "@/lib/backup-service";
 import { 
@@ -135,6 +136,23 @@ export default function BackupContent() {
       showStatus(error.message || "Erreur lors de la mise à jour du planning.", "error");
     } finally {
       setIsSavingSchedule(false);
+    }
+  };
+
+  const handleDeleteBackup = async (backup: GitHubBackup) => {
+    if (!window.confirm(`Êtes-vous sûr de vouloir supprimer définitivement la sauvegarde "${backup.name}" de GitHub ?`)) {
+      return;
+    }
+
+    try {
+      showStatus("Suppression en cours...", "loading");
+      await deleteBackupAction(`backups/${backup.name}`, backup.sha);
+      showStatus("Sauvegarde supprimée.", "success");
+      // Refresh list
+      const updatedFiles = await getBackupsAction(selectedOrgId);
+      setBackups(updatedFiles);
+    } catch (error: any) {
+      showStatus(error.message || "Erreur lors de la suppression.", "error");
     }
   };
 
@@ -419,14 +437,23 @@ export default function BackupContent() {
                         </td>
                         <td className="px-5 py-4 text-zinc-500 font-medium">{formatSize(b.size)}</td>
                         <td className="px-5 py-4 text-right">
-                          <a 
-                            href={`/api/backups/download?file=${encodeURIComponent(b.name)}`}
-                            download={b.name}
-                            className="inline-flex items-center gap-2 rounded-lg bg-zinc-900 px-3 py-1.5 text-xs font-bold text-white hover:bg-zinc-800 transition-all active:scale-95"
-                          >
-                            <Download className="h-3.5 w-3.5" />
-                            Récupérer
-                          </a>
+                          <div className="flex items-center justify-end gap-2">
+                            <a 
+                              href={`/api/backups/download?file=${encodeURIComponent(b.name)}`}
+                              download={b.name}
+                              title="Télécharger"
+                              className="inline-flex h-8 w-8 items-center justify-center rounded-lg border border-zinc-200 bg-white text-zinc-600 hover:text-zinc-900 hover:bg-zinc-50 transition-all active:scale-95 shadow-sm"
+                            >
+                              <Download className="h-4 w-4" />
+                            </a>
+                            <button
+                              onClick={() => handleDeleteBackup(b)}
+                              title="Supprimer"
+                              className="inline-flex h-8 w-8 items-center justify-center rounded-lg border border-red-100 bg-red-50/30 text-red-500 hover:text-red-600 hover:bg-red-50 hover:border-red-200 transition-all active:scale-95"
+                            >
+                              <Trash className="h-4 w-4" />
+                            </button>
+                          </div>
                         </td>
                       </tr>
                     ))
