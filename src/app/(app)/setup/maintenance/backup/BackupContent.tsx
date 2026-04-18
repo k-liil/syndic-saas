@@ -145,7 +145,7 @@ export default function BackupContent() {
     }
 
     try {
-      showStatus("Suppression en cours...", "loading");
+      showStatus("Suppression en cours...", "info");
       await deleteBackupAction(`backups/${backup.name}`, backup.sha);
       showStatus("Sauvegarde supprimée.", "success");
       // Refresh list
