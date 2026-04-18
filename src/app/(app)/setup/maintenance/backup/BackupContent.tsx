@@ -31,7 +31,8 @@ import {
   Activity,
   ExternalLink,
   Copy,
-  Info
+  Info,
+  Trash
 } from "lucide-react";
 
 export default function BackupContent() {
