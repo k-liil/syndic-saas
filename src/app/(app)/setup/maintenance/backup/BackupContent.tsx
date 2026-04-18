@@ -13,7 +13,7 @@ import {
   getSystemBackupHealthAction,
   deleteBackupAction
 } from "./actions";
-import { GitHubBackup } from "@/lib/backup-service";
+import type { GitHubBackup } from "@/lib/backup-service";
 import { 
   Database, 
   Download, 
@@ -101,6 +101,9 @@ export default function BackupContent() {
       
       setBackups(files || []);
       setSchedule(sched || { frequency: 1440, isActive: true, retentionCount: 10 });
+      if (logs?.error) {
+        showStatus(logs.error, "error");
+      }
       setAudits(logs?.items || []);
     } catch (error: any) {
       showStatus(error.message || "Erreur lors du chargement des données de l'organisation.", "error");
@@ -128,13 +131,17 @@ export default function BackupContent() {
     if (!selectedOrgId || !schedule) return;
     setIsSavingSchedule(true);
     try {
-      await updateBackupScheduleAction(
+      const res = await updateBackupScheduleAction(
         selectedOrgId, 
         schedule.frequency || 1440, 
         !!schedule.isActive,
         schedule.retentionCount || 10
       );
-      showStatus("Planning mis à jour.", "success");
+      if (res && 'error' in res) {
+        showStatus(res.error as string, "error");
+      } else {
+        showStatus("Planning mis à jour.", "success");
+      }
     } catch (error: any) {
       showStatus(error.message || "Erreur lors de la mise à jour du planning.", "error");
     } finally {

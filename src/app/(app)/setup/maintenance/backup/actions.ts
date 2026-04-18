@@ -1,8 +1,7 @@
-"use server";
-
 import { BackupService, GitHubBackup } from "@/lib/backup-service";
 import { logAction } from "@/lib/audit-service";
 import { revalidatePath } from "next/cache";
+import { prisma } from "@/lib/prisma";
 
 export async function getBackupsAction(organizationId?: string): Promise<GitHubBackup[]> {
   try {
@@ -52,8 +51,6 @@ export async function getSystemBackupHealthAction() {
   }
 }
 
-import { prisma } from "@/lib/prisma";
-
 export async function getBackupScheduleAction(organizationId: string) {
   try {
     const sched = await prisma.backupSchedule.findUnique({
@@ -61,12 +58,15 @@ export async function getBackupScheduleAction(organizationId: string) {
     });
     if (!sched) return null;
     return {
-      ...sched,
+      id: sched.id,
+      organizationId: sched.organizationId,
+      frequency: sched.frequency,
+      isActive: sched.isActive,
+      retentionCount: sched.retentionCount || 10,
       lastRunAt: sched.lastRunAt?.toISOString() || null,
       nextRunAt: sched.nextRunAt?.toISOString() || null,
       createdAt: sched.createdAt.toISOString(),
       updatedAt: sched.updatedAt.toISOString(),
-      retentionCount: sched.retentionCount || 10,
     };
   } catch (error) {
     console.error("[BACKUP_LOG] Error in getBackupScheduleAction:", error);
@@ -89,16 +89,19 @@ export async function updateBackupScheduleAction(
       create: { organizationId, frequency, isActive, nextRunAt, retentionCount }
     });
     return {
-      ...res,
+      id: res.id,
+      organizationId: res.organizationId,
+      frequency: res.frequency,
+      isActive: res.isActive,
+      retentionCount: res.retentionCount || 10,
       lastRunAt: res.lastRunAt?.toISOString() || null,
       nextRunAt: res.nextRunAt?.toISOString() || null,
       createdAt: res.createdAt.toISOString(),
       updatedAt: res.updatedAt.toISOString(),
-      retentionCount: res.retentionCount || 10,
     };
   } catch (error: any) {
     console.error("[BACKUP_LOG] Error in updateBackupScheduleAction:", error);
-    throw new Error(`Erreur SQL : ${error.message || String(error)}`);
+    return { error: `Erreur SQL : ${error.message || String(error)}` };
   }
 }
 
@@ -120,9 +123,15 @@ export async function getBackupAuditAction(organizationId: string, page: number 
 
     return {
       items: items.map(a => ({
-        ...a,
+        id: a.id,
+        organizationId: a.organizationId,
+        fileName: a.fileName,
+        status: a.status,
+        errorMsg: a.errorMsg,
+        sizeBytes: a.sizeBytes,
         createdAt: a.createdAt.toISOString(),
         deletedAt: a.deletedAt?.toISOString() || null,
+        organizationName: a.organization.name
       })),
       pagination: {
         page,
@@ -133,7 +142,7 @@ export async function getBackupAuditAction(organizationId: string, page: number 
     };
   } catch (error: any) {
     console.error("[BACKUP_LOG] Error in getBackupAuditAction:", error);
-    throw new Error(`Erreur Audit SQL : ${error.message || String(error)}`);
+    return { items: [], pagination: { page, pageSize, total: 0, totalPages: 0 }, error: String(error) };
   }
 }
 
