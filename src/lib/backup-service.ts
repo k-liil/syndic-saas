@@ -279,6 +279,14 @@ export class BackupService {
       // 4. Enforce Retention
       await this.enforceRetention(organizationId);
 
+      await logAction({
+        action: isManual ? "MANUAL_BACKUP_SUCCESS" : "BACKUP_SUCCESS",
+        details: `Sauvegarde ${isManual ? "manuelle" : "automatique"} réussie: ${zippedName}`,
+        organizationId,
+        entityType: "BACKUP",
+        entityId: zippedName
+      });
+
       return { success: true, fileName: zippedName };
     } catch (error: any) {
       console.error(`[BACKUP_LOG] Backup failed for ${org.slug}:`, error);
@@ -290,6 +298,14 @@ export class BackupService {
           status: 'ERROR',
           errorMsg: error.message || String(error),
         }
+      });
+
+      await logAction({
+        action: isManual ? "MANUAL_BACKUP_ERROR" : "BACKUP_ERROR",
+        details: `Échec de la sauvegarde: ${error.message || String(error)}`,
+        organizationId,
+        entityType: "BACKUP",
+        entityId: zippedName
       });
 
       throw error;

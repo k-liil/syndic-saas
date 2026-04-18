@@ -14,19 +14,28 @@ export async function logAction(data: {
   action: AuditAction | string;
   details?: string;
   organizationId?: string;
+  userId?: string; // Optional override
   entityType?: string;
   entityId?: string;
 }) {
   try {
-    const session = await auth();
-    const userId = session?.user?.id;
+    let finalUserId = data.userId;
+
+    if (!finalUserId) {
+      try {
+        const session = await auth();
+        finalUserId = session?.user?.id;
+      } catch (e) {
+        console.warn("[AUDIT_LOG] Could not fetch session in logAction:", e);
+      }
+    }
 
     await prisma.actionLog.create({
       data: {
         action: data.action,
         details: data.details,
         organizationId: data.organizationId,
-        userId: userId,
+        userId: finalUserId,
         entityType: data.entityType,
         entityId: data.entityId,
       },
