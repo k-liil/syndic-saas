@@ -180,6 +180,16 @@ export default function BackupContent() {
     showStatus("URL copiée dans le presse-papier", "success");
   };
 
+  const extractDateFromName = (name: string) => {
+    const match = name.match(/(\d{4}-\d{2}-\d{2})/);
+    if (!match) return "Inconnue";
+    return new Date(match[1]).toLocaleDateString('fr-FR', {
+      day: '2-digit',
+      month: 'short',
+      year: 'numeric'
+    });
+  };
+
   const filteredOrgs = organizations.filter(o => 
     o.name.toLowerCase().includes(searchTerm.toLowerCase()) || 
     o.slug.toLowerCase().includes(searchTerm.toLowerCase())
@@ -372,38 +382,6 @@ export default function BackupContent() {
             )}
           </div>
 
-          <div className="rounded-xl border border-zinc-200 bg-white p-5 shadow-sm space-y-4">
-            <div className="flex items-center justify-between">
-              <h3 className="font-bold text-zinc-900 flex items-center gap-2 text-sm uppercase tracking-wider text-zinc-500">
-                <History className="h-4 w-4" />
-                Historique Récent
-              </h3>
-              <Link 
-                href="/setup/maintenance/backup/history"
-                className="text-[10px] font-bold text-indigo-600 hover:text-indigo-700 uppercase tracking-wider"
-              >
-                Voir tout
-              </Link>
-            </div>
-            <div className="space-y-3">
-              {audits.length === 0 ? (
-                <p className="text-xs text-zinc-400 italic">Aucun log récent.</p>
-              ) : (
-                audits.map((log) => (
-                  <div key={log.id} className="flex items-start gap-3 p-2 rounded-lg hover:bg-zinc-50 group transition-colors">
-                    <div className={`mt-1 p-1 rounded-full ${log.status === 'SUCCESS' ? 'bg-emerald-100' : 'bg-red-100'}`}>
-                      {log.status === 'SUCCESS' ? <CheckCircle2 className="h-3 w-3 text-emerald-600" /> : <AlertCircle className="h-3 w-3 text-red-600" />}
-                    </div>
-                    <div className="flex-1 min-w-0">
-                      <p className="text-xs font-medium text-zinc-900 truncate">{log.fileName}</p>
-                      <p className="text-[10px] text-zinc-400">{new Date(log.createdAt).toLocaleString()} • {formatSize(log.sizeBytes)}</p>
-                      {log.errorMsg && <p className="text-[10px] text-red-500 mt-0.5 mt-0.5 line-clamp-1">{log.errorMsg}</p>}
-                    </div>
-                  </div>
-                ))
-              )}
-            </div>
-          </div>
         </div>
 
         {/* Right Column: File List */}
@@ -425,8 +403,9 @@ export default function BackupContent() {
                 <thead className="bg-zinc-50 border-b border-zinc-100 sticky top-0">
                   <tr>
                     <th className="px-5 py-3 font-semibold text-zinc-500">Archive</th>
+                    <th className="px-5 py-3 font-semibold text-zinc-500 text-center">Date du dépôt</th>
                     <th className="px-5 py-3 font-semibold text-zinc-500">Type</th>
-                    <th className="px-5 py-3 font-semibold text-zinc-500">Taille</th>
+                    <th className="px-5 py-3 font-semibold text-zinc-500 text-center">Taille</th>
                     <th className="px-5 py-3 font-semibold text-zinc-500 text-right">Action</th>
                   </tr>
                 </thead>
@@ -457,10 +436,18 @@ export default function BackupContent() {
                             </span>
                           </div>
                         </td>
+                        <td className="px-5 py-4 text-center">
+                           <div className="flex flex-col items-center">
+                             <span className="text-xs font-semibold text-zinc-700">{extractDateFromName(b.name)}</span>
+                             <span className="text-[9px] text-zinc-400 font-mono mt-0.5">
+                               {b.name.split('-').pop()?.replace('.sql.gz', '').slice(-6).replace(/(\d{2})(\d{2})(\d{2})/, '$1:$2:$3') || ''}
+                             </span>
+                           </div>
+                        </td>
                         <td className="px-5 py-4 text-zinc-500">
                            <span className="px-2 py-0.5 rounded bg-zinc-100 text-[10px] font-bold text-zinc-600">SQL GZ</span>
                         </td>
-                        <td className="px-5 py-4 text-zinc-500 font-medium">{formatSize(b.size)}</td>
+                        <td className="px-5 py-4 text-zinc-500 font-medium text-center">{formatSize(b.size)}</td>
                         <td className="px-5 py-4 text-right">
                           <div className="flex items-center justify-end gap-2">
                             <a 
