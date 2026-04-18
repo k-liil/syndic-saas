@@ -99,7 +99,8 @@ export default function BackupContent() {
         getBackupAuditAction(orgId)
       ]);
       
-      setBackups(files || []);
+      const sortedFiles = (files || []).sort((a, b) => b.name.localeCompare(a.name));
+      setBackups(sortedFiles);
       setSchedule(sched || { frequency: 1440, isActive: true, retentionCount: 10 });
       if (logs?.error) {
         showStatus(logs.error, "error");
@@ -160,7 +161,8 @@ export default function BackupContent() {
       showStatus("Sauvegarde supprimée.", "success");
       // Refresh list
       const updatedFiles = await getBackupsAction(selectedOrgId);
-      setBackups(updatedFiles);
+      const sortedFiles = (updatedFiles || []).sort((a, b) => b.name.localeCompare(a.name));
+      setBackups(sortedFiles);
     } catch (error: any) {
       showStatus(error.message || "Erreur lors de la suppression.", "error");
     }
@@ -444,7 +446,7 @@ export default function BackupContent() {
                                  const tsStr = b.name.split('-').pop()?.replace('.sql.gz', '');
                                  const ts = Number(tsStr);
                                  if (!ts) return '';
-                                 return new Date(ts).toLocaleTimeString('fr-FR', { hour: '2-digit', minute: '2-digit', second: '2-digit' });
+                                 return new Date(ts).toLocaleTimeString('fr-FR', { hour: '2-digit', minute: '2-digit', second: '2-digit', hour12: false });
                                })()}
                              </span>
                            </div>
