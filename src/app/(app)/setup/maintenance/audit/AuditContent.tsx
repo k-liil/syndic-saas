@@ -12,13 +12,8 @@ import {
   ChevronRight,
   Info
 } from "lucide-react";
-import { format } from "date-fns";
-import { fr } from "date-fns/locale";
 import { getAuditLogsAction } from "./actions";
-import { Button } from "@/components/ui/button";
-import { Input } from "@/components/ui/input";
-import { Badge } from "@/components/ui/badge";
-import { toast } from "sonner";
+import { formatDate } from "@/lib/date-utils";
 
 export default function AuditContent() {
   const [logs, setLogs] = useState<any[]>([]);
@@ -47,7 +42,7 @@ export default function AuditContent() {
       setPagination(res.pagination);
     } catch (error) {
       console.error("Failed to fetch logs:", error);
-      toast.error("Échec du chargement des journaux");
+      alert("Échec du chargement des journaux");
     } finally {
       setLoading(false);
     }
@@ -75,9 +70,9 @@ export default function AuditContent() {
     const config = actionMap[action] || { label: action, color: "bg-gray-100 text-gray-700 border-gray-200" };
     
     return (
-      <Badge variant="outline" className={`font-medium ${config.color}`}>
+      <span className={`inline-flex items-center rounded-md border px-2.5 py-0.5 text-xs font-semibold transition-colors focus:outline-none focus:ring-2 focus:ring-ring focus:ring-offset-2 ${config.color}`}>
         {config.label}
-      </Badge>
+      </span>
     );
   };
 
@@ -87,16 +82,16 @@ export default function AuditContent() {
         <form onSubmit={handleSearch} className="flex flex-1 items-center gap-2 max-w-md">
           <div className="relative flex-1">
             <Search className="absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-muted-foreground" />
-            <Input 
+            <input 
               placeholder="Rechercher dans les logs..." 
-              className="pl-9 h-10 border-slate-200 focus:ring-primary/20 transition-all"
+              className="flex h-10 w-full rounded-md border border-slate-200 bg-white px-3 py-2 text-sm ring-offset-background file:border-0 file:bg-transparent file:text-sm file:font-medium placeholder:text-muted-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 disabled:cursor-not-allowed disabled:opacity-50 pl-9"
               value={filters.query}
               onChange={(e) => setFilters({ ...filters, query: e.target.value })}
             />
           </div>
-          <Button type="submit" variant="secondary" className="h-10">
+          <button type="submit" className="inline-flex items-center justify-center whitespace-nowrap rounded-md text-sm font-medium ring-offset-background transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 disabled:pointer-events-none disabled:opacity-50 h-10 px-4 py-2 bg-slate-100 text-slate-900 hover:bg-slate-200">
             Rechercher
-          </Button>
+          </button>
         </form>
 
         <div className="flex items-center gap-2">
@@ -150,10 +145,10 @@ export default function AuditContent() {
                     <td className="px-6 py-4 whitespace-nowrap">
                       <div className="flex flex-col">
                         <span className="font-medium text-slate-900">
-                          {format(new Date(log.createdAt), "dd MMM yyyy", { locale: fr })}
+                          {formatDate(log.createdAt)}
                         </span>
                         <span className="text-xs text-slate-500">
-                          {format(new Date(log.createdAt), "HH:mm:ss")}
+                          {new Date(log.createdAt).toLocaleTimeString("fr-FR")}
                         </span>
                       </div>
                     </td>
@@ -200,24 +195,20 @@ export default function AuditContent() {
               Page {pagination.page} sur {pagination.totalPages} ({pagination.total} logs)
             </div>
             <div className="flex items-center gap-2">
-              <Button
-                variant="outline"
-                size="sm"
+              <button
                 onClick={() => fetchLogs(pagination.page - 1)}
                 disabled={pagination.page <= 1 || loading}
-                className="h-8 px-2"
+                className="inline-flex items-center justify-center whitespace-nowrap rounded-md text-sm font-medium ring-offset-background transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 disabled:pointer-events-none disabled:opacity-50 border border-slate-200 bg-white hover:bg-slate-50 h-8 px-2"
               >
                 <ChevronLeft className="h-4 w-4" />
-              </Button>
-              <Button
-                variant="outline"
-                size="sm"
+              </button>
+              <button
                 onClick={() => fetchLogs(pagination.page + 1)}
                 disabled={pagination.page >= pagination.totalPages || loading}
-                className="h-8 px-2"
+                className="inline-flex items-center justify-center whitespace-nowrap rounded-md text-sm font-medium ring-offset-background transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 disabled:pointer-events-none disabled:opacity-50 border border-slate-200 bg-white hover:bg-slate-50 h-8 px-2"
               >
                 <ChevronRight className="h-4 w-4" />
-              </Button>
+              </button>
             </div>
           </div>
         )}

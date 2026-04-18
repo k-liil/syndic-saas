@@ -15,13 +15,8 @@ import {
   Clock,
   Trash2
 } from "lucide-react";
-import { format } from "date-fns";
-import { fr } from "date-fns/locale";
 import { getBackupAuditAction, getOrganizationsAction } from "../actions";
-import { Button } from "@/components/ui/button";
-import { Input } from "@/components/ui/input";
-import { Badge } from "@/components/ui/badge";
-import { toast } from "sonner";
+import { formatDate, formatDateLong } from "@/lib/date-utils";
 
 export default function HistoryContent() {
   const [organizations, setOrganizations] = useState<any[]>([]);
@@ -56,7 +51,7 @@ export default function HistoryContent() {
       setPagination(res.pagination);
     } catch (error) {
       console.error("Failed to fetch history:", error);
-      toast.error("Échec du chargement de l'historique");
+      alert("Échec du chargement de l'historique");
     } finally {
       setLoading(false);
     }
@@ -145,10 +140,10 @@ export default function HistoryContent() {
                         <Calendar className="h-4 w-4 text-slate-400" />
                         <div className="flex flex-col">
                           <span className="font-medium text-slate-900">
-                            {format(new Date(log.createdAt), "dd MMM yyyy", { locale: fr })}
+                            {formatDate(log.createdAt)}
                           </span>
                           <span className="text-xs text-slate-500 font-mono">
-                            {format(new Date(log.createdAt), "HH:mm:ss")}
+                            {new Date(log.createdAt).toLocaleTimeString("fr-FR")}
                           </span>
                         </div>
                       </div>
@@ -168,16 +163,16 @@ export default function HistoryContent() {
                     </td>
                     <td className="px-6 py-4 whitespace-nowrap">
                       {log.status === 'SUCCESS' ? (
-                        <Badge variant="outline" className="bg-emerald-50 text-emerald-700 border-emerald-200 gap-1.5 py-1 px-2.5">
+                        <span className="inline-flex items-center rounded-md border px-2.5 py-1 text-xs font-semibold bg-emerald-50 text-emerald-700 border-emerald-200 gap-1.5">
                           <CheckCircle2 className="h-3.5 w-3.5" />
                           Succès
-                        </Badge>
+                        </span>
                       ) : (
                         <div className="flex flex-col gap-1">
-                          <Badge variant="outline" className="bg-red-50 text-red-700 border-red-200 gap-1.5 py-1 px-2.5">
+                          <span className="inline-flex items-center rounded-md border px-2.5 py-1 text-xs font-semibold bg-red-50 text-red-700 border-red-200 gap-1.5">
                             <AlertCircle className="h-3.5 w-3.5" />
                             Échec
-                          </Badge>
+                          </span>
                           {log.errorMsg && (
                             <span className="text-[10px] text-red-500 max-w-[200px] truncate" title={log.errorMsg}>
                               {log.errorMsg}
@@ -193,7 +188,7 @@ export default function HistoryContent() {
                           <div className="flex flex-col">
                             <span className="text-xs font-bold uppercase tracking-tight">Supprimé</span>
                             <span className="text-[10px] opacity-70">
-                              {format(new Date(log.deletedAt), "dd/MM/yy HH:mm")}
+                              {formatDate(log.deletedAt)} {new Date(log.deletedAt).toLocaleTimeString("fr-FR")}
                             </span>
                             {log.deletionType && (
                               <span className="text-[9px] italic opacity-60">
@@ -224,22 +219,20 @@ export default function HistoryContent() {
               Page {pagination.page} sur {pagination.totalPages}
             </div>
             <div className="flex items-center gap-2">
-              <Button
-                variant="outline"
-                size="sm"
+              <button
                 onClick={() => fetchLogs(selectedOrgId, pagination.page - 1)}
                 disabled={pagination.page <= 1 || loading}
+                className="inline-flex items-center justify-center whitespace-nowrap rounded-md text-sm font-medium ring-offset-background transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 disabled:pointer-events-none disabled:opacity-50 border border-slate-200 bg-white hover:bg-slate-50 h-8 px-2"
               >
                 <ChevronLeft className="h-4 w-4" />
-              </Button>
-              <Button
-                variant="outline"
-                size="sm"
+              </button>
+              <button
                 onClick={() => fetchLogs(selectedOrgId, pagination.page + 1)}
                 disabled={pagination.page >= pagination.totalPages || loading}
+                className="inline-flex items-center justify-center whitespace-nowrap rounded-md text-sm font-medium ring-offset-background transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 disabled:pointer-events-none disabled:opacity-50 border border-slate-200 bg-white hover:bg-slate-50 h-8 px-2"
               >
                 <ChevronRight className="h-4 w-4" />
-              </Button>
+              </button>
             </div>
           </div>
         )}

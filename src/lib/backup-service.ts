@@ -1,4 +1,5 @@
 import { prisma } from '@/lib/prisma';
+import { logAction } from './audit-service';
 import fs from 'fs';
 import path from 'path';
 import zlib from 'zlib';
@@ -111,9 +112,12 @@ export class BackupService {
   }
 
   static async deleteBackup(fileName: string, deletionType: "MANUAL" | "RETENTION" = "MANUAL") {
+    const { token, repo } = this.config;
+    if (!token || !repo) throw new Error("GitHub Configuration missing.");
+
     try {
       const response = await fetch(
-        `https://api.github.com/repos/${REPO_OWNER}/${REPO_NAME}/contents/backups/${fileName}`,
+        `https://api.github.com/repos/${repo}/contents/backups/${fileName}`,
         {
           method: "GET",
           headers: {
@@ -131,7 +135,7 @@ export class BackupService {
       const sha = data.sha;
 
       const deleteResponse = await fetch(
-        `https://api.github.com/repos/${REPO_OWNER}/${REPO_NAME}/contents/backups/${fileName}`,
+        `https://api.github.com/repos/${repo}/contents/backups/${fileName}`,
         {
           method: "DELETE",
           headers: {

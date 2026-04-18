@@ -1,18 +1,17 @@
-import { Breadcrumbs } from "@/components/Breadcrumbs";
 import { ClipboardList } from "lucide-react";
 import AuditContent from "./AuditContent";
+import Link from "next/link";
 
 export default function AuditPage() {
   return (
     <div className="flex flex-col gap-6 p-6">
       <div className="flex flex-col gap-2">
-        <Breadcrumbs
-          items={[
-            { label: "Configuration", href: "/setup" },
-            { label: "Maintenance", href: "/setup/maintenance" },
-            { label: "Journal d'audit", href: "/setup/maintenance/audit", active: true },
-          ]}
-        />
+        <Link 
+          href="/setup/maintenance" 
+          className="text-xs font-medium text-slate-500 hover:text-primary transition-colors mb-2 block"
+        >
+          ← Retour à la maintenance
+        </Link>
         <div className="flex items-center gap-3">
           <div className="flex h-12 w-12 items-center justify-center rounded-xl bg-primary/10 text-primary shadow-sm border border-primary/20">
             <ClipboardList className="h-6 w-6" />
