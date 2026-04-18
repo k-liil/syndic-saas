@@ -1,6 +1,7 @@
 "use client";
 
 import { useState, useEffect } from "react";
+import Link from "next/link";
 import { 
   getBackupsAction, 
   triggerManualBackupAction, 
@@ -32,7 +33,8 @@ import {
   ExternalLink,
   Copy,
   Info,
-  Trash
+  Trash2,
+  ClipboardList
 } from "lucide-react";
 
 export default function BackupContent() {
@@ -99,7 +101,7 @@ export default function BackupContent() {
       
       setBackups(files || []);
       setSchedule(sched || { frequency: 1440, isActive: true, retentionCount: 10 });
-      setAudits(logs || []);
+      setAudits(logs?.items || []);
     } catch (error: any) {
       showStatus(error.message || "Erreur lors du chargement des données de l'organisation.", "error");
     } finally {
@@ -147,7 +149,7 @@ export default function BackupContent() {
 
     try {
       showStatus("Suppression en cours...", "info");
-      await deleteBackupAction(`backups/${backup.name}`, backup.sha);
+      await deleteBackupAction(backup.name);
       showStatus("Sauvegarde supprimée.", "success");
       // Refresh list
       const updatedFiles = await getBackupsAction(selectedOrgId);
@@ -217,6 +219,13 @@ export default function BackupContent() {
             {isBackingUp ? <RefreshCw className="h-4 w-4 animate-spin" /> : <Plus className="h-4 w-4" />}
             {isBackingUp ? "Exportation..." : "Backup Manuel"}
           </button>
+          <Link 
+            href="/setup/maintenance/audit"
+            className="flex items-center gap-2 rounded-md border border-zinc-200 bg-white px-4 py-2 text-sm font-medium text-zinc-700 shadow-sm hover:bg-zinc-50 transition-all active:scale-95"
+          >
+            <ClipboardList className="h-4 w-4" />
+            Journal
+          </Link>
         </div>
       </div>
 
@@ -357,10 +366,18 @@ export default function BackupContent() {
           </div>
 
           <div className="rounded-xl border border-zinc-200 bg-white p-5 shadow-sm space-y-4">
-            <h3 className="font-bold text-zinc-900 flex items-center gap-2 text-sm uppercase tracking-wider text-zinc-500">
-              <History className="h-4 w-4" />
-              Historique Récent (Audits)
-            </h3>
+            <div className="flex items-center justify-between">
+              <h3 className="font-bold text-zinc-900 flex items-center gap-2 text-sm uppercase tracking-wider text-zinc-500">
+                <History className="h-4 w-4" />
+                Historique Récent
+              </h3>
+              <Link 
+                href="/setup/maintenance/backup/history"
+                className="text-[10px] font-bold text-indigo-600 hover:text-indigo-700 uppercase tracking-wider"
+              >
+                Voir tout
+              </Link>
+            </div>
             <div className="space-y-3">
               {audits.length === 0 ? (
                 <p className="text-xs text-zinc-400 italic">Aucun log récent.</p>
@@ -452,7 +469,7 @@ export default function BackupContent() {
                               title="Supprimer"
                               className="inline-flex h-8 w-8 items-center justify-center rounded-lg border border-red-100 bg-red-50/30 text-red-500 hover:text-red-600 hover:bg-red-50 hover:border-red-200 transition-all active:scale-95"
                             >
-                              <Trash className="h-4 w-4" />
+                              <Trash2 className="h-4 w-4" />
                             </button>
                           </div>
                         </td>

@@ -5,6 +5,7 @@ import { DueStatus, PaymentMethod, ReceiptType, Prisma } from "@prisma/client";
 import { getOrgIdFromRequest } from "@/lib/org-utils";
 import { reallocateUnitContributions } from "@/lib/allocation";
 import { getApplicableContribution } from "@/lib/contribution-engine";
+import { logAction } from "@/lib/audit-service";
 
 function firstDayOfMonth(d: Date) {
   return new Date(Date.UTC(d.getUTCFullYear(), d.getUTCMonth(), 1));
@@ -481,6 +482,14 @@ await tx.fiscalYear.upsert({
           id: true,
           receiptNumber: true,
         },
+      });
+
+      await logAction({
+        action: "CREATE_RECEIPT",
+        details: `Reçu n°${receipt.receiptNumber} - ${amount} DH (${method})`,
+        organizationId: orgId!,
+        entityType: "RECEIPT",
+        entityId: receipt.id,
       });
 
       // No need for manual allocation logic here as reallocateUnitContributions will

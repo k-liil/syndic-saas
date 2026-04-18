@@ -52,6 +52,7 @@ model Organization {
   userOrganizations     UserOrganization[]
   backupSchedule        BackupSchedule?
   backupAudits          BackupAudit[]
+  actionLogs            ActionLog[]
 }
 
 model Owner {
@@ -305,6 +306,7 @@ model User {
   owner         Owner?
   sessions      Session[]
   organizations UserOrganization[]
+  actionLogs    ActionLog[]
 }
 
 model UserOrganization {
@@ -819,7 +821,27 @@ model BackupAudit {
   errorMsg       String?
   sizeBytes      Int          @default(0)
   createdAt      DateTime     @default(now())
+  deletedAt      DateTime?
+  deletionType   String?      // "MANUAL" | "RETENTION"
 
   @@index([organizationId])
+  @@index([createdAt])
+}
+
+model ActionLog {
+  id             String       @id @default(cuid())
+  organizationId String?
+  userId         String?
+  action         String       // e.g., "CREATE_RECEIPT", "DELETE_PAYMENT"
+  details        String?      // Optional description or JSON
+  entityType     String?      // e.g., "RECEIPT", "PAYMENT"
+  entityId       String?
+  createdAt      DateTime     @default(now())
+
+  organization   Organization? @relation(fields: [organizationId], references: [id])
+  user           User?         @relation(fields: [userId], references: [id])
+
+  @@index([organizationId])
+  @@index([userId])
   @@index([createdAt])
 }

@@ -5,6 +5,7 @@ import { requireAuth, requireManager } from "@/lib/authz";
 import { ensureFiscalYear } from "@/lib/fiscalYear";
 import { getOrgIdFromRequest } from "@/lib/org-utils";
 import { resolveActiveFiscalYear } from "@/lib/active-fiscal-year";
+import { logAction } from "@/lib/audit-service";
 
 function getErrorDetail(error: unknown) {
   return error instanceof Error ? error.message : String(error);
@@ -236,6 +237,14 @@ export async function POST(req: Request) {
       },
     });
 
+    await logAction({
+      action: "CREATE_PAYMENT",
+      details: `Paiement n°${payment.paymentNumber} à ${payment.supplier.name} - ${amount} DH (${payment.method})`,
+      organizationId: orgId!,
+      entityType: "PAYMENT",
+      entityId: payment.id,
+    });
+
     return NextResponse.json(payment);
   } catch (e) {
     console.error("POST /api/payments failed:", e);
@@ -281,6 +290,14 @@ export async function DELETE(req: Request) {
     if (!existing) {
       return NextResponse.json({ error: "PAYMENT_NOT_FOUND" }, { status: 404 });
     }
+
+    await logAction({
+      action: "DELETE_PAYMENT",
+      details: `Suppression du paiement n°${id} (Organisation: ${orgId})`,
+      organizationId: orgId!,
+      entityType: "PAYMENT",
+      entityId: id,
+    });
 
     await prisma.payment.delete({ where: { id } });
 

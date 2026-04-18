@@ -194,6 +194,22 @@ export const PAGE_VISIBILITY_REGISTRY: PageRegistryItem[] = [
     defaultEnabled: true,
     roles: { SUPER_ADMIN: true, MANAGER: false, OWNER: false },
   },
+  {
+    title: "Journal d'audit",
+    href: "/setup/maintenance/audit",
+    icon: "ClipboardList",
+    section: "administration",
+    defaultEnabled: true,
+    roles: { SUPER_ADMIN: true, MANAGER: true, OWNER: false },
+  },
+  {
+    title: "Historique des sauvegardes",
+    href: "/setup/maintenance/backup/history",
+    icon: "History",
+    section: "administration",
+    defaultEnabled: true,
+    roles: { SUPER_ADMIN: true, MANAGER: false, OWNER: false },
+  },
 ];
 
 export type PageVisibilityRecord = {

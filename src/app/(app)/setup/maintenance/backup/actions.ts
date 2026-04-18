@@ -1,6 +1,7 @@
 "use server";
 
 import { BackupService, GitHubBackup } from "@/lib/backup-service";
+import { logAction } from "@/lib/audit-service";
 import { revalidatePath } from "next/cache";
 
 export async function getBackupsAction(organizationId?: string): Promise<GitHubBackup[]> {
@@ -101,17 +102,35 @@ export async function updateBackupScheduleAction(
   }
 }
 
-export async function getBackupAuditAction(organizationId: string) {
+export async function getBackupAuditAction(organizationId: string, page: number = 1, pageSize: number = 20) {
   try {
-    const audits = await prisma.backupAudit.findMany({
-      where: { organizationId },
-      orderBy: { createdAt: 'desc' },
-      take: 10
-    });
-    return audits.map(a => ({
-      ...a,
-      createdAt: a.createdAt.toISOString(),
-    }));
+    const skip = (page - 1) * pageSize;
+    const [items, total] = await Promise.all([
+      prisma.backupAudit.findMany({
+        where: { organizationId },
+        orderBy: { createdAt: 'desc' },
+        skip,
+        take: pageSize,
+        include: {
+          organization: { select: { name: true } }
+        }
+      }),
+      prisma.backupAudit.count({ where: { organizationId } })
+    ]);
+
+    return {
+      items: items.map(a => ({
+        ...a,
+        createdAt: a.createdAt.toISOString(),
+        deletedAt: a.deletedAt?.toISOString() || null,
+      })),
+      pagination: {
+        page,
+        pageSize,
+        total,
+        totalPages: Math.ceil(total / pageSize)
+      }
+    };
   } catch (error: any) {
     console.error("[BACKUP_LOG] Error in getBackupAuditAction:", error);
     throw new Error(`Erreur Audit SQL : ${error.message || String(error)}`);
@@ -131,16 +150,13 @@ export async function getOrganizationsAction() {
   }
 }
 
-export async function deleteBackupAction(filePath: string, sha: string) {
+export async function deleteBackupAction(fileName: string) {
   try {
-    console.log(`[BACKUP_LOG] Deleting backup: ${filePath}...`);
-    const success = await BackupService.deleteBackup(filePath, sha);
-    if (!success) throw new Error("La suppression GitHub a échoué.");
-    
+    await BackupService.deleteBackup(fileName, "MANUAL");
     revalidatePath("/setup/maintenance/backup");
     return { success: true };
-  } catch (error: any) {
-    console.error("[BACKUP_LOG] Error in deleteBackupAction:", error);
-    throw new Error(error.message || "Impossible de supprimer la sauvegarde.");
+  } catch (error) {
+    console.error("[BACKUP_ACTION] Error deleting backup:", error);
+    return { error: "Failed to delete backup" };
   }
 }

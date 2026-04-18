@@ -4,6 +4,7 @@ import { requireAuth, requireManager } from "@/lib/authz";
 import { DueStatus, Prisma } from "@prisma/client";
 import { reallocateUnitContributions } from "@/lib/allocation";
 import { getOrgIdFromRequest } from "@/lib/org-utils";
+import { logAction } from "@/lib/audit-service";
 
 export async function GET(
   req: Request,
@@ -266,6 +267,14 @@ export async function DELETE(
 
         await tx.receiptAllocation.deleteMany({
           where: { receiptId: id },
+        });
+
+        await logAction({
+          action: "DELETE_RECEIPT",
+          details: `Suppression du reçu n°${receipt.id} (Organisation: ${receipt.organizationId})`,
+          organizationId: receipt.organizationId ?? undefined,
+          entityType: "RECEIPT",
+          entityId: id,
         });
 
         await tx.receipt.delete({

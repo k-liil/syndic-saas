@@ -23,6 +23,8 @@ import {
   Truck,
   Users,
   Vault,
+  ClipboardList,
+  History,
 } from "lucide-react";
 import { normalizeRole } from "@/lib/roles";
 import { PAGE_VISIBILITY_REGISTRY, type PageVisibilityRecord, roleCanSeePage } from "@/lib/page-visibility";
@@ -46,6 +48,8 @@ const ICONS: Record<string, ElementType> = {
   Truck,
   Users,
   Vault,
+  ClipboardList,
+  History,
 };
 
 function SectionTitle({ children }: { children: React.ReactNode }) {

@@ -110,29 +110,66 @@ export class BackupService {
     }
   }
 
-  static async deleteBackup(filePath: string, sha: string): Promise<boolean> {
-    const { token, repo } = this.config;
-    if (!token || !repo) return false;
-
+  static async deleteBackup(fileName: string, deletionType: "MANUAL" | "RETENTION" = "MANUAL") {
     try {
-      const response = await fetch(`https://api.github.com/repos/${repo}/contents/${filePath}`, {
-        method: 'DELETE',
-        headers: {
-          'Authorization': `token ${token}`,
-          'Accept': 'application/vnd.github.v3+json',
-          'Content-Type': 'application/json',
-          'User-Agent': 'syndicly-backup-bot',
-        },
-        body: JSON.stringify({
-          message: `Automatic retention: deleting old backup ${filePath}`,
-          sha: sha
-        })
+      const response = await fetch(
+        `https://api.github.com/repos/${REPO_OWNER}/${REPO_NAME}/contents/backups/${fileName}`,
+        {
+          method: "GET",
+          headers: {
+            Authorization: `token ${process.env.BACKUP_GITHUB_TOKEN}`,
+            Accept: "application/vnd.github.v3+json",
+          },
+        }
+      );
+
+      if (!response.ok) {
+        throw new Error(`Failed to find backup file: ${response.statusText}`);
+      }
+
+      const data = await response.json();
+      const sha = data.sha;
+
+      const deleteResponse = await fetch(
+        `https://api.github.com/repos/${REPO_OWNER}/${REPO_NAME}/contents/backups/${fileName}`,
+        {
+          method: "DELETE",
+          headers: {
+            Authorization: `token ${process.env.BACKUP_GITHUB_TOKEN}`,
+            Accept: "application/vnd.github.v3+json",
+            "Content-Type": "application/json",
+          },
+          body: JSON.stringify({
+            message: `Delete backup ${fileName} (${deletionType})`,
+            sha,
+          }),
+        }
+      );
+
+      if (!deleteResponse.ok) {
+        throw new Error(`Failed to delete backup file: ${deleteResponse.statusText}`);
+      }
+
+      // Track in database
+      await prisma.backupAudit.updateMany({
+        where: { fileName: fileName },
+        data: {
+          deletedAt: new Date(),
+          deletionType: deletionType
+        }
       });
 
-      return response.ok;
-    } catch (e) {
-      console.error('[BACKUP_LOG] Failed to delete backup:', e);
-      return false;
+      await logAction({
+        action: "BACKUP_DELETE",
+        details: `Deleted ${fileName} (${deletionType})`,
+        entityType: "BACKUP",
+        entityId: fileName
+      });
+
+      return { success: true };
+    } catch (error) {
+      console.error("[BACKUP_LOG] Error in deleteBackup:", error);
+      throw error;
     }
   }
 
@@ -153,11 +190,11 @@ export class BackupService {
         // GitHub usually returns them sorted, but let's be safe.
         const sorted = backups.sort((a, b) => a.name.localeCompare(b.name));
         
-        const toDelete = sorted.slice(0, backups.length - limit);
+        const backupsToDelete = sorted.slice(0, backups.length - limit);
         
-        for (const file of toDelete) {
-          console.log(`[BACKUP_LOG] Deleting old backup: ${file.name}`);
-          await this.deleteBackup(file.path, file.sha);
+        for (const fileToDelete of backupsToDelete) {
+          console.log(`[BACKUP_LOG] Retention: deleting ${fileToDelete.name}`);
+          await this.deleteBackup(fileToDelete.name, "RETENTION");
         }
       }
     } catch (error) {
