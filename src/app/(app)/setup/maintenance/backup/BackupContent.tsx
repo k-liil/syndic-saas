@@ -439,8 +439,13 @@ export default function BackupContent() {
                         <td className="px-5 py-4 text-center">
                            <div className="flex flex-col items-center">
                              <span className="text-xs font-semibold text-zinc-700">{extractDateFromName(b.name)}</span>
-                             <span className="text-[9px] text-zinc-400 font-mono mt-0.5">
-                               {b.name.split('-').pop()?.replace('.sql.gz', '').slice(-6).replace(/(\d{2})(\d{2})(\d{2})/, '$1:$2:$3') || ''}
+                             <span className="text-[10px] text-zinc-400 font-medium mt-1">
+                               {(() => {
+                                 const tsStr = b.name.split('-').pop()?.replace('.sql.gz', '');
+                                 const ts = Number(tsStr);
+                                 if (!ts) return '';
+                                 return new Date(ts).toLocaleTimeString('fr-FR', { hour: '2-digit', minute: '2-digit', second: '2-digit' });
+                               })()}
                              </span>
                            </div>
                         </td>
