@@ -15,25 +15,30 @@ export default async function AppLayout({
   if (!gate.ok) {
     return null; // Let middleware handle redirect, avoid HTML/JSON collision
   }
-  const settings = await prisma.appSettings.findFirst();
+
+  let settings = null;
+  try {
+    settings = await prisma.appSettings.findFirst();
+  } catch (error) {
+    console.error("Failed to load global AppSettings in layout:", error);
+  }
+
   const cookieStore = await cookies();
   const initialOrgId = cookieStore.get("syndic-org-id")?.value;
   
   let initialOrgs: any[] = [];
-  if (gate.ok) {
-    if (gate.isSuperAdmin) {
-      initialOrgs = await prisma.organization.findMany({
-        where: { isActive: true },
-        select: { id: true, name: true, slug: true, logoUrl: true },
-        orderBy: { name: "asc" },
-      });
-    } else {
-      const orgIds = (gate.userOrganizations ?? []).map((uo: any) => uo.organizationId);
-      initialOrgs = await prisma.organization.findMany({
-        where: { id: { in: orgIds } },
-        select: { id: true, name: true, slug: true, logoUrl: true },
-      });
-    }
+  if (gate.isSuperAdmin) {
+    initialOrgs = await prisma.organization.findMany({
+      where: { isActive: true },
+      select: { id: true, name: true, slug: true, logoUrl: true },
+      orderBy: { name: "asc" },
+    });
+  } else {
+    const orgIds = (gate.userOrganizations ?? []).map((uo: any) => uo.organizationId);
+    initialOrgs = await prisma.organization.findMany({
+      where: { id: { in: orgIds } },
+      select: { id: true, name: true, slug: true, logoUrl: true },
+    });
   }
 
   return (

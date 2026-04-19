@@ -23,312 +23,324 @@ function toNumber(value: unknown): number {
 }
 
 export async function GET(req: Request) {
-  const gate = await requireAuth();
-  if (!gate.ok) {
-    return NextResponse.json({ error: gate.error }, { status: gate.status });
-  }
+  try {
+    const gate = await requireAuth();
+    if (!gate.ok) {
+      return NextResponse.json({ error: gate.error }, { status: gate.status });
+    }
 
-  const orgId = await getOrgIdFromRequest(req, gate);
-  if (!orgId) {
-    return NextResponse.json([]);
-  }
+    const orgId = await getOrgIdFromRequest(req, gate);
+    if (!orgId) {
+      return NextResponse.json([]);
+    }
 
-  const { searchParams } = new URL(req.url);
-  const yearParam = searchParams.get("year");
-  const parsedYear = await resolveActiveFiscalYear(orgId, yearParam);
+    const { searchParams } = new URL(req.url);
+    const yearParam = searchParams.get("year");
+    const parsedYear = await resolveActiveFiscalYear(orgId, yearParam);
 
-  if (parsedYear === undefined || !Number.isInteger(parsedYear) || parsedYear < 2000 || parsedYear > 2100) {
-    return NextResponse.json(
-      { error: "Invalid year parameter" },
-      { status: 400 }
+    if (parsedYear === undefined || !Number.isInteger(parsedYear) || parsedYear < 2000 || parsedYear > 2100) {
+      return NextResponse.json(
+        { error: "Invalid year parameter" },
+        { status: 400 }
+      );
+    }
+
+    const year = parsedYear;
+
+    const startDate = new Date(Date.UTC(year, 0, 1, 0, 0, 0, 0));
+    const endDate = new Date(Date.UTC(year + 1, 0, 1, 0, 0, 0, 0));
+    
+    const [settings, earliestFiscalYear, activeBanks] = await Promise.all([
+      prisma.appSettings.findFirst({ where: { organizationId: orgId } }),
+      prisma.fiscalYear.findFirst({
+        where: { organizationId: orgId },
+        orderBy: { year: "asc" },
+        select: { year: true },
+      }),
+      prisma.internalBank.findMany({
+        where: { organizationId: orgId, isActive: true },
+        select: { openingBalance: true },
+      }),
+    ]);
+
+    const openingBank = activeBanks.reduce(
+      (acc, b) => acc + toNumber(b.openingBalance),
+      0
     );
-  }
 
-  const year = parsedYear;
+    const firstExerciseYearCandidates = [
+      settings?.startYear,
+      earliestFiscalYear?.year,
+    ].filter((value): value is number => typeof value === "number" && Number.isInteger(value));
 
-  const startDate = new Date(Date.UTC(year, 0, 1, 0, 0, 0, 0));
-  const endDate = new Date(Date.UTC(year + 1, 0, 1, 0, 0, 0, 0));
-  
-  const [settings, earliestFiscalYear, activeBanks] = await Promise.all([
-    prisma.appSettings.findFirst({ where: { organizationId: orgId } }),
-    prisma.fiscalYear.findFirst({
-      where: { organizationId: orgId },
-      orderBy: { year: "asc" },
-      select: { year: true },
-    }),
-    prisma.internalBank.findMany({
-      where: { organizationId: orgId, isActive: true },
-      select: { openingBalance: true },
-    }),
-  ]);
+    const firstExerciseYear =
+      firstExerciseYearCandidates.length > 0
+        ? Math.min(...firstExerciseYearCandidates)
+        : year;
+    const firstExerciseStartDate = new Date(
+      Date.UTC(firstExerciseYear, 0, 1, 0, 0, 0, 0)
+    );
+    const carryForwardDateFilter =
+      year > firstExerciseYear
+        ? { gte: firstExerciseStartDate, lt: startDate }
+        : { gte: startDate, lt: startDate };
 
-  const openingBank = activeBanks.reduce(
-    (acc, b) => acc + toNumber(b.openingBalance),
-    0
-  );
-
-  const firstExerciseYearCandidates = [
-    settings?.startYear,
-    earliestFiscalYear?.year,
-  ].filter((value): value is number => typeof value === "number" && Number.isInteger(value));
-
-  const firstExerciseYear =
-    firstExerciseYearCandidates.length > 0
-      ? Math.min(...firstExerciseYearCandidates)
-      : year;
-  const firstExerciseStartDate = new Date(
-    Date.UTC(firstExerciseYear, 0, 1, 0, 0, 0, 0)
-  );
-  const carryForwardDateFilter =
-    year > firstExerciseYear
-      ? { gte: firstExerciseStartDate, lt: startDate }
-      : { gte: startDate, lt: startDate };
-
-  const [
-    receiptsAgg,
-    otherReceiptsAgg,
-    paymentsAgg,
-    ownersCount,
-    paidOwners,
-    expensesByCategory,
-    receiptsMonths,
-    otherReceiptsMonths,
-    paymentsMonths,
-    preYearReceiptsCashAgg,
-    preYearReceiptsBankAgg,
-    preYearOtherReceiptsCashAgg,
-    preYearOtherReceiptsBankAgg,
-    preYearPaymentsCashAgg,
-    preYearPaymentsBankAgg,
-  ] = await Promise.all([
-    prisma.receipt.aggregate({
-      where: { organizationId: orgId!, date: { gte: startDate, lt: endDate } },
-      _sum: { amount: true },
-    }),
-    prisma.otherReceipt.aggregate({
-      where: { organizationId: orgId!, date: { gte: startDate, lt: endDate } },
-      _sum: { amount: true },
-    }),
-    prisma.payment.aggregate({
-      where: { organizationId: orgId!, date: { gte: startDate, lt: endDate } },
-      _sum: { amount: true },
-    }),
-    prisma.owner.count({ where: { organizationId: orgId! } }),
-    prisma.receipt.groupBy({
-      by: ["ownerId"],
-      where: { organizationId: orgId!, date: { gte: startDate, lt: endDate } },
-    }),
-    prisma.payment.groupBy({
-      by: ["accountingPostId"],
-      _sum: { amount: true },
-      where: { organizationId: orgId!, date: { gte: startDate, lt: endDate } },
-    }),
-    prisma.receipt.findMany({
-      where: { organizationId: orgId!, date: { gte: startDate, lt: endDate } },
-      select: { amount: true, date: true, method: true },
-    }),
-    prisma.otherReceipt.findMany({
-      where: { organizationId: orgId!, date: { gte: startDate, lt: endDate } },
-      select: { amount: true, date: true, method: true },
-    }),
-    prisma.payment.findMany({
-      where: { organizationId: orgId!, date: { gte: startDate, lt: endDate } },
-      select: { amount: true, date: true, method: true },
-    }),
-    prisma.receipt.aggregate({
-      where: {
-        organizationId: orgId!,
-        date: carryForwardDateFilter,
-        method: "CASH",
-      },
-      _sum: { amount: true },
-    }),
-    prisma.receipt.aggregate({
-      where: {
-        organizationId: orgId!,
-        date: carryForwardDateFilter,
-        method: { in: ["TRANSFER", "CHECK", "DEBIT", "BANK_DEPOSIT"] },
-      },
-      _sum: { amount: true },
-    }),
-    prisma.otherReceipt.aggregate({
-      where: {
-        organizationId: orgId!,
-        date: carryForwardDateFilter,
-        method: "CASH",
-      },
-      _sum: { amount: true },
-    }),
-    prisma.otherReceipt.aggregate({
-      where: {
-        organizationId: orgId!,
-        date: carryForwardDateFilter,
-        method: { in: ["TRANSFER", "CHECK", "DEBIT", "BANK_DEPOSIT"] },
-      },
-      _sum: { amount: true },
-    }),
-    prisma.payment.aggregate({
-      where: {
-        organizationId: orgId!,
-        date: carryForwardDateFilter,
-        method: "CASH",
-      },
-      _sum: { amount: true },
-    }),
-    prisma.payment.aggregate({
-      where: {
-        organizationId: orgId!,
-        date: carryForwardDateFilter,
-        method: { in: ["TRANSFER", "CHECK", "DEBIT", "BANK_DEPOSIT"] },
-      },
-      _sum: { amount: true },
-    }),
-  ]);
-
-  const receiptsByMonth = new Array(12).fill(0);
-  const paymentsByMonth = new Array(12).fill(0);
-
-  let receiptsCash = 0;
-  let receiptsBank = 0;
-
-  for (const r of receiptsMonths) {
-    const month = new Date(r.date).getUTCMonth();
-    const amount = toNumber(r.amount);
-    receiptsByMonth[month] += amount;
-    if (r.method === "CASH") receiptsCash += amount;
-    else receiptsBank += amount;
-  }
-
-  for (const r of otherReceiptsMonths) {
-    const month = new Date(r.date).getUTCMonth();
-    const amount = toNumber(r.amount);
-    receiptsByMonth[month] += amount;
-    if (r.method === "CASH") receiptsCash += amount;
-    else receiptsBank += amount;
-  }
-
-  let paymentsCash = 0;
-  let paymentsBank = 0;
-
-  for (const p of paymentsMonths) {
-    const month = new Date(p.date).getUTCMonth();
-    const amount = toNumber(p.amount);
-    paymentsByMonth[month] += amount;
-    if (p.method === "CASH") paymentsCash += amount;
-    else paymentsBank += amount;
-  }
-
-  const openingCash = toNumber(settings?.openingCashBalance);
-  const openingCashForYear =
-    openingCash +
-    toNumber(preYearReceiptsCashAgg._sum.amount) +
-    toNumber(preYearOtherReceiptsCashAgg._sum.amount) -
-    toNumber(preYearPaymentsCashAgg._sum.amount);
-  
-  const openingBankForYear =
-    openingBank +
-    toNumber(preYearReceiptsBankAgg._sum.amount) +
-    toNumber(preYearOtherReceiptsBankAgg._sum.amount) -
-    toNumber(preYearPaymentsBankAgg._sum.amount);
-
-  const openingTotal = openingCashForYear + openingBankForYear;
-
-  const cumulativeBalanceByMonth = new Array(12).fill(0);
-  let runningBalance = openingTotal;
-  for (let i = 0; i < 12; i += 1) {
-    runningBalance += (receiptsByMonth[i] ?? 0) - (paymentsByMonth[i] ?? 0);
-    cumulativeBalanceByMonth[i] = runningBalance;
-  }
-
-  const cashBalance = openingCashForYear + receiptsCash - paymentsCash;
-  const bankBalance = openingBankForYear + receiptsBank - paymentsBank;
-
-  const totalReceipts = receiptsCash + receiptsBank;
-  const totalPayments = paymentsCash + paymentsBank;
-
-  const [bankReceipts, bankOtherReceipts, bankPayments] = await Promise.all([
-    prisma.receipt.groupBy({
-      by: ["bankId"],
-      where: { organizationId: orgId!, bankId: { not: null } },
-      _sum: { amount: true },
-    }),
-    prisma.otherReceipt.groupBy({
-      by: ["bankId"],
-      where: { organizationId: orgId!, bankId: { not: null } },
-      _sum: { amount: true },
-    }),
-    prisma.payment.groupBy({
-      by: ["bankId"],
-      where: { organizationId: orgId!, bankId: { not: null } },
-      _sum: { amount: true },
-    }),
-  ]);
-
-  const activeBanksFull = await prisma.internalBank.findMany({
-    where: { organizationId: orgId!, isActive: true },
-  });
-
-  const bankBalancesOverview = activeBanksFull.map((b) => {
-    const receipts = toNumber(bankReceipts.find((r) => r.bankId === b.id)?._sum.amount);
-    const others = toNumber(bankOtherReceipts.find((r) => r.bankId === b.id)?._sum.amount);
-    const payments = toNumber(bankPayments.find((p) => p.bankId === b.id)?._sum.amount);
-
-    return {
-      id: b.id,
-      name: b.name,
-      balance: toNumber(b.openingBalance) + receipts + others - payments,
-    };
-  });
-
-  const paidOwnersCount = paidOwners.length;
-
-  const collectionRate =
-    ownersCount === 0
-      ? 0
-      : Number(((paidOwnersCount / ownersCount) * 100).toFixed(4));
-
-  const postIds = expensesByCategory
-    .map((c) => c.accountingPostId)
-    .filter((id): id is string => id !== null);
-
-  const accountingPosts = postIds.length
-    ? await prisma.accountingPost.findMany({
+    const [
+      receiptsAgg,
+      otherReceiptsAgg,
+      paymentsAgg,
+      ownersCount,
+      paidOwners,
+      expensesByCategory,
+      receiptsMonths,
+      otherReceiptsMonths,
+      paymentsMonths,
+      preYearReceiptsCashAgg,
+      preYearReceiptsBankAgg,
+      preYearOtherReceiptsCashAgg,
+      preYearOtherReceiptsBankAgg,
+      preYearPaymentsCashAgg,
+      preYearPaymentsBankAgg,
+    ] = await Promise.all([
+      prisma.receipt.aggregate({
+        where: { organizationId: orgId!, date: { gte: startDate, lt: endDate } },
+        _sum: { amount: true },
+      }),
+      prisma.otherReceipt.aggregate({
+        where: { organizationId: orgId!, date: { gte: startDate, lt: endDate } },
+        _sum: { amount: true },
+      }),
+      prisma.payment.aggregate({
+        where: { organizationId: orgId!, date: { gte: startDate, lt: endDate } },
+        _sum: { amount: true },
+      }),
+      prisma.owner.count({ where: { organizationId: orgId! } }),
+      prisma.receipt.groupBy({
+        by: ["ownerId"],
+        where: { organizationId: orgId!, date: { gte: startDate, lt: endDate } },
+      }),
+      prisma.payment.groupBy({
+        by: ["accountingPostId"],
+        _sum: { amount: true },
+        where: { organizationId: orgId!, date: { gte: startDate, lt: endDate } },
+      }),
+      prisma.receipt.findMany({
+        where: { organizationId: orgId!, date: { gte: startDate, lt: endDate } },
+        select: { amount: true, date: true, method: true },
+      }),
+      prisma.otherReceipt.findMany({
+        where: { organizationId: orgId!, date: { gte: startDate, lt: endDate } },
+        select: { amount: true, date: true, method: true },
+      }),
+      prisma.payment.findMany({
+        where: { organizationId: orgId!, date: { gte: startDate, lt: endDate } },
+        select: { amount: true, date: true, method: true },
+      }),
+      prisma.receipt.aggregate({
         where: {
           organizationId: orgId!,
-          id: { in: postIds },
+          date: carryForwardDateFilter,
+          method: "CASH",
         },
-        select: {
-          id: true,
-          code: true,
-          name: true,
+        _sum: { amount: true },
+      }),
+      prisma.receipt.aggregate({
+        where: {
+          organizationId: orgId!,
+          date: carryForwardDateFilter,
+          method: { in: ["TRANSFER", "CHECK", "DEBIT", "BANK_DEPOSIT"] },
         },
-      })
-    : [];
+        _sum: { amount: true },
+      }),
+      prisma.otherReceipt.aggregate({
+        where: {
+          organizationId: orgId!,
+          date: carryForwardDateFilter,
+          method: "CASH",
+        },
+        _sum: { amount: true },
+      }),
+      prisma.otherReceipt.aggregate({
+        where: {
+          organizationId: orgId!,
+          date: carryForwardDateFilter,
+          method: { in: ["TRANSFER", "CHECK", "DEBIT", "BANK_DEPOSIT"] },
+        },
+        _sum: { amount: true },
+      }),
+      prisma.payment.aggregate({
+        where: {
+          organizationId: orgId!,
+          date: carryForwardDateFilter,
+          method: "CASH",
+        },
+        _sum: { amount: true },
+      }),
+      prisma.payment.aggregate({
+        where: {
+          organizationId: orgId!,
+          date: carryForwardDateFilter,
+          method: { in: ["TRANSFER", "CHECK", "DEBIT", "BANK_DEPOSIT"] },
+        },
+        _sum: { amount: true },
+      }),
+    ]);
 
-  const expensesByCategoryFormatted = expensesByCategory.map((c) => ({
-    categoryName:
-      accountingPosts.find((ap) => ap.id === c.accountingPostId)?.name ??
-      "Sans poste",
-    amount: toNumber(c._sum.amount),
-  }));
+    const receiptsByMonth = new Array(12).fill(0);
+    const paymentsByMonth = new Array(12).fill(0);
 
-  return NextResponse.json({
-    year,
-    totalReceipts: Number(totalReceipts),
-    totalPayments: Number(totalPayments),
-    cashBalance: Number(cashBalance),
-    bankBalance: Number(bankBalance),
-    bankBalances: bankBalancesOverview,
-    openingTotal: Number(openingTotal),
-    receiptsByMonth: receiptsByMonth.map(Number),
-    paymentsByMonth: paymentsByMonth.map(Number),
-    cumulativeBalanceByMonth: cumulativeBalanceByMonth.map(Number),
-    collectionRate: Number(collectionRate),
-    ownersCount,
-    paidOwnersCount,
-    expensesByCategory: expensesByCategoryFormatted.map((e) => ({
-      ...e,
-      amount: Number(e.amount),
-    })),
-  });
+    let receiptsCash = 0;
+    let receiptsBank = 0;
+
+    for (const r of receiptsMonths) {
+      const month = new Date(r.date).getUTCMonth();
+      const amount = toNumber(r.amount);
+      receiptsByMonth[month] += amount;
+      if (r.method === "CASH") receiptsCash += amount;
+      else receiptsBank += amount;
+    }
+
+    for (const r of otherReceiptsMonths) {
+      const month = new Date(r.date).getUTCMonth();
+      const amount = toNumber(r.amount);
+      receiptsByMonth[month] += amount;
+      if (r.method === "CASH") receiptsCash += amount;
+      else receiptsBank += amount;
+    }
+
+    let paymentsCash = 0;
+    let paymentsBank = 0;
+
+    for (const p of paymentsMonths) {
+      const month = new Date(p.date).getUTCMonth();
+      const amount = toNumber(p.amount);
+      paymentsByMonth[month] += amount;
+      if (p.method === "CASH") paymentsCash += amount;
+      else paymentsBank += amount;
+    }
+
+    const openingCash = toNumber(settings?.openingCashBalance);
+    const openingCashForYear =
+      openingCash +
+      toNumber(preYearReceiptsCashAgg._sum.amount) +
+      toNumber(preYearOtherReceiptsCashAgg._sum.amount) -
+      toNumber(preYearPaymentsCashAgg._sum.amount);
+    
+    const openingBankForYear =
+      openingBank +
+      toNumber(preYearReceiptsBankAgg._sum.amount) +
+      toNumber(preYearOtherReceiptsBankAgg._sum.amount) -
+      toNumber(preYearPaymentsBankAgg._sum.amount);
+
+    const openingTotal = openingCashForYear + openingBankForYear;
+
+    const cumulativeBalanceByMonth = new Array(12).fill(0);
+    let runningBalance = openingTotal;
+    for (let i = 0; i < 12; i += 1) {
+      runningBalance += (receiptsByMonth[i] ?? 0) - (paymentsByMonth[i] ?? 0);
+      cumulativeBalanceByMonth[i] = runningBalance;
+    }
+
+    const cashBalance = openingCashForYear + receiptsCash - paymentsCash;
+    const bankBalance = openingBankForYear + receiptsBank - paymentsBank;
+
+    const totalReceipts = receiptsCash + receiptsBank;
+    const totalPayments = paymentsCash + paymentsBank;
+
+    const [bankReceipts, bankOtherReceipts, bankPayments] = await Promise.all([
+      prisma.receipt.groupBy({
+        by: ["bankId"],
+        where: { organizationId: orgId!, bankId: { not: null } },
+        _sum: { amount: true },
+      }),
+      prisma.otherReceipt.groupBy({
+        by: ["bankId"],
+        where: { organizationId: orgId!, bankId: { not: null } },
+        _sum: { amount: true },
+      }),
+      prisma.payment.groupBy({
+        by: ["bankId"],
+        where: { organizationId: orgId!, bankId: { not: null } },
+        _sum: { amount: true },
+      }),
+    ]);
+
+    const activeBanksFull = await prisma.internalBank.findMany({
+      where: { organizationId: orgId!, isActive: true },
+    });
+
+    const bankBalancesOverview = activeBanksFull.map((b) => {
+      const receipts = toNumber(bankReceipts.find((r) => r.bankId === b.id)?._sum.amount);
+      const others = toNumber(bankOtherReceipts.find((r) => r.bankId === b.id)?._sum.amount);
+      const payments = toNumber(bankPayments.find((p) => p.bankId === b.id)?._sum.amount);
+
+      return {
+        id: b.id,
+        name: b.name,
+        balance: toNumber(b.openingBalance) + receipts + others - payments,
+      };
+    });
+
+    const paidOwnersCount = paidOwners.length;
+
+    const collectionRate =
+      ownersCount === 0
+        ? 0
+        : Number(((paidOwnersCount / ownersCount) * 100).toFixed(4));
+
+    const postIds = expensesByCategory
+      .map((c) => c.accountingPostId)
+      .filter((id): id is string => id !== null);
+
+    const accountingPosts = postIds.length
+      ? await prisma.accountingPost.findMany({
+          where: {
+            organizationId: orgId!,
+            id: { in: postIds },
+          },
+          select: {
+            id: true,
+            code: true,
+            name: true,
+          },
+        })
+      : [];
+
+    const expensesByCategoryFormatted = expensesByCategory.map((c) => ({
+      categoryName:
+        accountingPosts.find((ap) => ap.id === c.accountingPostId)?.name ??
+        "Sans poste",
+      amount: toNumber(c._sum.amount),
+    }));
+
+    const result = {
+      year,
+      totalReceipts: Number(totalReceipts),
+      totalPayments: Number(totalPayments),
+      cashBalance: Number(cashBalance),
+      bankBalance: Number(bankBalance),
+      bankBalances: bankBalancesOverview,
+      openingTotal: Number(openingTotal),
+      receiptsByMonth: receiptsByMonth.map(Number),
+      paymentsByMonth: paymentsByMonth.map(Number),
+      cumulativeBalanceByMonth: cumulativeBalanceByMonth.map(Number),
+      collectionRate: Number(collectionRate),
+      ownersCount,
+      paidOwnersCount,
+      expensesByCategory: expensesByCategoryFormatted.map((e) => ({
+        ...e,
+        amount: Number(e.amount),
+      })),
+    };
+
+    return NextResponse.json(JSON.parse(JSON.stringify(result, (key, value) => 
+      (typeof value === 'object' && value && value.constructor?.name === 'Decimal') ? Number(value) : value
+    )));
+  } catch (error: any) {
+    console.error("GET /api/dashboard failed:", error);
+    return NextResponse.json(
+      { error: "INTERNAL_ERROR", detail: error instanceof Error ? error.message : String(error) },
+      { status: 500 }
+    );
+  }
 }
