@@ -100,7 +100,7 @@ export async function reallocateUnitContributions(
   ]);
 
   const now = new Date();
-  const lastDue = existingDues.length > 0 ? existingDues.reduce((prev, current) => (prev.period > current.period) ? prev : current) : null;
+  const lastDue = existingDues.length > 0 ? existingDues.reduce((prev: any, current: any) => (prev.period > current.period) ? prev : current) : null;
   
   const lastTargetDate = [
     lastReceipt?.date,
