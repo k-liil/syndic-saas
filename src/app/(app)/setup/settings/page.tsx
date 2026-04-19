@@ -38,8 +38,12 @@ type Settings = {
 type InternalBank = {
   id: string;
   name: string;
+  agency: string | null;
+  city: string | null;
+  accountNumber: string | null;
   isActive: boolean;
   openingBalance: number;
+  openingBalanceDate: string | null;
   createdAt: string;
   updatedAt: string;
 };
@@ -132,8 +136,16 @@ export default function SettingsPage() {
   const [openingCashBalance, setOpeningCashBalance] = useState<number>(0);
   const [openingBankBalance, setOpeningBankBalance] = useState<number>(0);
   const [banks, setBanks] = useState<InternalBank[]>([]);
-  const [newBankName, setNewBankName] = useState("");
-  const [newBankOpeningBalance, setNewBankOpeningBalance] = useState<string>("0");
+  const [showBankModal, setShowBankModal] = useState(false);
+  const [editingBank, setEditingBank] = useState<InternalBank | null>(null);
+  const [bankFormData, setBankFormData] = useState({
+    name: "",
+    agency: "",
+    city: "",
+    accountNumber: "",
+    openingBalance: "0",
+    openingBalanceDate: "",
+  });
   const [savingBank, setSavingBank] = useState(false);
   const [savingSettings, setSavingSettings] = useState(false);
   const [status, setStatus] = useState<StatusState>({
@@ -207,8 +219,8 @@ export default function SettingsPage() {
   const primaryAction = useMemo(() => {
     if (tab === "banks") {
       return {
-        label: savingBank ? "Enregistrement..." : "Enregistrer",
-        disabled: savingBank || !newBankName.trim(),
+        label: savingBank ? "Enregistrement..." : "Ajouter une banque",
+        disabled: savingBank,
       };
     }
 
@@ -480,34 +492,74 @@ export default function SettingsPage() {
     setSavingSettings(false);
   }
 
-  async function addBank() {
-    const name = newBankName.trim();
-    if (!name) return;
+  async function saveBank() {
+    if (!bankFormData.name.trim()) return;
     setSavingBank(true);
 
     const res = await fetch(apiUrl("/api/internal-banks"), {
-      method: "POST",
+      method: editingBank ? "PUT" : "POST",
       headers: {
         "Content-Type": "application/json",
       },
       body: JSON.stringify({
-        name,
-        openingBalance: Number(newBankOpeningBalance) || 0,
+        id: editingBank?.id,
+        name: bankFormData.name,
+        agency: bankFormData.agency,
+        city: bankFormData.city,
+        accountNumber: bankFormData.accountNumber,
+        openingBalance: Number(bankFormData.openingBalance) || 0,
+        openingBalanceDate: bankFormData.openingBalanceDate || null,
       }),
     });
 
     if (!res.ok) {
       const err = await res.json().catch(() => ({}));
-      showStatus("error", `Erreur: ${err?.error ?? "create bank failed"}`);
+      showStatus("error", `Erreur: ${err?.error ?? "save bank failed"}`);
       setSavingBank(false);
       return;
     }
 
-    setNewBankName("");
-    setNewBankOpeningBalance("0");
+    setBankFormData({
+      name: "",
+      agency: "",
+      city: "",
+      accountNumber: "",
+      openingBalance: "0",
+      openingBalanceDate: "",
+    });
+    setEditingBank(null);
+    setShowBankModal(false);
     await loadBanks();
     setSavingBank(false);
-    showStatus("success", "Banque enregistree.");
+    showStatus("success", editingBank ? "Banque mise à jour." : "Banque enregistrée.");
+  }
+
+  function openEditBank(bank: InternalBank) {
+    setEditingBank(bank);
+    setBankFormData({
+      name: bank.name,
+      agency: bank.agency ?? "",
+      city: bank.city ?? "",
+      accountNumber: bank.accountNumber ?? "",
+      openingBalance: bank.openingBalance.toString(),
+      openingBalanceDate: bank.openingBalanceDate ? bank.openingBalanceDate.split("T")[0] : "",
+    });
+    setShowBankModal(true);
+  }
+
+  function openAddBank() {
+    setEditingBank(null);
+    // Default date to start of accounting start
+    const defaultDate = `${startYear}-${startMonth.toString().padStart(2, "0")}-01`;
+    setBankFormData({
+      name: "",
+      agency: "",
+      city: "",
+      accountNumber: "",
+      openingBalance: "0",
+      openingBalanceDate: defaultDate,
+    });
+    setShowBankModal(true);
   }
 
   async function toggleBank(bank: InternalBank) {
@@ -587,7 +639,7 @@ export default function SettingsPage() {
     if (primaryAction.disabled) return;
 
     if (tab === "banks") {
-      await addBank();
+      openAddBank();
       return;
     }
 
@@ -990,31 +1042,6 @@ export default function SettingsPage() {
               </p>
             </div>
 
-            <div className="mt-5 grid grid-cols-1 gap-3 sm:grid-cols-3">
-              <input
-                className="h-12 col-span-1 rounded-md border border-zinc-200 bg-white px-4 text-sm shadow-sm outline-none placeholder:text-zinc-400"
-                value={newBankName}
-                onChange={(e) => setNewBankName(e.target.value)}
-                placeholder="Ex: Attijariwafa Bank"
-              />
-              <input
-                type="number"
-                className="h-12 col-span-1 rounded-md border border-zinc-200 bg-white px-4 text-sm shadow-sm outline-none placeholder:text-zinc-400"
-                value={newBankOpeningBalance}
-                onChange={(e) => setNewBankOpeningBalance(e.target.value)}
-                placeholder="Solde d'ouverture (DH)"
-                step="0.01"
-              />
-              <button type="button"
-                onClick={addBank}
-                disabled={savingBank || !newBankName.trim()}
-                className="flex items-center justify-center gap-2 h-12 rounded-md bg-blue-600 hover:bg-blue-700 px-5 text-sm font-semibold text-white shadow-sm disabled:cursor-not-allowed disabled:opacity-40"
-              >
-                {savingBank ? <Loader2 className="h-4 w-4 animate-spin" /> : <PlusCircle className="h-4 w-4" />}
-                Ajouter la banque
-              </button>
-            </div>
-
             <div className="mt-5 space-y-3">
               {banks.length === 0 ? (
                 <div className="rounded-md border border-dashed border-zinc-200 bg-zinc-50 px-4 py-5 text-sm text-zinc-500 text-center">
@@ -1030,7 +1057,7 @@ export default function SettingsPage() {
                       <div className="flex items-center gap-2">
                         <Building2 className="h-4 w-4 text-zinc-400" />
                         <span className="truncate text-sm font-bold text-zinc-900">
-                          {bank.name}
+                           {bank.name}
                         </span>
                         <span
                           className={
@@ -1041,6 +1068,19 @@ export default function SettingsPage() {
                         >
                           {bank.isActive ? "Active" : "Inactive"}
                         </span>
+                      </div>
+                      
+                      <div className="mt-1 flex flex-wrap gap-x-4 gap-y-1 text-xs text-zinc-500">
+                        {bank.agency && (
+                          <span className="flex items-center gap-1">
+                            <span className="font-bold text-zinc-400 text-[10px] uppercase tracking-tight">Agence:</span> {bank.agency} {bank.city ? `(${bank.city})` : ""}
+                          </span>
+                        )}
+                        {bank.accountNumber && (
+                          <span className="flex items-center gap-1">
+                            <span className="font-bold text-zinc-400 text-[10px] uppercase tracking-tight">Compte:</span> {bank.accountNumber}
+                          </span>
+                        )}
                       </div>
                       <div className="mt-2 flex items-center gap-4">
                         <div className="flex flex-col">
@@ -1064,6 +1104,15 @@ export default function SettingsPage() {
                     </div>
 
                     <div className="flex items-center gap-2 border-t border-zinc-100 pt-3 sm:border-0 sm:pt-0">
+                      <button
+                        type="button"
+                        onClick={() => openEditBank(bank)}
+                        className="rounded-lg p-2 text-zinc-400 hover:bg-indigo-50 hover:text-indigo-600 transition-colors"
+                        title="Modifier"
+                      >
+                        <Pencil className="h-5 w-5" />
+                      </button>
+
                       <button
                         type="button"
                         onClick={() => toggleBank(bank)}
@@ -1457,6 +1506,102 @@ export default function SettingsPage() {
               className="flex items-center gap-2 btn-brand rounded-md px-6 py-2 text-sm font-semibold disabled:opacity-50"
             >
               {editingGroupId ? "Mettre à jour" : "Créer le groupe"}
+            </button>
+          </div>
+        </div>
+      </Modal>
+
+      {/* Bank Modal */}
+      <Modal
+        open={showBankModal}
+        onClose={() => {
+          setShowBankModal(false);
+          setEditingBank(null);
+        }}
+        title={editingBank ? "Modifier la banque" : "Nouvelle banque"}
+      >
+        <div className="p-4 space-y-4">
+          <div className="grid grid-cols-2 gap-4">
+            <div className="col-span-full">
+              <label className="block text-sm font-medium text-zinc-700 mb-1">Nom de la banque</label>
+              <input
+                className="h-10 w-full rounded-md border border-zinc-200 px-3 text-sm focus:ring-2 focus:ring-indigo-500 outline-none"
+                value={bankFormData.name}
+                onChange={(e) => setBankFormData({ ...bankFormData, name: e.target.value })}
+                placeholder="Ex: Attijariwafa Bank, BMCE..."
+              />
+            </div>
+            <div>
+              <label className="block text-sm font-medium text-zinc-700 mb-1">Agence</label>
+              <input
+                className="h-10 w-full rounded-md border border-zinc-200 px-3 text-sm focus:ring-2 focus:ring-indigo-500 outline-none"
+                value={bankFormData.agency}
+                onChange={(e) => setBankFormData({ ...bankFormData, agency: e.target.value })}
+                placeholder="Ex: Agence Al Amal"
+              />
+            </div>
+            <div>
+              <label className="block text-sm font-medium text-zinc-700 mb-1">Ville</label>
+              <input
+                className="h-10 w-full rounded-md border border-zinc-200 px-3 text-sm focus:ring-2 focus:ring-indigo-500 outline-none"
+                value={bankFormData.city}
+                onChange={(e) => setBankFormData({ ...bankFormData, city: e.target.value })}
+                placeholder="Ex: Casablanca, Rabat..."
+              />
+            </div>
+            <div className="col-span-full">
+              <label className="block text-sm font-medium text-zinc-700 mb-1">Numéro de compte / RIB</label>
+              <input
+                className="h-10 w-full rounded-md border border-zinc-200 px-3 text-sm focus:ring-2 focus:ring-indigo-500 outline-none"
+                value={bankFormData.accountNumber}
+                onChange={(e) => setBankFormData({ ...bankFormData, accountNumber: e.target.value })}
+                placeholder="Numéro de compte..."
+              />
+            </div>
+            <div className="pt-4 border-t border-zinc-100 col-span-full">
+              <h3 className="text-sm font-bold text-zinc-900 mb-2">Comptabilité initiale</h3>
+              <div className="grid grid-cols-2 gap-4">
+                <div>
+                  <label className="block text-sm font-medium text-zinc-700 mb-1">Solde d'ouverture (DH)</label>
+                  <input
+                    type="number"
+                    step="0.01"
+                    className="h-10 w-full rounded-md border border-zinc-200 px-3 text-sm focus:ring-2 focus:ring-indigo-500 outline-none"
+                    value={bankFormData.openingBalance}
+                    onChange={(e) => setBankFormData({ ...bankFormData, openingBalance: e.target.value })}
+                  />
+                </div>
+                <div>
+                  <label className="block text-sm font-medium text-zinc-700 mb-1">Date du solde</label>
+                  <input
+                    type="date"
+                    className="h-10 w-full rounded-md border border-zinc-200 px-3 text-sm focus:ring-2 focus:ring-indigo-500 outline-none"
+                    value={bankFormData.openingBalanceDate}
+                    onChange={(e) => setBankFormData({ ...bankFormData, openingBalanceDate: e.target.value })}
+                  />
+                </div>
+              </div>
+              <p className="mt-2 text-[11px] text-zinc-500 italic">
+                Ce solde sera utilisé comme point de départ pour le calcul de la balance de cette banque.
+              </p>
+            </div>
+          </div>
+          <div className="flex justify-end gap-3 pt-4 border-t border-zinc-100">
+            <button
+              onClick={() => {
+                setShowBankModal(false);
+                setEditingBank(null);
+              }}
+              className="px-4 py-2 text-sm font-medium text-zinc-600 hover:bg-zinc-100 rounded-md"
+            >
+              Annuler
+            </button>
+            <button onClick={saveBank}
+              disabled={savingBank || !bankFormData.name.trim()}
+              className="flex items-center gap-2 btn-brand rounded-md px-6 py-2 text-sm font-semibold disabled:opacity-50"
+            >
+              {savingBank ? <Loader2 className="h-4 w-4 animate-spin" /> : <Save className="h-4 w-4" />}
+              {editingBank ? "Mettre à jour" : "Créer la banque"}
             </button>
           </div>
         </div>

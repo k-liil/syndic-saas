@@ -77,7 +77,11 @@ export async function POST(req: Request) {
     data: {
       organizationId: orgId!,
       name: body.name.trim(),
+      agency: typeof body.agency === "string" ? body.agency.trim() : null,
+      city: typeof body.city === "string" ? body.city.trim() : null,
+      accountNumber: typeof body.accountNumber === "string" ? body.accountNumber.trim() : null,
       openingBalance: typeof body.openingBalance === "number" ? body.openingBalance : 0,
+      openingBalanceDate: typeof body.openingBalanceDate === "string" ? new Date(body.openingBalanceDate) : null,
     },
   });
 
@@ -114,10 +118,15 @@ export async function PUT(req: Request) {
     where: { id: body.id },
     data: {
       name: typeof body.name === "string" ? body.name.trim() : undefined,
+      agency: typeof body.agency === "string" ? body.agency.trim() : undefined,
+      city: typeof body.city === "string" ? body.city.trim() : undefined,
+      accountNumber: typeof body.accountNumber === "string" ? body.accountNumber.trim() : undefined,
       isActive:
         typeof body.isActive === "boolean" ? body.isActive : undefined,
       openingBalance:
         typeof body.openingBalance === "number" ? body.openingBalance : undefined,
+      openingBalanceDate:
+        typeof body.openingBalanceDate === "string" ? new Date(body.openingBalanceDate) : undefined,
     },
   });
 

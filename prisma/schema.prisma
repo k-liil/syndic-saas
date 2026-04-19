@@ -399,17 +399,21 @@ model FiscalYear {
 }
 
 model InternalBank {
-  id             String         @id @default(cuid())
-  organizationId String
-  name           String
-  isActive       Boolean        @default(true)
-  createdAt      DateTime       @default(now())
-  updatedAt      DateTime       @updatedAt
-  openingBalance Decimal        @default(0) @db.Decimal(12, 2)
-  organization   Organization   @relation(fields: [organizationId], references: [id], onDelete: Cascade)
-  otherReceipts  OtherReceipt[]
-  payments       Payment[]
-  receipts       Receipt[]
+  id                 String         @id @default(cuid())
+  organizationId     String
+  name               String
+  agency             String?
+  city               String?
+  accountNumber      String?
+  openingBalance     Decimal        @default(0) @db.Decimal(12, 2)
+  openingBalanceDate DateTime?
+  isActive           Boolean        @default(true)
+  createdAt          DateTime       @default(now())
+  updatedAt          DateTime       @updatedAt
+  organization       Organization   @relation(fields: [organizationId], references: [id], onDelete: Cascade)
+  otherReceipts      OtherReceipt[]
+  payments           Payment[]
+  receipts           Receipt[]
 
   @@index([organizationId])
 }
