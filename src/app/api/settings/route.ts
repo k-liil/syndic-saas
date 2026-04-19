@@ -67,26 +67,38 @@ function toDecimalNumber(
 }
 
 export async function GET(req: Request) {
-  const gate = await requireManager();
-  if (!gate.ok) {
-    return NextResponse.json({ error: gate.error }, { status: gate.status });
+  try {
+    const gate = await requireManager();
+    if (!gate.ok) {
+      return NextResponse.json({ error: gate.error }, { status: gate.status });
+    }
+
+    const orgId = await getOrgIdFromRequest(req, gate);
+    if (!orgId) {
+      return NextResponse.json({ error: "No organization" }, { status: 400 });
+    }
+
+    const s = await getSingleton(orgId);
+    const organization = await prisma.organization.findUnique({
+      where: { id: orgId },
+      select: { id: true, name: true, slug: true },
+    });
+
+    const result = {
+      ...s,
+      organization,
+    };
+
+    return NextResponse.json(JSON.parse(JSON.stringify(result, (key, value) => 
+      (typeof value === 'object' && value && value.constructor?.name === 'Decimal') ? Number(value) : value
+    )));
+  } catch (error: any) {
+    console.error("GET /api/settings failed:", error);
+    return NextResponse.json(
+      { error: "INTERNAL_ERROR", detail: getErrorDetail(error) },
+      { status: 500 }
+    );
   }
-
-  const orgId = await getOrgIdFromRequest(req, gate);
-  if (!orgId) {
-    return NextResponse.json({ error: "No organization" }, { status: 400 });
-  }
-
-  const s = await getSingleton(orgId);
-  const organization = await prisma.organization.findUnique({
-    where: { id: orgId },
-    select: { id: true, name: true, slug: true },
-  });
-
-  return NextResponse.json({
-    ...s,
-    organization,
-  });
 }
 
 export async function PUT(req: Request) {
@@ -102,76 +114,74 @@ export async function PUT(req: Request) {
     }
 
     const body = await req.json();
-
     const current = await getSingleton(orgId);
 
     const updateData: any = {
+      brandName:
+        typeof body.brandName === "string" && body.brandName.trim()
+          ? body.brandName.trim()
+          : current.brandName,
 
-        brandName:
-          typeof body.brandName === "string" && body.brandName.trim()
-            ? body.brandName.trim()
-            : current.brandName,
+      brandColor:
+        typeof body.brandColor === "string" && body.brandColor.trim()
+          ? body.brandColor.trim()
+          : current.brandColor,
 
-        brandColor:
-          typeof body.brandColor === "string" && body.brandColor.trim()
-            ? body.brandColor.trim()
-            : current.brandColor,
+      startYear:
+        Number.isInteger(body.startYear) ? Number(body.startYear) : current.startYear,
 
-        startYear:
-          Number.isInteger(body.startYear) ? Number(body.startYear) : current.startYear,
+      startMonth:
+        Number.isInteger(body.startMonth) ? Number(body.startMonth) : current.startMonth,
 
-        startMonth:
-          Number.isInteger(body.startMonth) ? Number(body.startMonth) : current.startMonth,
+      receiptStartNumber:
+        Number.isInteger(body.receiptStartNumber)
+          ? Number(body.receiptStartNumber)
+          : current.receiptStartNumber,
 
-        receiptStartNumber:
-          Number.isInteger(body.receiptStartNumber)
-            ? Number(body.receiptStartNumber)
-            : current.receiptStartNumber,
+      receiptUsePrefix:
+        typeof body.receiptUsePrefix === "boolean"
+          ? body.receiptUsePrefix
+          : current.receiptUsePrefix,
 
-        receiptUsePrefix:
-          typeof body.receiptUsePrefix === "boolean"
-            ? body.receiptUsePrefix
-            : current.receiptUsePrefix,
+      receiptPrefix:
+        typeof body.receiptPrefix === "string"
+          ? body.receiptPrefix
+          : current.receiptPrefix,
 
-        receiptPrefix:
-          typeof body.receiptPrefix === "string"
-            ? body.receiptPrefix
-            : current.receiptPrefix,
+      paymentStartNumber:
+        Number.isInteger(body.paymentStartNumber)
+          ? Number(body.paymentStartNumber)
+          : current.paymentStartNumber,
 
-        paymentStartNumber:
-          Number.isInteger(body.paymentStartNumber)
-            ? Number(body.paymentStartNumber)
-            : current.paymentStartNumber,
+      paymentUsePrefix:
+        typeof body.paymentUsePrefix === "boolean"
+          ? body.paymentUsePrefix
+          : current.paymentUsePrefix,
 
-        paymentUsePrefix:
-          typeof body.paymentUsePrefix === "boolean"
-            ? body.paymentUsePrefix
-            : current.paymentUsePrefix,
+      paymentPrefix:
+        typeof body.paymentPrefix === "string"
+          ? body.paymentPrefix
+          : current.paymentPrefix,
 
-        paymentPrefix:
-          typeof body.paymentPrefix === "string"
-            ? body.paymentPrefix
-            : current.paymentPrefix,
+      openingCashBalance:
+        toDecimalNumber(body.openingCashBalance, current.openingCashBalance) ?? 0,
 
-        openingCashBalance:
-          toDecimalNumber(body.openingCashBalance, current.openingCashBalance) ?? 0,
+      openingBankBalance:
+        toDecimalNumber(body.openingBankBalance, current.openingBankBalance) ?? 0,
+      
+      contributionType:
+        typeof body.contributionType === "string"
+          ? body.contributionType
+          : current.contributionType,
 
-        openingBankBalance:
-          toDecimalNumber(body.openingBankBalance, current.openingBankBalance) ?? 0,
-        
-        contributionType:
-          typeof body.contributionType === "string"
-            ? body.contributionType
-            : current.contributionType,
-
-        globalFixedAmount:
-          toDecimalNumber(body.globalFixedAmount, current.globalFixedAmount, {
-            nullable: true,
-          }),
-        frequency:
-          typeof body.frequency === "string"
-            ? body.frequency
-            : current.frequency,
+      globalFixedAmount:
+        toDecimalNumber(body.globalFixedAmount, current.globalFixedAmount, {
+          nullable: true,
+        }),
+      frequency:
+        typeof body.frequency === "string"
+          ? body.frequency
+          : current.frequency,
     };
 
     const updated = await prisma.appSettings.update({
@@ -188,10 +198,14 @@ export async function PUT(req: Request) {
       select: { id: true, name: true, slug: true },
     });
 
-    return NextResponse.json({
+    const result = {
       ...updated,
       organization,
-    });
+    };
+
+    return NextResponse.json(JSON.parse(JSON.stringify(result, (key, value) => 
+      (typeof value === 'object' && value && value.constructor?.name === 'Decimal') ? Number(value) : value
+    )));
   } catch (e) {
     console.error("PUT /api/settings failed:", e);
     return NextResponse.json(
@@ -258,7 +272,9 @@ export async function PATCH(req: Request) {
       await syncOrganizationName(orgId!, data.brandName);
     }
 
-    return NextResponse.json(updated);
+    return NextResponse.json(JSON.parse(JSON.stringify(updated, (key, value) => 
+      (typeof value === 'object' && value && value.constructor?.name === 'Decimal') ? Number(value) : value
+    )));
   } catch (e) {
     console.error("PATCH /api/settings failed:", e);
     return NextResponse.json(

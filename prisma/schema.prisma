@@ -132,10 +132,10 @@ model ContributionGroup {
   createdAt      DateTime                @default(now())
   updatedAt      DateTime                @updatedAt
   defaultAmount  Decimal?                @db.Decimal(10, 2)
+  frequency      ContributionFrequency   @default(MONTHLY)
   organization   Organization            @relation(fields: [organizationId], references: [id], onDelete: Cascade)
   units          ContributionGroupUnit[]
   periods        ContributionPeriod[]
-  frequency      ContributionFrequency   @default(MONTHLY)
 
   @@index([organizationId])
 }
@@ -362,26 +362,26 @@ model VerificationToken {
 }
 
 model AppSettings {
-  id                 String           @id @default(uuid())
-  organizationId     String           @unique
-  brandName          String           @default("Syndicly")
-  brandColor         String           @default("#4f46e5")
-  startYear          Int              @default(2026)
-  startMonth         Int              @default(1)
-  receiptStartNumber Int              @default(1)
-  receiptUsePrefix   Boolean          @default(false)
+  id                 String                @id @default(uuid())
+  organizationId     String                @unique
+  brandName          String                @default("Syndicly")
+  brandColor         String                @default("#4f46e5")
+  startYear          Int                   @default(2026)
+  startMonth         Int                   @default(1)
+  receiptStartNumber Int                   @default(1)
+  receiptUsePrefix   Boolean               @default(false)
   receiptPrefix      String?
-  paymentStartNumber Int              @default(1)
-  paymentUsePrefix   Boolean          @default(false)
+  paymentStartNumber Int                   @default(1)
+  paymentUsePrefix   Boolean               @default(false)
   paymentPrefix      String?
-  openingCashBalance Decimal          @default(0) @db.Decimal(12, 2)
-  openingBankBalance Decimal          @default(0) @db.Decimal(12, 2)
-  contributionType   ContributionType @default(GLOBAL_FIXED)
-  globalFixedAmount  Decimal?         @db.Decimal(10, 2)
+  openingCashBalance Decimal               @default(0) @db.Decimal(12, 2)
+  openingBankBalance Decimal               @default(0) @db.Decimal(12, 2)
+  contributionType   ContributionType      @default(GLOBAL_FIXED)
+  globalFixedAmount  Decimal?              @db.Decimal(10, 2)
+  createdAt          DateTime              @default(now())
+  updatedAt          DateTime              @updatedAt
   frequency          ContributionFrequency @default(MONTHLY)
-  createdAt          DateTime         @default(now())
-  updatedAt          DateTime         @updatedAt
-  organization       Organization     @relation(fields: [organizationId], references: [id], onDelete: Cascade)
+  organization       Organization          @relation(fields: [organizationId], references: [id], onDelete: Cascade)
 
   @@index([organizationId])
 }
@@ -789,9 +789,9 @@ enum PaymentMethod {
 enum ReceiptType {
   CONTRIBUTION
   RENT
+  OTHER
   TRANSFER
   PAST_CONTRIBUTION
-  OTHER
 }
 
 enum ContributionType {
@@ -852,6 +852,7 @@ enum MeetingDocumentSourceType {
   UPLOAD
   VAULT
 }
+
 enum ContributionFrequency {
   MONTHLY
   ANNUAL
