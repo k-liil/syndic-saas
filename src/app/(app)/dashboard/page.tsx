@@ -34,6 +34,11 @@ type DashboardData = {
   totalPayments: number;
   cashBalance: number;
   bankBalance: number;
+  bankBalances: {
+    id: string;
+    name: string;
+    balance: number;
+  }[];
   openingTotal: number;
   receiptsByMonth: number[];
   paymentsByMonth: number[];
@@ -53,6 +58,7 @@ const emptyData: DashboardData = {
   totalPayments: 0,
   cashBalance: 0,
   bankBalance: 0,
+  bankBalances: [],
   openingTotal: 0,
   receiptsByMonth: new Array(12).fill(0),
   paymentsByMonth: new Array(12).fill(0),
@@ -165,6 +171,7 @@ function DashboardPageContent() {
           totalPayments: Number(json?.totalPayments ?? 0),
           cashBalance: Number(json?.cashBalance ?? 0),
           bankBalance: Number(json?.bankBalance ?? 0),
+          bankBalances: Array.isArray(json?.bankBalances) ? json.bankBalances : [],
           openingTotal: Number(json?.openingTotal ?? 0),
           receiptsByMonth: Array.isArray(json?.receiptsByMonth)
             ? json.receiptsByMonth
@@ -252,7 +259,7 @@ function DashboardPageContent() {
               Tableau de bord
             </div>
             <h1 className="display-title mt-3 text-5xl font-semibold leading-[0.96] text-slate-950 sm:text-6xl">
-              Vision globale de l'exercice {year}
+              Vision globale de l'exercice {data.year}
             </h1>
             <p className="mt-3 text-sm leading-7 text-slate-600 sm:text-base">
               Suivez la tresorerie, les coproprietaires payeurs et la repartition
@@ -291,14 +298,14 @@ function DashboardPageContent() {
 
       <div className="grid gap-5 xl:grid-cols-4">
         <KpiCard
-          title={`Total encaissé (${year})`}
+          title={`Total encaissé (${data.year})`}
           value={formatMAD(data.totalReceipts)}
           subtitle="Recettes de l'exercice"
           icon={ArrowUpRight}
           tone="emerald"
         />
         <KpiCard
-          title={`Total dépensé (${year})`}
+          title={`Total dépensé (${data.year})`}
           value={formatMAD(data.totalPayments)}
           subtitle="Charges réglées"
           icon={ArrowDownRight}
@@ -312,7 +319,7 @@ function DashboardPageContent() {
           tone="sky"
         />
         <KpiCard
-          title={`Créances en retard (${year})`}
+          title={`Créances en retard (${data.year})`}
           value={`${unpaidOwners}`}
           subtitle="Copropriétaires restant à régulariser"
           icon={AlertTriangle}
@@ -321,7 +328,7 @@ function DashboardPageContent() {
       </div>
 
       <div className="grid gap-5 xl:grid-cols-[1.45fr_1fr]">
-        <Card title={`Flux de trésorerie (${year})`}>
+        <Card title={`Flux de trésorerie (${data.year})`}>
           <div className="rounded-md border border-slate-200 bg-gradient-to-b from-slate-50 to-white p-4">
             <ResponsiveContainer width="100%" height={320}>
               <ComposedChart
@@ -404,7 +411,7 @@ function DashboardPageContent() {
                   <div className="text-sm font-semibold text-slate-900">
                     Encaissements de l'exercice
                   </div>
-                  <div className="text-xs text-slate-500">Exercice {year}</div>
+                  <div className="text-xs text-slate-500">Exercice {data.year}</div>
                 </div>
               </div>
               <div className="text-right">
@@ -425,24 +432,26 @@ function DashboardPageContent() {
               </div>
             </div>
 
-            <div className="flex items-center justify-between border border-slate-200 bg-slate-50 px-4 py-4">
-              <div>
-                <div className="text-sm font-semibold text-slate-900">Solde banque</div>
-                <div className="text-xs text-slate-500">Situation actuelle</div>
+            {data.bankBalances.map((bank) => (
+              <div key={bank.id} className="flex items-center justify-between border border-slate-200 bg-slate-50 px-4 py-4">
+                <div>
+                  <div className="text-sm font-semibold text-slate-900">Solde {bank.name}</div>
+                  <div className="text-xs text-slate-500">Compte bancaire</div>
+                </div>
+                <div className="text-sm font-bold text-slate-900">
+                  {formatMAD(bank.balance)}
+                </div>
               </div>
-              <div className="text-sm font-bold text-slate-900">
-                {formatMAD(data.bankBalance)}
-              </div>
-            </div>
+            ))}
 
             <div className="flex items-center justify-between border border-slate-200 bg-slate-50 px-4 py-4">
               <div>
                 <div className="text-sm font-semibold text-slate-900">Taux d'encaissement</div>
                 <div className="text-xs text-slate-500">Paiements copropriétaires</div>
               </div>
-                <div className="text-sm font-bold text-slate-900">
-                  {Number(data.collectionRate ?? 0).toLocaleString("fr-FR", { minimumFractionDigits: 2, maximumFractionDigits: 2 })}%
-                </div>
+              <div className="text-sm font-bold text-slate-900">
+                {Number(data.collectionRate ?? 0).toLocaleString("fr-FR", { minimumFractionDigits: 2, maximumFractionDigits: 2 })}%
+              </div>
             </div>
           </div>
         </Card>
@@ -450,7 +459,11 @@ function DashboardPageContent() {
 
       <div className="grid gap-5 xl:grid-cols-2">
         <Card title="Taux d'encaissement copropriétaires">
-          {paidOwners === 0 ? (
+          {paidOwners === 0 && unpaidOwners === 0 ? (
+            <div className="flex h-[260px] items-center justify-center border border-slate-200 bg-slate-50 text-sm font-medium text-slate-400">
+              Aucun copropriétaire trouvé.
+            </div>
+          ) : paidOwners === 0 ? (
             <div className="flex h-[260px] items-center justify-center border border-slate-200 bg-slate-50 text-sm font-medium text-slate-400">
               Aucun copropriétaire n'a encore payé.
             </div>

@@ -246,6 +246,40 @@ export async function GET(req: Request) {
   const totalReceipts = receiptsCash + receiptsBank;
   const totalPayments = paymentsCash + paymentsBank;
 
+  const [bankReceipts, bankOtherReceipts, bankPayments] = await Promise.all([
+    prisma.receipt.groupBy({
+      by: ["bankId"],
+      where: { organizationId: orgId!, bankId: { not: null } },
+      _sum: { amount: true },
+    }),
+    prisma.otherReceipt.groupBy({
+      by: ["bankId"],
+      where: { organizationId: orgId!, bankId: { not: null } },
+      _sum: { amount: true },
+    }),
+    prisma.payment.groupBy({
+      by: ["bankId"],
+      where: { organizationId: orgId!, bankId: { not: null } },
+      _sum: { amount: true },
+    }),
+  ]);
+
+  const activeBanksFull = await prisma.internalBank.findMany({
+    where: { organizationId: orgId!, isActive: true },
+  });
+
+  const bankBalancesOverview = activeBanksFull.map((b) => {
+    const receipts = toNumber(bankReceipts.find((r) => r.bankId === b.id)?._sum.amount);
+    const others = toNumber(bankOtherReceipts.find((r) => r.bankId === b.id)?._sum.amount);
+    const payments = toNumber(bankPayments.find((p) => p.bankId === b.id)?._sum.amount);
+
+    return {
+      id: b.id,
+      name: b.name,
+      balance: toNumber(b.openingBalance) + receipts + others - payments,
+    };
+  });
+
   const paidOwnersCount = paidOwners.length;
 
   const collectionRate =
@@ -284,6 +318,7 @@ export async function GET(req: Request) {
     totalPayments: Number(totalPayments),
     cashBalance: Number(cashBalance),
     bankBalance: Number(bankBalance),
+    bankBalances: bankBalancesOverview,
     openingTotal: Number(openingTotal),
     receiptsByMonth: receiptsByMonth.map(Number),
     paymentsByMonth: paymentsByMonth.map(Number),

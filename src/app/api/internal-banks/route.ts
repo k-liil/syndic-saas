@@ -29,30 +29,50 @@ export async function GET(req: Request) {
     }));
 
     return NextResponse.json(normalizedBanks);
-  } catch (err: any) {
-    // SELF-HEALING: If the column is missing, try to add it on the fly
-    if (err.message?.includes("openingBalance") || err.message?.includes("P2021")) {
-      console.log("🛠️ Attempting self-healing: Adding missing openingBalance column...");
+  } catch (error: any) {
+    console.error("[INTERNAL_BANKS_GET] Error:", error);
+
+    // Self-healing: if columns are missing, try to add them
+    if (error.message?.includes("column") || error.code === "P2021") {
+      console.log("[INTERNAL_BANKS_GET] Attempting self-healing for missing columns...");
       try {
-        await prisma.$executeRawUnsafe('ALTER TABLE "InternalBank" ADD COLUMN IF NOT EXISTS "openingBalance" DECIMAL(12,2) NOT NULL DEFAULT 0;');
-        
-        // Retry the query
+        // We try to add all potential missing columns
+        const columnsToAdd = [
+          { name: "agency", type: "TEXT" },
+          { name: "city", type: "TEXT" },
+          { name: "accountNumber", type: "TEXT" },
+          { name: "openingBalanceDate", type: "TIMESTAMP" }
+        ];
+
+        for (const col of columnsToAdd) {
+          try {
+            await prisma.$executeRawUnsafe(
+              `ALTER TABLE "InternalBank" ADD COLUMN IF NOT EXISTS "${col.name}" ${col.type};`
+            );
+            console.log(`[INTERNAL_BANKS_GET] Column "${col.name}" added or already exists.`);
+          } catch (e) {
+            console.error(`[INTERNAL_BANKS_GET] Failed to add column "${col.name}":`, e);
+          }
+        }
+
+        // Retry the fetch
         const banks = await prisma.internalBank.findMany({
           where: { organizationId: orgId! },
           orderBy: { name: "asc" },
         });
-
         return NextResponse.json(banks.map(bank => ({
           ...bank,
           openingBalance: Number(bank.openingBalance)
         })));
-      } catch (repairErr: any) {
-        console.error("❌ Self-healing failed:", repairErr);
+      } catch (retryError) {
+        console.error("[INTERNAL_BANKS_GET] Self-healing failed:", retryError);
       }
     }
-    
-    console.error("[BANKS_API_ERROR]", err);
-    return NextResponse.json({ error: "SERVER_ERROR" }, { status: 500 });
+
+    return NextResponse.json(
+      { error: "Impossible de charger les banques internes" },
+      { status: 500 }
+    );
   }
 }
 
