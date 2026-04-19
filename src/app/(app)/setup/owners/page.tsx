@@ -4,7 +4,7 @@ import { useEffect, useMemo, useState } from "react";
 import { useSession } from "next-auth/react";
 import { Modal } from "@/components/ui/Modal";
 import { Table, THead, TR, TH, TD } from "@/components/ui/Table";
-import { Pencil, Trash2, Upload, PlusCircle } from "lucide-react";
+import { Pencil, Trash2, Upload, PlusCircle, Loader2 } from "lucide-react";
 import { canManage } from "@/lib/roles";
 import { useApiUrl } from "@/lib/org-context";
 
@@ -64,7 +64,8 @@ export default function OwnersPage() {
   const [errorMsg, setErrorMsg] = useState<string>("");
 
   const [units, setUnits] = useState<Unit[]>([]);
-  const [unitId, setUnitId] = useState<string>("");
+  const [unitIds, setUnitIds] = useState<string[]>([]);
+  const [lotSearch, setLotSearch] = useState("");
 
   const [openImport, setOpenImport] = useState(false);
   const [importFile, setImportFile] = useState<File | null>(null);
@@ -105,7 +106,7 @@ export default function OwnersPage() {
   }
 
   function openCreate() {
-    setUnitId("");
+    setUnitIds([]);
     setEditingId(null);
     setFirstName("");
     setName("");
@@ -128,8 +129,7 @@ export default function OwnersPage() {
     setErrorMsg("");
     setOpenForm(true);
 
-    const primary = o.units?.find((u: any) => u.type === "APARTMENT") ?? o.units?.[0] ?? null;
-    setUnitId(primary?.id ?? "");
+    setUnitIds(o.units?.map(u => u.id) || []);
   }
 
   async function submit() {
@@ -139,8 +139,7 @@ export default function OwnersPage() {
 
     try {
       const payload = {
-        unitId: unitId || undefined,
-        lotNumber: unitId || undefined,
+        unitIds,
         name: name.trim(),
         firstName: firstName.trim(),
         cin: cin.trim() || null,
@@ -169,7 +168,7 @@ export default function OwnersPage() {
   }
 
   async function loadUnits() {
-    const res = await fetch(apiUrl("/api/units?type=APARTMENT"), { cache: "no-store" });
+    const res = await fetch(apiUrl("/api/units"), { cache: "no-store" });
     const data = await res.json().catch(() => null);
     setUnits(Array.isArray(data) ? data : []);
   }
@@ -669,97 +668,167 @@ export default function OwnersPage() {
           setEditingId(null);
           setErrorMsg("");
         }}
-        title={editingId ? "Modifier un copropriétaire" : "Ajouter un copropriétaire"}
+        title={
+          editingId ? (
+            <div className="flex flex-col gap-1">
+              <span className="text-zinc-500 text-xs font-normal uppercase tracking-wider">Modifier Copropriétaire</span>
+              <div className="flex items-center gap-2">
+                <span className="text-xl font-bold text-zinc-900">{firstName} {name}</span>
+                {cin && <span className="text-xs bg-zinc-100 text-zinc-500 px-2 py-0.5 rounded-full border border-zinc-200">{cin}</span>}
+              </div>
+            </div>
+          ) : "Ajouter un copropriétaire"
+        }
         zIndex={50}
       >
-        <div className="grid gap-4">
+        <div className="grid gap-6">
           {errorMsg ? (
             <div className="rounded-md border border-red-200 bg-red-50 p-3 text-sm text-red-800">{errorMsg}</div>
           ) : null}
 
-          <div className="grid gap-2">
-            <label className="text-sm font-medium">Lot *</label>
-            <select
-              className="h-10 rounded-md border border-zinc-200 px-3 bg-white"
-              value={unitId}
-              onChange={(e) => setUnitId(e.target.value)}
-            >
-              <option value="">— Choisir un lot —</option>
-              {units.map((u) => (
-                <option key={u.id} value={u.id}>
-                  {u.lotNumber}
-                </option>
-              ))}
-            </select>
-            <div className="text-xs text-zinc-500">Le copropriétaire est lié automatiquement au lot via son numéro.</div>
-          </div>
+          {/* Section: Identité */}
+          <div className="space-y-4">
+            <h3 className="text-xs font-bold uppercase tracking-widest text-zinc-400 border-b pb-2">Identité & Contact</h3>
+            <div className="grid grid-cols-2 gap-4">
+              <div className="grid gap-2">
+                <label className="text-sm font-medium">Prénom</label>
+                <input
+                  className="h-10 rounded-md border border-zinc-200 px-3 focus:ring-2 focus:ring-indigo-500/20 focus:border-indigo-500 outline-none transition-all"
+                  placeholder="Prénom"
+                  value={firstName}
+                  onChange={(e) => setFirstName(e.target.value)}
+                />
+              </div>
+              <div className="grid gap-2">
+                <label className="text-sm font-medium">Nom *</label>
+                <input
+                  className="h-10 rounded-md border border-zinc-200 px-3 focus:ring-2 focus:ring-indigo-500/20 focus:border-indigo-500 outline-none transition-all"
+                  placeholder="Nom"
+                  value={name}
+                  onChange={(e) => setName(e.target.value)}
+                />
+              </div>
+            </div>
 
-          <div className="grid grid-cols-2 gap-4">
+            <div className="grid grid-cols-2 gap-4">
+               <div className="grid gap-2">
+                <label className="text-sm font-medium">CIN (Optionnel)</label>
+                <input
+                  className="h-10 rounded-md border border-zinc-200 px-3 focus:ring-2 focus:ring-indigo-500/20 focus:border-indigo-500 outline-none transition-all"
+                  placeholder="Ex: AA123456"
+                  value={cin}
+                  onChange={(e) => setCin(e.target.value)}
+                />
+              </div>
+              <div className="grid gap-2">
+                <label className="text-sm font-medium">Téléphone</label>
+                <input
+                  className="h-10 rounded-md border border-zinc-200 px-3 focus:ring-2 focus:ring-indigo-500/20 focus:border-indigo-500 outline-none transition-all"
+                  placeholder="06..."
+                  value={phone}
+                  onChange={(e) => setPhone(e.target.value)}
+                />
+              </div>
+            </div>
+
             <div className="grid gap-2">
-              <label className="text-sm font-medium">Prénom</label>
+              <label className="text-sm font-medium">Email</label>
               <input
-                className="h-10 rounded-md border border-zinc-200 px-3"
-                placeholder="Prénom"
-                value={firstName}
-                onChange={(e) => setFirstName(e.target.value)}
+                className="h-10 rounded-md border border-zinc-200 px-3 focus:ring-2 focus:ring-indigo-500/20 focus:border-indigo-500 outline-none transition-all"
+                placeholder="email@example.com"
+                value={email}
+                onChange={(e) => setEmail(e.target.value)}
               />
             </div>
+          </div>
+
+          {/* Section: Lots */}
+          <div className="space-y-4">
+            <h3 className="text-xs font-bold uppercase tracking-widest text-zinc-400 border-b pb-2">Lots affectés</h3>
+            
+            <div className="min-h-[60px] p-3 rounded-xl border-2 border-dashed border-zinc-200 bg-zinc-50/50">
+              {unitIds.length === 0 ? (
+                <div className="text-center py-2 text-zinc-400 text-sm">Aucun lot sélectionné</div>
+              ) : (
+                <div className="flex flex-wrap gap-2">
+                  {unitIds.map((id) => {
+                    const u = units.find(item => item.id === id);
+                    if (!u) return null;
+                    return (
+                      <div key={id} className="inline-flex items-center gap-2 bg-white border border-zinc-200 rounded-lg pl-3 pr-2 py-1.5 shadow-sm group">
+                        <span className="text-sm font-semibold text-zinc-900">{u.lotNumber}</span>
+                        <span className="text-[10px] text-zinc-500 uppercase">{u.building?.name || 'Lot'}</span>
+                        <button 
+                          onClick={() => setUnitIds(prev => prev.filter(x => x !== id))}
+                          className="p-1 hover:bg-rose-50 hover:text-rose-600 rounded-md transition-colors text-zinc-400"
+                        >
+                          <Trash2 className="h-3 w-3" />
+                        </button>
+                      </div>
+                    );
+                  })}
+                </div>
+              )}
+            </div>
+
             <div className="grid gap-2">
-              <label className="text-sm font-medium">Nom *</label>
-              <input
-                className="h-10 rounded-md border border-zinc-200 px-3"
-                placeholder="Nom"
-                value={name}
-                onChange={(e) => setName(e.target.value)}
-              />
+              <div className="relative">
+                <div className="absolute inset-y-0 left-3 flex items-center pointer-events-none">
+                  <PlusCircle className="h-4 w-4 text-zinc-400" />
+                </div>
+                <input 
+                  type="text"
+                  placeholder="Rechercher un numéro de lot..."
+                  className="w-full h-11 pl-10 pr-4 bg-white border border-zinc-200 rounded-xl text-sm focus:ring-2 focus:indigo-500/20 focus:border-indigo-500 outline-none"
+                  value={lotSearch}
+                  onChange={(e) => setLotSearch(e.target.value)}
+                />
+              </div>
+              
+              {lotSearch.trim().length > 0 && (
+                <div className="max-h-40 overflow-auto border border-zinc-200 rounded-xl bg-white shadow-xl">
+                  {units
+                    .filter(u => !unitIds.includes(u.id))
+                    .filter(u => u.lotNumber?.toLowerCase().includes(lotSearch.toLowerCase()) || u.reference?.toLowerCase().includes(lotSearch.toLowerCase()))
+                    .map(u => (
+                      <button
+                        key={u.id}
+                        onClick={() => {
+                          setUnitIds(prev => [...prev, u.id]);
+                          setLotSearch("");
+                        }}
+                        className="w-full text-left px-4 py-2.5 text-sm hover:bg-indigo-50 hover:text-indigo-700 border-b border-zinc-50 last:border-0 transition-colors flex items-center justify-between"
+                      >
+                        <div className="flex flex-col">
+                           <span className="font-bold">Lot {u.lotNumber}</span>
+                           <span className="text-[10px] text-zinc-500">{u.building?.name || u.reference}</span>
+                        </div>
+                        <PlusCircle className="h-4 w-4 opacity-30 group-hover:opacity-100" />
+                      </button>
+                    ))}
+                    {units.filter(u => !unitIds.includes(u.id)).filter(u => u.lotNumber?.toLowerCase().includes(lotSearch.toLowerCase()) || u.reference?.toLowerCase().includes(lotSearch.toLowerCase())).length === 0 && (
+                      <div className="p-3 text-center text-zinc-400 text-xs italic">Aucun lot disponible pour "{lotSearch}"</div>
+                    )}
+                </div>
+              )}
             </div>
           </div>
 
-          <div className="grid gap-2">
-            <label className="text-sm font-medium">CIN (Optionnel)</label>
-            <input
-              className="h-10 rounded-md border border-zinc-200 px-3"
-              placeholder="CIN"
-              value={cin}
-              onChange={(e) => setCin(e.target.value)}
-            />
-          </div>
-
-          <div className="grid gap-2">
-            <label className="text-sm font-medium">Email</label>
-            <input
-              className="h-10 rounded-md border border-zinc-200 px-3"
-              placeholder="Email"
-              value={email}
-              onChange={(e) => setEmail(e.target.value)}
-            />
-          </div>
-
-          <div className="grid gap-2">
-            <label className="text-sm font-medium">Téléphone</label>
-            <input
-              className="h-10 rounded-md border border-zinc-200 px-3"
-              placeholder="Téléphone"
-              value={phone}
-              onChange={(e) => setPhone(e.target.value)}
-            />
-          </div>
-
-          <div className="grid gap-2">
-            <label className="text-sm font-medium">Note / Infos complémentaires</label>
+          <div className="grid gap-2 pt-2">
+            <label className="text-sm font-medium">Notes / Libellé interne</label>
             <textarea
-              className="min-h-[80px] rounded-md border border-zinc-200 p-3"
-              placeholder="Notes, Tel 2, etc..."
+              className="min-h-[80px] rounded-xl border border-zinc-200 p-3 text-sm focus:ring-2 focus:indigo-500/20 focus:border-indigo-500 outline-none transition-all"
+              placeholder="Ex: Notes, Coordonnées secondaires..."
               value={notes}
               onChange={(e) => setNotes(e.target.value)}
             />
           </div>
 
           <button onClick={submit}
-            disabled={!canSubmit || busy}
-            className="flex items-center gap-2 mt-2 h-11 w-full rounded-md bg-blue-600 hover:bg-blue-700 text-sm font-medium text-white hover:bg-zinc-800 disabled:opacity-40"
+            disabled={!canSubmit || busy || unitIds.length === 0}
+            className="flex items-center justify-center gap-2 mt-4 h-12 w-full rounded-2xl bg-zinc-900 border border-zinc-900 hover:bg-zinc-800 text-sm font-bold text-white shadow-xl shadow-zinc-200/50 disabled:opacity-40 transition-all active:scale-[0.98]"
           >
-            {busy ? "Enregistrement..." : editingId ? "Enregistrer" : "Créer le copropriétaire"}
+            {busy ? <Loader2 className="h-5 w-5 animate-spin" /> : editingId ? "Enregistrer les modifications" : "Créer le copropriétaire"}
           </button>
         </div>
       </Modal> : null}

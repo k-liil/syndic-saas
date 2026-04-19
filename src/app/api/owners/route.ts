@@ -165,6 +165,8 @@ export async function POST(req: Request) {
 
   const unitId = asString(body.unitId);
   const lotNumber = asString(body.lotNumber);
+  const unitIds = Array.isArray(body.unitIds) ? body.unitIds : [];
+  
   const firstName = asString(body.firstName).trim();
   const name = asString(body.name).trim();
   const cin = asString(body.cin).trim();
@@ -172,21 +174,27 @@ export async function POST(req: Request) {
   const phone = asString(body.phone).trim();
   const notes = asString(body.notes).trim();
 
-  if (!unitId && !lotNumber) return NextResponse.json({ error: "unitId or lotNumber is required" }, { status: 400 });
-  if (!name) return NextResponse.json({ error: "Name is required" }, { status: 400 });
+  if (!unitId && !lotNumber && unitIds.length === 0) {
+    return NextResponse.json({ error: "Au moins un lot est requis" }, { status: 400 });
+  }
+  if (!name) return NextResponse.json({ error: "Le nom est requis" }, { status: 400 });
 
   try {
-    const unit = unitId
-      ? await prisma.unit.findFirst({
-          where: { id: unitId, organizationId: orgId },
-          select: { id: true },
-        })
-      : await prisma.unit.findFirst({
-          where: { lotNumber, organizationId: orgId },
-          select: { id: true },
-        });
+    let targetUnitIds = [...unitIds];
+    if (targetUnitIds.length === 0) {
+      const fallbackUnit = unitId
+        ? await prisma.unit.findFirst({
+            where: { id: unitId, organizationId: orgId },
+            select: { id: true },
+          })
+        : await prisma.unit.findFirst({
+            where: { lotNumber, organizationId: orgId },
+            select: { id: true },
+          });
+      if (fallbackUnit) targetUnitIds.push(fallbackUnit.id);
+    }
 
-    if (!unit) return NextResponse.json({ error: "Unit not found" }, { status: 400 });
+    if (targetUnitIds.length === 0) return NextResponse.json({ error: "Lot introuvable" }, { status: 400 });
 
     const created = await prisma.$transaction(async (tx) => {
       const owner = await tx.owner.upsert({
@@ -215,19 +223,21 @@ export async function POST(req: Request) {
         select: { id: true, name: true, firstName: true, cin: true, email: true, phone: true, notes: true },
       });
 
-      const existing = await tx.ownership.findFirst({
-        where: { ownerId: owner.id, unitId: unit.id, endDate: null },
-        select: { id: true },
-      });
-
-      if (!existing) {
-        await tx.ownership.create({
-          data: {
-            organizationId: orgId,
-            ownerId: owner.id,
-            unitId: unit.id,
-          },
+      for (const uId of targetUnitIds) {
+        const existing = await tx.ownership.findFirst({
+          where: { ownerId: owner.id, unitId: uId, endDate: null },
+          select: { id: true },
         });
+
+        if (!existing) {
+          await tx.ownership.create({
+            data: {
+              organizationId: orgId,
+              ownerId: owner.id,
+              unitId: uId,
+            },
+          });
+        }
       }
 
       if (email) {
@@ -255,6 +265,8 @@ export async function PATCH(req: Request) {
   const id = asString(body.id);
   const unitId = asString(body.unitId);
   const lotNumber = asString(body.lotNumber);
+  const unitIds = Array.isArray(body.unitIds) ? body.unitIds : null;
+
   const firstName = asString(body.firstName).trim();
   const name = asString(body.name).trim();
   const cin = asString(body.cin).trim();
@@ -263,22 +275,31 @@ export async function PATCH(req: Request) {
   const notes = asString(body.notes);
 
   if (!id) return NextResponse.json({ error: "Missing id" }, { status: 400 });
-  if (!unitId && !lotNumber) return NextResponse.json({ error: "unitId or lotNumber is required" }, { status: 400 });
-  if (!name) return NextResponse.json({ error: "Name is required" }, { status: 400 });
+  if (!unitId && !lotNumber && !unitIds) {
+    return NextResponse.json({ error: "Au moins un lot est requis" }, { status: 400 });
+  }
+  if (!name) return NextResponse.json({ error: "Le nom est requis" }, { status: 400 });
 
   try {
     const updated = await prisma.$transaction(async (tx) => {
-      const unit = unitId
-        ? await tx.unit.findFirst({
-            where: { id: unitId, organizationId: orgId },
-            select: { id: true },
-          })
-        : await tx.unit.findFirst({
-            where: { lotNumber, organizationId: orgId },
-            select: { id: true },
-          });
+      let targetUnitIds: string[] = [];
+      
+      if (unitIds) {
+        targetUnitIds = unitIds;
+      } else {
+        const fallbackUnit = unitId
+          ? await tx.unit.findFirst({
+              where: { id: unitId, organizationId: orgId },
+              select: { id: true },
+            })
+          : await tx.unit.findFirst({
+              where: { lotNumber, organizationId: orgId },
+              select: { id: true },
+            });
+        if (fallbackUnit) targetUnitIds.push(fallbackUnit.id);
+      }
 
-      if (!unit) throw new Error("Unit not found");
+      if (targetUnitIds.length === 0) throw new Error("Lot introuvable");
 
       const existingOwner = await tx.owner.findFirst({
         where: { id, organizationId: orgId },
@@ -300,34 +321,38 @@ export async function PATCH(req: Request) {
         select: { id: true, name: true, firstName: true, cin: true, email: true, phone: true, notes: true },
       });
 
+      // Close ownerships that are not in the list anymore
       await tx.ownership.updateMany({
         where: {
           organizationId: orgId,
           ownerId: owner.id,
           endDate: null,
-          unitId: { not: unit.id },
+          unitId: { notIn: targetUnitIds },
         },
         data: { endDate: new Date() },
       });
 
-      const existing = await tx.ownership.findFirst({
-        where: {
-          organizationId: orgId,
-          ownerId: owner.id,
-          unitId: unit.id,
-          endDate: null,
-        },
-        select: { id: true },
-      });
-
-      if (!existing) {
-        await tx.ownership.create({
-          data: {
+      // Add new ownerships
+      for (const uId of targetUnitIds) {
+        const existing = await tx.ownership.findFirst({
+          where: {
             organizationId: orgId,
             ownerId: owner.id,
-            unitId: unit.id,
+            unitId: uId,
+            endDate: null,
           },
+          select: { id: true },
         });
+
+        if (!existing) {
+          await tx.ownership.create({
+            data: {
+              organizationId: orgId,
+              ownerId: owner.id,
+              unitId: uId,
+            },
+          });
+        }
       }
 
       if (email) {
