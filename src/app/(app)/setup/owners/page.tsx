@@ -13,6 +13,7 @@ type Unit = {
   lotNumber: string;
   reference: string;
   building: { id: string; name: string } | null;
+  activeOwnership?: { id: string; ownerId: string } | null;
 };
 
 type Owner = {
@@ -838,6 +839,7 @@ export default function OwnersPage() {
                 <div className="max-h-40 overflow-auto border border-zinc-200 rounded-xl bg-white shadow-xl">
                   {units
                     .filter(u => !unitIds.includes(u.id))
+                    .filter(u => !u.activeOwnership) // Only available lots
                     .filter(u => u.lotNumber?.toLowerCase().includes(lotSearch.toLowerCase()) || u.reference?.toLowerCase().includes(lotSearch.toLowerCase()))
                     .map(u => (
                       <button
