@@ -26,7 +26,10 @@ model Organization {
   createdAt             DateTime               @default(now())
   updatedAt             DateTime               @updatedAt
   accountingPosts       AccountingPost[]
+  actionLogs            ActionLog[]
   settings              AppSettings?
+  backupAudits          BackupAudit[]
+  backupSchedule        BackupSchedule?
   budgets               Budget[]
   buildings             Building[]
   claims                Claim[]
@@ -50,9 +53,6 @@ model Organization {
   supplierSectors       SupplierSector[]
   units                 Unit[]
   userOrganizations     UserOrganization[]
-  backupSchedule        BackupSchedule?
-  backupAudits          BackupAudit[]
-  actionLogs            ActionLog[]
 }
 
 model Owner {
@@ -301,12 +301,12 @@ model User {
   createdAt     DateTime           @default(now())
   updatedAt     DateTime           @updatedAt
   accounts      Account[]
+  actionLogs    ActionLog[]
   claimComments ClaimComment[]
   notifications Notification[]
   owner         Owner?
   sessions      Session[]
   organizations UserOrganization[]
-  actionLogs    ActionLog[]
 }
 
 model UserOrganization {
@@ -402,14 +402,14 @@ model InternalBank {
   id                 String         @id @default(cuid())
   organizationId     String
   name               String
-  agency             String?
-  city               String?
-  accountNumber      String?
-  openingBalance     Decimal        @default(0) @db.Decimal(12, 2)
-  openingBalanceDate DateTime?
   isActive           Boolean        @default(true)
   createdAt          DateTime       @default(now())
   updatedAt          DateTime       @updatedAt
+  openingBalance     Decimal        @default(0) @db.Decimal(12, 2)
+  accountNumber      String?
+  agency             String?
+  city               String?
+  openingBalanceDate DateTime?
   organization       Organization   @relation(fields: [organizationId], references: [id], onDelete: Cascade)
   otherReceipts      OtherReceipt[]
   payments           Payment[]
@@ -699,10 +699,59 @@ model PageVisibilitySetting {
 }
 
 model SystemSettings {
-  id                    String   @id @default(cuid())
-  prismaLogging         Boolean  @default(true)
+  id                    String    @id @default(cuid())
+  prismaLogging         Boolean   @default(true)
+  updatedAt             DateTime  @updatedAt
   lastBackupHeartbeatAt DateTime?
-  updatedAt             DateTime @updatedAt
+}
+
+model BackupSchedule {
+  id             String       @id @default(cuid())
+  organizationId String       @unique
+  frequency      Int          @default(1440)
+  isActive       Boolean      @default(true)
+  lastRunAt      DateTime?
+  nextRunAt      DateTime?
+  createdAt      DateTime     @default(now())
+  updatedAt      DateTime     @updatedAt
+  retentionCount Int          @default(10)
+  organization   Organization @relation(fields: [organizationId], references: [id], onDelete: Cascade)
+
+  @@index([organizationId])
+  @@index([isActive, nextRunAt])
+}
+
+model BackupAudit {
+  id             String       @id @default(cuid())
+  organizationId String
+  fileName       String
+  status         String
+  errorMsg       String?
+  sizeBytes      Int          @default(0)
+  createdAt      DateTime     @default(now())
+  deletedAt      DateTime?
+  deletionType   String?
+  organization   Organization @relation(fields: [organizationId], references: [id], onDelete: Cascade)
+
+  @@index([organizationId])
+  @@index([createdAt])
+}
+
+model ActionLog {
+  id             String        @id @default(cuid())
+  organizationId String?
+  userId         String?
+  action         String
+  details        String?
+  entityType     String?
+  entityId       String?
+  createdAt      DateTime      @default(now())
+  organization   Organization? @relation(fields: [organizationId], references: [id])
+  user           User?         @relation(fields: [userId], references: [id])
+
+  @@index([organizationId])
+  @@index([userId])
+  @@index([createdAt])
 }
 
 enum UserRole {
@@ -798,54 +847,4 @@ enum MeetingDocumentType {
 enum MeetingDocumentSourceType {
   UPLOAD
   VAULT
-}
-
-model BackupSchedule {
-  id             String       @id @default(cuid())
-  organizationId String       @unique
-  organization   Organization @relation(fields: [organizationId], references: [id], onDelete: Cascade)
-  frequency      Int          @default(1440) // frequency in minutes (default 24h = 1440)
-  retentionCount Int          @default(10)   // number of backups to keep
-  isActive       Boolean      @default(true)
-  lastRunAt      DateTime?
-  nextRunAt      DateTime?
-  createdAt      DateTime     @default(now())
-  updatedAt      DateTime     @updatedAt
-
-  @@index([organizationId])
-  @@index([isActive, nextRunAt])
-}
-
-model BackupAudit {
-  id             String       @id @default(cuid())
-  organizationId String
-  organization   Organization @relation(fields: [organizationId], references: [id], onDelete: Cascade)
-  fileName       String
-  status         String       // "SUCCESS" | "ERROR"
-  errorMsg       String?
-  sizeBytes      Int          @default(0)
-  createdAt      DateTime     @default(now())
-  deletedAt      DateTime?
-  deletionType   String?      // "MANUAL" | "RETENTION"
-
-  @@index([organizationId])
-  @@index([createdAt])
-}
-
-model ActionLog {
-  id             String       @id @default(cuid())
-  organizationId String?
-  userId         String?
-  action         String       // e.g., "CREATE_RECEIPT", "DELETE_PAYMENT"
-  details        String?      // Optional description or JSON
-  entityType     String?      // e.g., "RECEIPT", "PAYMENT"
-  entityId       String?
-  createdAt      DateTime     @default(now())
-
-  organization   Organization? @relation(fields: [organizationId], references: [id])
-  user           User?         @relation(fields: [userId], references: [id])
-
-  @@index([organizationId])
-  @@index([userId])
-  @@index([createdAt])
 }

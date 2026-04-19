@@ -86,24 +86,38 @@ export async function reallocateUnitContributions(
     log(`Supprimé ${deleteRes.count} dettes hors-période (avant la date de début).`);
   }
 
-  // 1.4 Generate missing dues if needed (up to last receipt or today)
-  const lastReceipt = await tx.receipt.findFirst({
-    where: { unitId, organizationId, type: ReceiptType.CONTRIBUTION },
-    orderBy: { date: "desc" },
-    select: { date: true },
-  });
+  // 1.4 Generate missing dues or update existing ones if amount changed
+  const [existingDues, lastReceipt] = await Promise.all([
+    tx.monthlyDue.findMany({
+      where: { unitId, organizationId },
+      select: { id: true, period: true, amountDue: true },
+    }),
+    tx.receipt.findFirst({
+      where: { unitId, organizationId, type: ReceiptType.CONTRIBUTION },
+      orderBy: { date: "desc" },
+      select: { date: true },
+    }),
+  ]);
 
   const now = new Date();
-  const lastTargetDate =
-    lastReceipt?.date && lastReceipt.date > now ? lastReceipt.date : now;
+  const lastDue = existingDues.length > 0 ? existingDues.reduce((prev, current) => (prev.period > current.period) ? prev : current) : null;
+  
+  const lastTargetDate = [
+    lastReceipt?.date,
+    lastDue?.period,
+    now
+  ].filter(Boolean).reduce((prev, current) => (prev! > current!) ? prev : current);
+
   // Ensure we go to the first of the month
   const targetPeriod = new Date(
-    Date.UTC(lastTargetDate.getUTCFullYear(), lastTargetDate.getUTCMonth(), 1),
+    Date.UTC(lastTargetDate!.getUTCFullYear(), lastTargetDate!.getUTCMonth(), 1),
   );
 
   let cursor = new Date(startPeriod);
   let createdCount = 0;
+  let updatedCount = 0;
   const duesToCreate: any[] = [];
+  const duesToUpdate: { id: string; amountDue: number }[] = [];
 
   while (cursor <= targetPeriod) {
     const { amount } = getApplicableContribution(
@@ -112,15 +126,29 @@ export async function reallocateUnitContributions(
       settings as any,
       globalPeriods,
     );
+
     if (amount > 0) {
-      duesToCreate.push({
-        organizationId,
-        unitId,
-        period: new Date(cursor),
-        amountDue: amount,
-        paidAmount: 0,
-        status: DueStatus.UNPAID,
+      const existing = existingDues.find((d: any) => {
+        const dDate = new Date(d.period);
+        return (
+          dDate.toISOString().slice(0, 7) === cursor.toISOString().slice(0, 7)
+        );
       });
+
+      if (existing) {
+        if (Number(existing.amountDue) !== amount) {
+          duesToUpdate.push({ id: existing.id, amountDue: amount });
+        }
+      } else {
+        duesToCreate.push({
+          organizationId,
+          unitId,
+          period: new Date(cursor),
+          amountDue: amount,
+          paidAmount: 0,
+          status: DueStatus.UNPAID,
+        });
+      }
     }
     cursor.setUTCMonth(cursor.getUTCMonth() + 1);
   }
@@ -132,7 +160,20 @@ export async function reallocateUnitContributions(
     });
     createdCount = res.count;
   }
-  log(`Généré ${createdCount} dettes mensuelles manquantes (batch).`);
+
+  if (duesToUpdate.length > 0) {
+    for (const update of duesToUpdate) {
+      await tx.monthlyDue.update({
+        where: { id: update.id },
+        data: { amountDue: update.amountDue },
+      });
+      updatedCount++;
+    }
+  }
+
+  log(
+    `Bilan des dettes : ${createdCount} créées, ${updatedCount} mises à jour (tarifs modifiés).`,
+  );
 
   // 1.5 Fetch current dues and receipts for reallocation
 

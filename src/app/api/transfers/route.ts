@@ -33,15 +33,37 @@ export async function POST(req: Request) {
       return NextResponse.json({ error: "SAME_SOURCE_DESTINATION" }, { status: 400 });
     }
 
-    // Resolve system supplier and accounting post
-    const [supplier, post, settings] = await Promise.all([
-      prisma.supplier.findFirst({ where: { organizationId: orgId, name: "Virement Interne" } }),
-      prisma.accountingPost.findFirst({ where: { organizationId: orgId, code: "VI" } }),
+    // Resolve or create system supplier and accounting post (self-healing)
+    let supplier = await prisma.supplier.findFirst({
+      where: { organizationId: orgId, name: "Virement Interne" }
+    });
+
+    if (!supplier) {
+      supplier = await prisma.supplier.create({
+        data: {
+          organizationId: orgId,
+          name: "Virement Interne",
+        }
+      });
+    }
+
+    const [postResult, settings] = await Promise.all([
+      prisma.accountingPost.upsert({
+        where: { organizationId_code: { organizationId: orgId, code: "VI" } },
+        update: {},
+        create: {
+          organizationId: orgId,
+          code: "VI",
+          name: "Virement Interne",
+          postType: "CHARGE",
+          isActive: true,
+        },
+      }),
       prisma.appSettings.findFirst({ where: { organizationId: orgId } }),
       ensureFiscalYear(prisma, orgId, transferDate),
     ]);
 
-    if (!supplier) throw new Error("SYSTEM_SUPPLIER_MISSING");
+    const post = postResult;
 
     const result = await prisma.$transaction(async (tx) => {
       // 1. Create Source Payment (Expense)
