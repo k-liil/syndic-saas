@@ -12,7 +12,7 @@ export function Modal({
 }: {
   open: boolean;
   onClose: () => void;
-  title: string;
+  title: string | ReactNode;
   children: ReactNode;
   zIndex?: number;
   containerClassName?: string;
