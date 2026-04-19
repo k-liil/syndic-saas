@@ -1487,6 +1487,17 @@ export default function SettingsPage() {
               </select>
             </div>
           </div>
+
+          <div>
+            <label className="block text-sm font-medium text-zinc-700 mb-1">Montant par défaut (DH)</label>
+            <input
+              type="number"
+              className="h-10 w-full rounded-md border border-zinc-200 px-3 text-sm focus:ring-2 focus:ring-indigo-500 outline-none"
+              value={groupAmount}
+              onChange={(e) => setGroupAmount(e.target.value)}
+              placeholder="Ex: 130"
+            />
+          </div>
           <div>
             <div className="flex items-center justify-between mb-2">
               <label className="block text-sm font-medium text-zinc-700">Lots à inclure</label>
