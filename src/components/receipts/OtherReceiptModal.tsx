@@ -145,154 +145,157 @@ export function OtherReceiptModal({
       open={open}
       onClose={onClose}
       title={isEdit ? "Modifier une autre recette" : "Ajouter une autre recette"}
+      containerClassName="w-[min(850px,94vw)]"
     >
-      <div className="grid gap-4">
+      <div className="space-y-6">
         {error ? (
           <div className="rounded-md border border-red-200 bg-red-50 px-3 py-2 text-sm text-red-700">
             {error}
           </div>
         ) : null}
 
-        <div>
-          <label className="text-sm font-medium">Type</label>
-          <select
-            className="h-10 w-full rounded-md border px-3"
-            value={type}
-            onChange={(e) => setType(e.target.value as OtherReceiptType)}
-          >
-            <option value="RENT">Loyer</option>
-            <option value="OTHER">Autre</option>
-          </select>
-        </div>
+        <div className="grid grid-cols-1 gap-6 md:grid-cols-2">
+          <div className="space-y-4">
+            <div>
+              <label className="mb-1.5 block text-sm font-semibold text-zinc-700">Type de recette</label>
+              <select
+                className="h-12 w-full rounded-md border border-zinc-200 px-3 text-sm outline-none focus:border-zinc-900"
+                value={type}
+                onChange={(e) => setType(e.target.value as OtherReceiptType)}
+              >
+                <option value="RENT">Loyer</option>
+                <option value="OTHER">Autre</option>
+              </select>
+            </div>
 
-        <div>
-          <label className="text-sm font-medium">Description</label>
-          <input
-            className="h-10 w-full rounded-md border px-3"
-            value={description}
-            onChange={(e) => setDescription(e.target.value)}
-            placeholder="Ex: Loyer local commercial"
-          />
-        </div>
-
-        <div>
-          <label className="text-sm font-medium">Montant</label>
-          <input
-            className="h-10 w-full rounded-md border px-3"
-            value={amount}
-            onChange={(e) => setAmount(e.target.value)}
-            inputMode="decimal"
-            placeholder="Ex: 1200"
-          />
-        </div>
-
-        <div>
-          <label className="text-sm font-medium">Méthode</label>
-          <select
-            className="h-10 w-full rounded-md border px-3"
-            value={method}
-            onChange={(e) => {
-              const m = e.target.value as Method;
-              setMethod(m);
-              if (m === "BANK_DEPOSIT") {
-                const totalWithFee = (Number(amount) || 0) + 1;
-                const displayDate = toDisplayDate(date);
-                const feeText = `Versement d'un montant de ${totalWithFee} DH avec une retenue de 1 DH pour les frais de timbre à la date du ${displayDate}`;
-                
-                if (!note.includes("frais de timbre")) {
-                  setNote(prev => prev ? `${prev}\n${feeText}` : feeText);
-                } else {
-                  setNote(prev => {
-                    const lines = prev.split("\n");
-                    const filtered = lines.filter(l => !l.includes("frais de timbre"));
-                    return [...filtered, feeText].join("\n").trim();
-                  });
-                }
-              }
-            }}
-          >
-            <option value="CASH">Espèces</option>
-            <option value="TRANSFER">Virement</option>
-            <option value="CHECK">Chèque</option>
-            <option value="BANK_DEPOSIT">Versement</option>
-          </select>
-        </div>
-
-        <div>
-          <label className="text-sm font-medium">Date (JJ/MM/AAAA)</label>
-          <DateInput
-            value={date}
-            onChange={(e) => setDate(e.target.value)}
-          />
-        </div>
-
-        {method !== "CASH" && (
-          <div>
-            <label className="text-sm font-medium">Banque</label>
-            <select
-              className="h-10 w-full rounded-md border px-3"
-              value={bankId}
-              onChange={(e) => {
-                const id = e.target.value;
-                setBankId(id);
-                const bank = banks.find(b => b.id === id);
-                setBankName(bank ? bank.name : "");
-              }}
-            >
-              <option value="">Sélectionner une banque</option>
-              {banks.map(bank => (
-                <option key={bank.id} value={bank.id}>{bank.name}</option>
-              ))}
-            </select>
+            <div>
+              <label className="mb-1.5 block text-sm font-semibold text-zinc-700">Description / Objet</label>
+              <input
+                className="h-12 w-full rounded-md border border-zinc-200 px-4 text-sm outline-none focus:border-zinc-900"
+                value={description}
+                onChange={(e) => setDescription(e.target.value)}
+                placeholder="Ex: Loyer local commercial"
+              />
+            </div>
           </div>
-        )}
 
-        {method === "CHECK" && (
-          <div>
-            <label className="text-sm font-medium">Numéro de chèque</label>
+          <div className="space-y-4">
+            <div>
+              <label className="mb-1.5 block text-sm font-semibold text-zinc-700">Montant (MAD)</label>
+              <input
+                className="h-12 w-full rounded-md border border-zinc-200 px-4 text-sm outline-none focus:border-zinc-900"
+                value={amount}
+                onChange={(e) => setAmount(e.target.value)}
+                inputMode="decimal"
+                placeholder="Ex: 1200"
+              />
+            </div>
+
+            <div>
+              <label className="mb-1.5 block text-sm font-semibold text-zinc-700">Date de l'opération</label>
+              <DateInput
+                value={date}
+                onChange={(e) => setDate(e.target.value)}
+              />
+            </div>
+          </div>
+        </div>
+
+        <div className="border-t border-zinc-100 pt-6">
+          <div className="grid grid-cols-1 gap-6 md:grid-cols-2">
+            <div>
+              <label className="mb-1.5 block text-sm font-semibold text-zinc-700">Méthode de paiement</label>
+              <select
+                className="h-12 w-full rounded-md border border-zinc-200 px-3 text-sm outline-none focus:border-zinc-900"
+                value={method}
+                onChange={(e) => {
+                  const m = e.target.value as Method;
+                  setMethod(m);
+                  if (m === "BANK_DEPOSIT") {
+                    const totalWithFee = (Number(amount) || 0) + 1;
+                    const displayDate = toDisplayDate(date);
+                    const feeText = `Versement d'un montant de ${totalWithFee} DH avec une retenue de 1 DH pour les frais de timbre à la date du ${displayDate}`;
+                    
+                    if (!note.includes("frais de timbre")) {
+                      setNote(prev => prev ? `${prev}\n${feeText}` : feeText);
+                    } else {
+                      setNote(prev => {
+                        const lines = prev.split("\n");
+                        const filtered = lines.filter(l => !l.includes("frais de timbre"));
+                        return [...filtered, feeText].join("\n").trim();
+                      });
+                    }
+                  }
+                }}
+              >
+                <option value="CASH">Espèces</option>
+                <option value="TRANSFER">Virement</option>
+                <option value="CHECK">Chèque</option>
+                <option value="BANK_DEPOSIT">Versement</option>
+              </select>
+            </div>
+
+            {(method === "TRANSFER" || method === "CHECK" || method === "BANK_DEPOSIT") && (
+              <div className="animate-in fade-in slide-in-from-top-2">
+                <label className="mb-1.5 block text-sm font-semibold text-zinc-700">Banque de destination</label>
+                <select
+                  className="h-12 w-full rounded-md border border-zinc-200 px-3 text-sm outline-none focus:border-zinc-900"
+                  value={bankId}
+                  onChange={(e) => {
+                    const id = e.target.value;
+                    setBankId(id);
+                    const bank = banks.find(b => b.id === id);
+                    setBankName(bank ? bank.name : "");
+                  }}
+                >
+                  <option value="">Sélectionner une banque</option>
+                  {banks.map(bank => (
+                    <option key={bank.id} value={bank.id}>{bank.name}</option>
+                  ))}
+                </select>
+              </div>
+            )}
+          </div>
+        </div>
+
+        {(method === "CHECK" || method === "TRANSFER") && (
+          <div className="animate-in fade-in slide-in-from-top-2">
+            <label className="mb-1.5 block text-sm font-semibold text-zinc-700">
+              {method === "CHECK" ? "Numéro de chèque" : "Référence du virement"}
+            </label>
             <input
-              className="h-10 w-full rounded-md border px-3"
+              className="h-12 w-full rounded-md border border-zinc-200 px-4 text-sm outline-none focus:border-zinc-900"
               value={bankRef}
               onChange={(e) => setBankRef(e.target.value)}
-              placeholder="Numéro du chèque"
+              placeholder={method === "CHECK" ? "Ex: 1234567" : "Ex: VIR-987654"}
             />
           </div>
         )}
 
-        {method === "TRANSFER" && (
-          <div>
-            <label className="text-sm font-medium">Référence bancaire</label>
-            <input
-              className="h-10 w-full rounded-md border px-3"
-              value={bankRef}
-              onChange={(e) => setBankRef(e.target.value)}
-              placeholder="Référence du virement"
-            />
-          </div>
-        )}
-
         <div>
-          <label className="text-sm font-medium">Note</label>
+          <label className="mb-1.5 block text-sm font-semibold text-zinc-700">Observations / Note</label>
           <textarea
-            className="w-full rounded-md border px-3 py-2"
+            className="min-h-[100px] w-full rounded-md border border-zinc-200 px-4 py-3 text-sm outline-none focus:border-zinc-900 shadow-sm"
             value={note}
             onChange={(e) => setNote(e.target.value)}
-            placeholder="Note optionnelle"
+            placeholder="Note facultative..."
           />
         </div>
 
-        <button onClick={save}
-          disabled={
-            busy ||
-            !description.trim() ||
-            Number(amount) <= 0 ||
-            ((method === "TRANSFER" || method === "CHECK" || method === "BANK_DEPOSIT") && !bankName.trim()) ||
-            (method === "CHECK" && !bankRef.trim())
-          }
-          className="flex items-center justify-center gap-2 btn-brand h-12 w-full rounded-md disabled:opacity-50"
-        >
-          {busy ? "Enregistrement..." : isEdit ? "Mettre à jour" : "Enregistrer la recette"}
-        </button>
+        <div className="flex justify-center pt-4 border-t border-zinc-100">
+          <button onClick={save}
+            disabled={
+              busy ||
+              !description.trim() ||
+              Number(amount) <= 0 ||
+              ((method === "TRANSFER" || method === "CHECK" || method === "BANK_DEPOSIT") && !bankName.trim()) ||
+              (method === "CHECK" && !bankRef.trim())
+            }
+            className="btn-brand h-12 w-full px-12 text-sm font-bold shadow-md transition-all hover:scale-[1.02] active:scale-[0.98] disabled:opacity-40 sm:w-auto min-w-[220px]"
+          >
+            {busy ? "Enregistrement..." : isEdit ? "Mettre à jour" : "Enregistrer la recette"}
+          </button>
+        </div>
       </div>
     </Modal>
   );

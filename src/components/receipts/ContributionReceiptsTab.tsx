@@ -1372,8 +1372,9 @@ export function ContributionReceiptsTab({
             ? "Modifier l'encaissement"
             : "Encaisser une cotisation"
         }
+        containerClassName="w-[min(900px,94vw)]"
       >
-        <div className="grid gap-4">
+        <div className="space-y-6">
           {success ? (
             <div className="rounded-md border border-emerald-200 bg-emerald-50 p-4 text-sm text-emerald-900">
               <div className="font-semibold">Encaissement enregistré</div>
@@ -1407,129 +1408,121 @@ export function ContributionReceiptsTab({
             </div>
           ) : null}
 
-          <div>
-            <label className="text-sm font-medium">Mode</label>
+          <div className="grid grid-cols-1 gap-6 md:grid-cols-2">
+            <div className="space-y-4">
+              <div>
+                <label className="mb-1.5 block text-sm font-semibold text-zinc-700">Mode de recherche</label>
+                <select
+                  className="h-12 w-full rounded-md border border-zinc-200 px-3 text-sm outline-none focus:border-zinc-900"
+                  value={mode}
+                  disabled={Boolean(editingReceiptId)}
+                  onChange={(e) => {
+                    setMode(e.target.value as "UNIT" | "OWNER");
+                    setQuery("");
+                    setUnits([]);
+                    setUnitId("");
+                  }}
+                >
+                  <option value="UNIT">Par lot</option>
+                  <option value="OWNER">Par copropriétaire</option>
+                </select>
+              </div>
 
-            <select
-              className="h-10 w-full rounded-md border px-3"
-              value={mode}
-              disabled={Boolean(editingReceiptId)}
-              onChange={(e) => {
-                setMode(e.target.value as "UNIT" | "OWNER");
-                setQuery("");
-                setUnits([]);
-                setUnitId("");
-              }}
-            >
-              <option value="UNIT">Par lot</option>
-              <option value="OWNER">Par copropriétaire</option>
-            </select>
-          </div>
-
-          <div>
-            <label className="text-sm font-medium">
-              {mode === "UNIT" ? "Lot" : "Copropriétaire"}
-            </label>
-
-            <input
-              className="h-12 w-full rounded-md border border-zinc-200 bg-white px-4 text-sm text-zinc-900 shadow-sm outline-none transition placeholder:text-zinc-400 focus:border-zinc-900 disabled:bg-zinc-100 disabled:text-zinc-500"
-              placeholder={
-                mode === "UNIT"
-                  ? "Rechercher un lot (ex: INM2A12)..."
-                  : "Rechercher un copropriétaire..."
-              }
-              value={query}
-              disabled={Boolean(editingReceiptId)}
-              onChange={(e) => {
-                setSuccess(null);
-                searchUnits(e.target.value);
-              }}
-            />
-
-            {units.length > 0 && (
-              <div className="mt-3 max-h-64 overflow-auto rounded-md border border-zinc-200 bg-white p-2 shadow-sm">
-                <div className="mb-2 px-2 text-xs font-medium uppercase tracking-wide text-zinc-500">
-                  Résultats
-                </div>
-
-                <div className="space-y-2">
-                  {units.map((u) => (
-                    <button
-                      key={u.id}
-                      type="button"
-                        onClick={() => {
-                          setUnitId(u.id);
-                          setQuery(`${u.lotNumber || u.reference} • ${u.ownerName ?? ""}`);
-                          setUnits([]);
-                          setSuccess(null);
-                        }}
-                      className="group block w-full rounded-md border border-zinc-200 bg-white px-3 py-3 text-left transition hover:border-zinc-300 hover:bg-zinc-50"
-                    >
-                      <div className="flex items-start justify-between gap-3">
-                        <div className="min-w-0">
-                          <div className="flex items-center gap-2">
-                            <span className="inline-flex gap-3 rounded-md bg-blue-600 px-2.5 py-1 text-[11px] font-semibold text-white">
-                              {u.lotNumber}
-                            </span>
-
-                            <span
-                              className={`inline-flex gap-3 rounded-md px-2.5 py-1 text-[11px] font-medium ${
-                                u.type === "APARTMENT"
-                                  ? "bg-blue-100 text-blue-700"
-                                  : u.type === "GARAGE"
-                                    ? "bg-emerald-100 text-emerald-700"
-                                    : "bg-zinc-200 text-zinc-700"
-                              }`}
-                            >
-                              {u.type === "APARTMENT"
-                                ? "Appartement"
-                                : u.type === "GARAGE"
-                                  ? "Garage"
-                                  : "Autre"}
-                            </span>
-                          </div>
-
-                          <div className="mt-2 text-sm font-medium text-zinc-900">
-                            {u.ownerName ?? "Sans copropriétaire"}
-                          </div>
-
-                          <div className="mt-1 text-xs text-zinc-500">
-                            {u.buildingName ?? "Sans immeuble"}{" "}
-                            {u.reference ? `• ${u.reference}` : ""}
-                          </div>
-                        </div>
-
-                        <div className="pt-1 text-xs font-medium text-zinc-400 group-hover:text-zinc-600">
-                          Choisir
-                        </div>
+              <div className="relative">
+                <label className="mb-1.5 block text-sm font-semibold text-zinc-700">
+                  {mode === "UNIT" ? "Lot" : "Copropriétaire"}
+                </label>
+                <div className="relative">
+                  <input
+                    className="h-12 w-full rounded-md border border-zinc-200 bg-white px-4 text-sm text-zinc-900 shadow-sm outline-none transition placeholder:text-zinc-400 focus:border-zinc-900 disabled:bg-zinc-100 disabled:text-zinc-500"
+                    placeholder={
+                      mode === "UNIT"
+                        ? "Rechercher un lot (ex: INM2A12)..."
+                        : "Rechercher un copropriétaire..."
+                    }
+                    value={query}
+                    disabled={Boolean(editingReceiptId)}
+                    onChange={(e) => {
+                      setSuccess(null);
+                      searchUnits(e.target.value);
+                    }}
+                  />
+                  {units.length > 0 && (
+                    <div className="absolute left-0 right-0 top-full z-[60] mt-1 max-h-64 overflow-auto rounded-md border border-zinc-200 bg-white p-2 shadow-xl">
+                      <div className="mb-2 px-2 text-xs font-medium uppercase tracking-wide text-zinc-500">
+                        Résultats
                       </div>
-                    </button>
-                  ))}
+                      <div className="space-y-1">
+                        {units.map((u) => (
+                          <button
+                            key={u.id}
+                            type="button"
+                            onClick={() => {
+                              setUnitId(u.id);
+                              setQuery(`${u.lotNumber || u.reference} • ${u.ownerName ?? ""}`);
+                              setUnits([]);
+                              setSuccess(null);
+                            }}
+                            className="group block w-full rounded-md px-3 py-2 text-left transition hover:bg-zinc-50"
+                          >
+                            <div className="flex items-center justify-between">
+                              <div>
+                                <div className="flex items-center gap-2">
+                                  <span className="font-bold text-zinc-900">{u.lotNumber}</span>
+                                  <span className="text-xs text-zinc-500">
+                                    {u.ownerName ?? "Sans copropriétaire"}
+                                  </span>
+                                </div>
+                                <div className="text-[10px] text-zinc-400">
+                                  {u.buildingName ?? "Sans immeuble"}
+                                </div>
+                              </div>
+                              <div className="text-[10px] font-medium text-zinc-400 group-hover:text-blue-600">
+                                Sélectionner
+                              </div>
+                            </div>
+                          </button>
+                        ))}
+                      </div>
+                    </div>
+                  )}
                 </div>
               </div>
-            )}
+            </div>
+
+            <div className="space-y-4">
+              <div>
+                <label className="mb-1.5 block text-sm font-semibold text-zinc-700">Montant (MAD)</label>
+                <input
+                  className="h-12 w-full rounded-md border border-zinc-200 bg-white px-4 text-sm shadow-sm outline-none transition focus:border-zinc-900 disabled:bg-zinc-100 disabled:text-zinc-500"
+                  value={amount}
+                  onChange={(e) => setAmount(e.target.value)}
+                  placeholder="Ex: 350"
+                  inputMode="decimal"
+                />
+              </div>
+
+              <div>
+                <label className="mb-1.5 block text-sm font-semibold text-zinc-700">Date de l'encaissement</label>
+                <DateInput
+                  value={date}
+                  onChange={(e) => setDate(e.target.value)}
+                />
+              </div>
+            </div>
           </div>
 
-          <div>
-            <label className="text-sm font-medium">Montant</label>
-            <input
-              className="h-12 w-full rounded-md border border-zinc-200 bg-white px-4 text-sm shadow-sm outline-none transition focus:border-zinc-900 disabled:bg-zinc-100 disabled:text-zinc-500"
-              value={amount}
-              onChange={(e) => setAmount(e.target.value)}
-              placeholder="Ex: 350"
-              inputMode="decimal"
-            />
-          </div>
+          <div className="border-t border-zinc-100 pt-6">
+            <label className="mb-3 block text-center text-sm font-semibold text-zinc-700 uppercase tracking-wider">
+              Méthode de paiement
+            </label>
 
-          <div>
-            <label className="text-sm font-medium text-zinc-700">Méthode</label>
-
-            <div className="mt-2 grid grid-cols-2 gap-3 md:grid-cols-4">
+            <div className="grid grid-cols-2 gap-3 md:grid-cols-4">
               {[
-                { id: "CASH", label: "Espèces", sub: "Encaiss. direct", icon: "💵", color: "emerald", ring: "ring-emerald-100", border: "border-emerald-500", bg: "bg-emerald-50" },
-                { id: "TRANSFER", label: "Virement", sub: "Banque interne", icon: "🏦", color: "blue", ring: "ring-blue-100", border: "border-blue-500", bg: "bg-blue-50" },
-                { id: "CHECK", label: "Chèque", sub: "Banque + n° chèque", icon: "🧾", color: "amber", ring: "ring-amber-100", border: "border-amber-500", bg: "bg-amber-50" },
-                { id: "BANK_DEPOSIT", label: "Versement", sub: "Dépôt en banque", icon: "💰", color: "purple", ring: "ring-purple-100", border: "border-purple-500", bg: "bg-purple-50" },
+                { id: "CASH", label: "Espèces", sub: "Direct", icon: "💵", color: "emerald", ring: "ring-emerald-100", border: "border-emerald-500", bg: "bg-emerald-50" },
+                { id: "TRANSFER", label: "Virement", sub: "Banque", icon: "🏦", color: "blue", ring: "ring-blue-100", border: "border-blue-500", bg: "bg-blue-50" },
+                { id: "CHECK", label: "Chèque", sub: "Banque + n°", icon: "🧾", color: "amber", ring: "ring-amber-100", border: "border-amber-500", bg: "bg-amber-50" },
+                { id: "BANK_DEPOSIT", label: "Versement", sub: "Dépôt", icon: "💰", color: "purple", ring: "ring-purple-100", border: "border-purple-500", bg: "bg-purple-50" },
               ].map((m) => (
                 <button
                   key={m.id}
@@ -1545,11 +1538,9 @@ export function ContributionReceiptsTab({
                       const displayDate = toDisplayDate(date);
                       const feeText = `Versement d'un montant de ${totalWithFee} DH avec une retenue de 1 DH pour les frais de timbre à la date du ${displayDate}`;
                       
-                      // Replace existing fee note or set it
                       if (!note.includes("frais de timbre")) {
                         setNote(prev => prev ? `${prev}\n${feeText}` : feeText);
                       } else {
-                        // Optional: update existing fee note if amount/date changed
                         setNote(prev => {
                           const lines = prev.split("\n");
                           const filtered = lines.filter(l => !l.includes("frais de timbre"));
@@ -1558,17 +1549,17 @@ export function ContributionReceiptsTab({
                       }
                     }
                   }}
-                  className={`rounded-xl border p-3 text-left shadow-sm transition-all duration-200 ${
+                  className={`flex flex-col items-center rounded-xl border p-3 text-center transition-all duration-200 ${
                     method === m.id
-                      ? `${m.border} ${m.bg} ring-2 ${m.ring}`
-                      : "border-zinc-200 bg-white hover:border-zinc-300 hover:shadow-md"
+                      ? `${m.border} ${m.bg} ring-2 ${m.ring} scale-[1.02]`
+                      : "border-zinc-200 bg-white hover:border-zinc-300 hover:bg-zinc-50"
                   }`}
                 >
-                  <div className="text-xl">{m.icon}</div>
-                  <div className="mt-2 text-sm font-bold text-zinc-900">
+                  <div className="text-2xl">{m.icon}</div>
+                  <div className="mt-1 text-sm font-bold text-zinc-900">
                     {m.label}
                   </div>
-                  <div className="mt-1 text-[10px] text-zinc-500 leading-tight">
+                  <div className="mt-0.5 text-[10px] text-zinc-500">
                     {m.sub}
                   </div>
                 </button>
@@ -1577,66 +1568,56 @@ export function ContributionReceiptsTab({
           </div>
 
           {(method === "TRANSFER" || method === "CHECK" || method === "BANK_DEPOSIT") && (
-            <div className="grid gap-2">
-              <label className="text-sm font-medium">
-                {method === "CHECK" ? "Banque émettrice" : "Banque de destination"}
-              </label>
+            <div className={`grid gap-4 md:grid-cols-${method === "CHECK" ? "2" : "1"} pt-2 animate-in fade-in slide-in-from-top-2`}>
+              <div className="space-y-1.5">
+                <label className="text-sm font-semibold text-zinc-700">
+                  {method === "CHECK" ? "Banque émettrice" : "Banque de destination"}
+                </label>
 
-              <select
-                className="h-12 w-full rounded-md border border-zinc-200 bg-white px-4 text-sm shadow-sm outline-none transition focus:border-zinc-900"
-                value={bankId}
-                onChange={(e) => {
-                  const id = e.target.value;
-                  setBankId(id);
-                  const bank = banks.find(b => b.id === id);
-                  setBankName(bank ? bank.name : "");
-                }}
-              >
-                <option value="">Choisir une banque</option>
+                <select
+                  className="h-12 w-full rounded-md border border-zinc-200 bg-white px-4 text-sm shadow-sm outline-none transition focus:border-zinc-900"
+                  value={bankId}
+                  onChange={(e) => {
+                    const id = e.target.value;
+                    setBankId(id);
+                    const bank = banks.find(b => b.id === id);
+                    setBankName(bank ? bank.name : "");
+                  }}
+                >
+                  <option value="">Choisir une banque</option>
+                  {banks.map((b) => (
+                    <option key={b.id} value={b.id}>
+                      {b.name}
+                    </option>
+                  ))}
+                </select>
+              </div>
 
-                {banks.map((b) => (
-                  <option key={b.id} value={b.id}>
-                    {b.name}
-                  </option>
-                ))}
-              </select>
-            </div>
-          )}
-
-          {method === "CHECK" && (
-            <div className="grid gap-2">
-              <label className="text-sm font-medium">N° de chèque</label>
-
-              <input
-                className="h-10 rounded-md border border-zinc-200 px-3"
-                value={checkNumber}
-                onChange={(e) => setCheckNumber(e.target.value)}
-                placeholder="Numéro du chèque"
-              />
+              {method === "CHECK" && (
+                <div className="space-y-1.5">
+                  <label className="text-sm font-semibold text-zinc-700">N° de chèque</label>
+                  <input
+                    className="h-12 w-full rounded-md border border-zinc-200 bg-white px-4 text-sm shadow-sm outline-none transition focus:border-zinc-900"
+                    value={checkNumber}
+                    onChange={(e) => setCheckNumber(e.target.value)}
+                    placeholder="Numéro du chèque"
+                  />
+                </div>
+              )}
             </div>
           )}
 
           <div>
-            <label className="text-sm font-medium">Date (JJ/MM/AAAA)</label>
-
-            <DateInput
-              value={date}
-              onChange={(e) => setDate(e.target.value)}
-            />
-          </div>
-
-          <div>
-            <label className="text-sm font-medium">Note</label>
-
+            <label className="mb-1.5 block text-sm font-semibold text-zinc-700">Notes / Informations complémentaires</label>
             <textarea
-              className="min-h-[110px] w-full rounded-md border border-zinc-200 bg-white px-4 py-3 text-sm shadow-sm outline-none transition focus:border-zinc-900"
+              className="min-h-[100px] w-full rounded-md border border-zinc-200 bg-white px-4 py-3 text-sm shadow-sm outline-none transition focus:border-zinc-900"
               value={note}
               onChange={(e) => setNote(e.target.value)}
-              placeholder="Ajouter une note..."
+              placeholder="Ajouter une note facultative..."
             />
           </div>
 
-          <div className="flex flex-col gap-3 sm:flex-row sm:items-center">
+          <div className="flex flex-col items-center justify-center gap-3 border-t border-zinc-100 pt-6 sm:flex-row">
             <button
               onClick={() => submit(false)}
               disabled={
@@ -1647,7 +1628,7 @@ export function ContributionReceiptsTab({
                   !bankName.trim()) ||
                 (method === "CHECK" && !checkNumber.trim())
               }
-              className="flex flex-1 items-center justify-center gap-2 btn-brand h-12 rounded-md text-sm font-medium disabled:opacity-50"
+              className="btn-brand h-12 w-full px-8 text-sm font-bold shadow-md transition-all hover:scale-[1.02] active:scale-[0.98] disabled:opacity-50 sm:w-auto min-w-[180px]"
             >
               {busy && !editingReceiptId ? (
                 "Enregistrement..."
@@ -1669,7 +1650,7 @@ export function ContributionReceiptsTab({
                     !bankName.trim()) ||
                   (method === "CHECK" && !checkNumber.trim())
                 }
-                className="flex flex-1 items-center justify-center gap-2 rounded-md border border-indigo-200 bg-indigo-50/50 h-12 text-sm font-medium text-indigo-700 transition hover:bg-indigo-50 hover:border-indigo-300 disabled:opacity-50"
+                className="flex items-center justify-center gap-2 rounded-md border border-zinc-200 bg-white h-12 w-full px-8 text-sm font-bold text-zinc-700 shadow-sm transition-all hover:bg-zinc-50 hover:scale-[1.02] active:scale-[0.98] disabled:opacity-50 sm:w-auto"
               >
                 {busy ? "Enregistrement..." : "Encaisser et créer un autre"}
               </button>

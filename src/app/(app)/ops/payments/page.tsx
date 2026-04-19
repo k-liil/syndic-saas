@@ -9,6 +9,7 @@ import { useApiUrl } from "@/lib/org-context";
 import { useActiveYear } from "@/lib/use-active-year";
 import { getSuggestedPaymentPostCode } from "@/lib/payment-accounting-posts";
 import { toDisplayDate as toDisplayDateLib } from "@/lib/date-utils";
+import { Modal } from "@/components/ui/Modal";
 
 type Supplier = {
   id: string;
@@ -903,352 +904,255 @@ function toggleSelect(id: string) {
         </div>
       </div>
 
-      {canEdit && openCreate ? (
-        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/30 p-4" onClick={closeCreateModal}>
-          <div className="w-full max-w-xl rounded-3xl bg-white shadow-2xl" onClick={(e) => e.stopPropagation()}>
-            <div className="flex items-center justify-between border-b border-zinc-200 px-6 py-5">
-              <h2 className="text-2xl font-semibold text-zinc-900">
-                {editingPayment ? "Modifier la dépense" : "Ajouter une dépense"}
-              </h2>
-
-              <button type="button"
-                onClick={closeCreateModal}
-                className="flex items-center gap-2 text-2xl leading-none text-zinc-400"
-              >
-                ×
-              </button>
-            </div>
-
-            <div className="space-y-5 px-6 py-6">
-              <div>
-                <label className="mb-2 block text-sm font-medium text-zinc-700">
-                  Titre de la dépense
-                </label>
-                <input
-                  className="h-12 w-full rounded-md border border-zinc-200 px-4 text-sm outline-none"
-                  value={title}
-                  onChange={(e) => {
-                    const nextTitle = e.target.value;
-                    setTitle(nextTitle);
-                    if (categoryAuto) {
-                      applySuggestedCategory(supplierId, nextTitle, note);
-                    }
-                  }}
-                />
-              </div>
-
-              <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
+      {canEdit && (
+        <Modal
+          open={openCreate}
+          onClose={closeCreateModal}
+          title={editingPayment ? "Modifier la dépense" : "Ajouter une dépense"}
+          containerClassName="w-[min(1000px,94vw)]"
+        >
+          <div className="space-y-6">
+            <div className="grid grid-cols-1 gap-6 md:grid-cols-2">
+              <div className="space-y-4">
                 <div>
-                  <label className="mb-2 block text-sm font-medium text-zinc-700">
-                    Montant (MAD)
-                  </label>
+                  <label className="mb-1.5 block text-sm font-semibold text-zinc-700">Titre de la dépense</label>
                   <input
-                    type="number"
-                    step="0.01"
-                    inputMode="decimal"
-                    className="h-12 w-full rounded-md border border-zinc-200 px-4 text-sm outline-none"
-                    value={amount}
+                    className="h-12 w-full rounded-md border border-zinc-200 px-4 text-sm outline-none focus:border-zinc-900 shadow-sm transition"
+                    value={title}
+                    placeholder="Ex: Facture électricité mars"
                     onChange={(e) => {
-                      const v = e.target.value;
-                      setAmount(v === "" ? "" : parseFloat(v));
+                      const nextTitle = e.target.value;
+                      setTitle(nextTitle);
+                      if (categoryAuto) {
+                        applySuggestedCategory(supplierId, nextTitle, note);
+                      }
                     }}
                   />
                 </div>
 
                 <div>
-                  <label className="mb-2 block text-sm font-medium text-zinc-700">
-                    Date
-                  </label>
-                  <input
-                    type="text"
-                    inputMode="numeric"
-                    placeholder="dd/mm/yyyy"
-                    className="h-12 w-full rounded-md border border-zinc-200 px-4 text-sm outline-none"
-                    value={date}
-                    onChange={(e) => setDate(e.target.value)}
-                  />
+                  <label className="mb-1.5 block text-sm font-semibold text-zinc-700">Prestataire / Fournisseur</label>
+                  <select
+                    className="h-12 w-full rounded-md border border-zinc-200 px-4 text-sm outline-none focus:border-zinc-900 shadow-sm transition"
+                    value={supplierId}
+                    onChange={(e) => {
+                      const nextSupplierId = e.target.value;
+                      setSupplierId(nextSupplierId);
+                      if (categoryAuto) {
+                        applySuggestedCategory(nextSupplierId, title, note);
+                      }
+                    }}
+                  >
+                    <option value="">Choisir un fournisseur</option>
+                    {suppliers.map((s) => (
+                      <option key={s.id} value={s.id}>
+                        {s.name}
+                      </option>
+                    ))}
+                  </select>
                 </div>
-              </div>
 
-              <div>
-                <label className="mb-2 block text-sm font-medium text-zinc-700">
-                  Prestataire / Fournisseur
-                </label>
-                <select
-                  className="h-12 w-full rounded-md border border-zinc-200 px-4 text-sm outline-none"
-                  value={supplierId}
-                  onChange={(e) => {
-                    const nextSupplierId = e.target.value;
-                    setSupplierId(nextSupplierId);
-                    if (categoryAuto) {
-                      applySuggestedCategory(nextSupplierId, title, note);
-                    }
-                  }}
-                >
-                  <option value="">Choisir un fournisseur</option>
-                  {suppliers.map((s) => (
-                    <option key={s.id} value={s.id}>
-                      {s.name}
-                    </option>
-                  ))}
-                </select>
-              </div>
-
-              <div>
-                <label className="mb-2 block text-sm font-medium text-zinc-700">
-                  Poste comptable
-                </label>
-
-                <select
-                  className="h-12 w-full rounded-md border border-zinc-200 px-4 text-sm outline-none"
-                  value={categoryId}
-                  onChange={(e) => {
-                    setCategoryId(e.target.value);
-                    setCategoryAuto(e.target.value === "");
-                  }}
-                >
-                  <option value="">Choisir un poste</option>
-
-                  {activeChargePosts
-                    .map((c) => (
+                <div>
+                  <label className="mb-1.5 block text-sm font-semibold text-zinc-700">Poste comptable</label>
+                  <select
+                    className="h-12 w-full rounded-md border border-zinc-200 px-4 text-sm outline-none focus:border-zinc-900 shadow-sm transition"
+                    value={categoryId}
+                    onChange={(e) => {
+                      setCategoryId(e.target.value);
+                      setCategoryAuto(e.target.value === "");
+                    }}
+                  >
+                    <option value="">Choisir un poste</option>
+                    {activeChargePosts.map((c) => (
                       <option key={c.id} value={c.id}>
                         {c.code} - {c.name}
                       </option>
                     ))}
-                </select>
-              </div>
-
-              <div>
-                <label className="mb-2 block text-sm font-medium text-zinc-700">
-                  Mode de paiement
-                </label>
-
-                <div className="mt-3 grid grid-cols-2 gap-3 xl:grid-cols-5">
-                  <button
-                    type="button"
-                    onClick={() => setMethod("CASH")}
-                    className={`rounded-md border p-3 text-left shadow-sm transition ${
-                      method === "CASH"
-                        ? "border-emerald-500 bg-emerald-50 shadow-sm"
-                        : "border-zinc-200 bg-white hover:border-zinc-300 hover:shadow-sm"
-                    }`}
-                  >
-                    <div className="text-xl">💵</div>
-                    <div className="mt-2 text-sm font-semibold text-zinc-900">
-                      Espèces
-                    </div>
-                    <div className="mt-1 text-xs text-zinc-500">
-                      Paiement direct
-                    </div>
-                  </button>
-
-                  <button
-                    type="button"
-                    onClick={() => setMethod("TRANSFER")}
-                    className={`rounded-md border p-3 text-left shadow-sm transition ${
-                      method === "TRANSFER"
-                        ? "border-blue-500 bg-blue-50 shadow-sm"
-                        : "border-zinc-200 bg-white hover:border-zinc-300 hover:shadow-sm"
-                    }`}
-                  >
-                    <div className="text-xl">🏦</div>
-                    <div className="mt-2 text-sm font-semibold text-zinc-900">
-                      Virement
-                    </div>
-                    <div className="mt-1 text-xs text-zinc-500">
-                      Via banque interne
-                    </div>
-                  </button>
-
-                  <button
-                    type="button"
-                    onClick={() => setMethod("CHECK")}
-                    className={`rounded-md border p-3 text-left shadow-sm transition ${
-                      method === "CHECK"
-                        ? "border-orange-500 bg-orange-50 shadow-sm"
-                        : "border-zinc-200 bg-white hover:border-zinc-300 hover:shadow-sm"
-                    }`}
-                  >
-                    <div className="text-xl">🧾</div>
-                    <div className="mt-2 text-sm font-semibold text-zinc-900">
-                      Chèque
-                    </div>
-                    <div className="mt-1 text-xs text-zinc-500">
-                      Banque + numéro de chèque
-                    </div>
-                  </button>
-
-                  <button
-                    type="button"
-                    onClick={() => setMethod("DEBIT")}
-                    className={`rounded-md border p-3 text-left shadow-sm transition ${
-                      method === "DEBIT"
-                        ? "border-purple-500 bg-purple-50 shadow-sm"
-                        : "border-zinc-200 bg-white hover:border-zinc-300 hover:shadow-sm"
-                    }`}
-                  >
-                    <div className="text-xl">💳</div>
-                    <div className="mt-2 text-sm font-semibold text-zinc-900">
-                      Prélèvement
-                    </div>
-                    <div className="mt-1 text-xs text-zinc-500">
-                      Débit direct banque
-                    </div>
-                  </button>
-
-                  <button
-                    type="button"
-                    onClick={() => {
-                      setMethod("BANK_DEPOSIT");
-                      const totalWithFee = (Number(amount) || 0) + 1;
-                      const displayDate = toDisplayDateLib(date);
-                      const feeText = `Versement d'un montant de ${totalWithFee} DH avec une retenue de 1 DH pour les frais de timbre à la date du ${displayDate}`;
-                      
-                      if (!note.includes("frais de timbre")) {
-                        setNote(prev => prev ? `${prev}\n${feeText}` : feeText);
-                      } else {
-                        setNote(prev => {
-                          const lines = prev.split("\n");
-                          const filtered = lines.filter(l => !l.includes("frais de timbre"));
-                          return [...filtered, feeText].join("\n").trim();
-                        });
-                      }
-                    }}
-                    className={`rounded-md border p-3 text-left shadow-sm transition ${
-                      method === "BANK_DEPOSIT"
-                        ? "border-violet-500 bg-violet-50 shadow-sm"
-                        : "border-zinc-200 bg-white hover:border-zinc-300 hover:shadow-sm"
-                    }`}
-                  >
-                    <div className="text-xl">💰</div>
-                    <div className="mt-2 text-sm font-semibold text-zinc-900">
-                      Versement
-                    </div>
-                    <div className="mt-1 text-xs text-zinc-500">
-                      Dépôt en banque
-                    </div>
-                  </button>
+                  </select>
                 </div>
               </div>
 
-              {method !== "CASH" ? (
-                <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
+              <div className="space-y-4">
+                <div className="grid grid-cols-2 gap-4">
                   <div>
-                    <label className="mb-2 block text-sm font-medium text-zinc-700">
-                      Banque
-                    </label>
-                    <select
-                      className="h-12 w-full rounded-md border border-zinc-200 px-4 text-sm outline-none"
-                      value={bankId}
+                    <label className="mb-1.5 block text-sm font-semibold text-zinc-700">Montant (MAD)</label>
+                    <input
+                      type="number"
+                      step="0.01"
+                      inputMode="decimal"
+                      className="h-12 w-full rounded-md border border-zinc-200 px-4 text-sm outline-none focus:border-zinc-900 shadow-sm transition"
+                      value={amount}
                       onChange={(e) => {
-                        const id = e.target.value;
-                        setBankId(id);
-                        const bank = banks.find(b => b.id === id);
-                        setBankName(bank ? bank.name : "");
+                        const v = e.target.value;
+                        setAmount(v === "" ? "" : parseFloat(v));
                       }}
-                    >
-                      <option value="">Choisir une banque</option>
-                      {banks.map((b) => (
-                        <option key={b.id} value={b.id}>
-                          {b.name}
-                        </option>
-                      ))}
-                    </select>
+                    />
                   </div>
 
-                  {method === "CHECK" ? (
-                    <div>
-                      <label className="mb-2 block text-sm font-medium text-zinc-700">
-                        Numéro de chèque
-                      </label>
-                      <input
-                        className="h-12 w-full rounded-md border border-zinc-200 px-4 text-sm outline-none"
-                        value={bankRef}
-                        onChange={(e) => setBankRef(e.target.value)}
-                      />
-                    </div>
-                  ) : null}
+                  <div>
+                    <label className="mb-1.5 block text-sm font-semibold text-zinc-700">Date</label>
+                    <input
+                      type="text"
+                      inputMode="numeric"
+                      placeholder="dd/mm/yyyy"
+                      className="h-12 w-full rounded-md border border-zinc-200 px-4 text-sm outline-none focus:border-zinc-900 shadow-sm transition"
+                      value={date}
+                      onChange={(e) => setDate(e.target.value)}
+                    />
+                  </div>
                 </div>
-              ) : null}
 
-              <div>
-                <label className="mb-2 block text-sm font-medium text-zinc-700">
-                  Factures / bons
-                </label>
-                <div className="space-y-3 rounded-md border border-zinc-200 p-4">
-                  <input
-                    type="file"
-                    multiple
-                    onChange={(e) => {
-                      void addAttachments(e.target.files);
-                      e.currentTarget.value = "";
+                <div>
+                  <label className="mb-1.5 block text-sm font-semibold text-zinc-700">Pièces jointes (Factures, bons...)</label>
+                  <div className="rounded-md border border-zinc-200 bg-zinc-50/50 p-4 transition-all">
+                    <input
+                      type="file"
+                      multiple
+                      onChange={(e) => {
+                        void addAttachments(e.target.files);
+                        e.currentTarget.value = "";
+                      }}
+                      className="block w-full text-xs text-zinc-500 file:mr-4 file:rounded-full file:border-0 file:bg-zinc-200 file:px-4 file:py-2 file:text-xs file:font-semibold file:text-zinc-700 hover:file:bg-zinc-300"
+                    />
+
+                    {attachments.length > 0 ? (
+                      <div className="mt-3 flex flex-wrap gap-2">
+                        {attachments.map((attachment, index) => (
+                          <div
+                            key={`${attachment.name}-${index}`}
+                            className="inline-flex items-center gap-2 rounded-lg bg-white border border-zinc-200 px-3 py-1.5 text-[11px] font-medium text-zinc-700 shadow-sm"
+                          >
+                            <Paperclip className="h-3 w-3 text-zinc-400" />
+                            <span className="max-w-32 truncate">{attachment.name}</span>
+                            <button
+                              type="button"
+                              onClick={() => removeAttachment(index)}
+                              className="ml-1 text-zinc-400 hover:text-red-600"
+                            >
+                              ×
+                            </button>
+                          </div>
+                        ))}
+                      </div>
+                    ) : (
+                      <div className="mt-2 text-[10px] text-zinc-400 uppercase tracking-tight">Aucun fichier sélectionné</div>
+                    )}
+                  </div>
+                </div>
+              </div>
+            </div>
+
+            <div className="border-t border-zinc-100 pt-6">
+              <label className="mb-4 block text-center text-sm font-semibold text-zinc-700 uppercase tracking-widest">
+                Mode de paiement
+              </label>
+
+              <div className="grid grid-cols-2 gap-3 sm:grid-cols-3 md:grid-cols-5">
+                {[
+                  { id: "CASH", label: "Espèces", icon: "💵", color: "emerald", border: "border-emerald-500", bg: "bg-emerald-50", ring: "ring-emerald-100" },
+                  { id: "TRANSFER", label: "Virement", icon: "🏦", color: "blue", border: "border-blue-500", bg: "bg-blue-50", ring: "ring-blue-100" },
+                  { id: "CHECK", label: "Chèque", icon: "🧾", color: "orange", border: "border-orange-500", bg: "bg-orange-50", ring: "ring-orange-100" },
+                  { id: "DEBIT", label: "Prélèvement", icon: "💳", color: "purple", border: "border-purple-500", bg: "bg-purple-50", ring: "ring-purple-100" },
+                  { id: "BANK_DEPOSIT", label: "Versement", icon: "💰", color: "violet", border: "border-violet-500", bg: "bg-violet-50", ring: "ring-violet-100" },
+                ].map((m) => (
+                  <button
+                    key={m.id}
+                    type="button"
+                    onClick={() => {
+                      if (m.id === "BANK_DEPOSIT") {
+                        const totalWithFee = (Number(amount) || 0) + 1;
+                        const displayDate = toDisplayDateLib(date);
+                        const feeText = `Versement d'un montant de ${totalWithFee} DH avec une retenue de 1 DH pour les frais de timbre à la date du ${displayDate}`;
+                        
+                        if (!note.includes("frais de timbre")) {
+                          setNote(prev => prev ? `${prev}\n${feeText}` : feeText);
+                        } else {
+                          setNote(prev => {
+                            const lines = prev.split("\n");
+                            const filtered = lines.filter(l => !l.includes("frais de timbre"));
+                            return [...filtered, feeText].join("\n").trim();
+                          });
+                        }
+                      }
+                      setMethod(m.id as any);
                     }}
-                    className="block w-full text-sm"
-                  />
+                    className={`flex flex-col items-center rounded-xl border p-3 text-center transition-all duration-200 ${
+                      method === m.id
+                        ? `${m.border} ${m.bg} ring-2 ${m.ring} scale-[1.02]`
+                        : "border-zinc-200 bg-white hover:border-zinc-300 hover:bg-zinc-50"
+                    }`}
+                  >
+                    <div className="text-2xl">{m.icon}</div>
+                    <div className="mt-1.5 text-sm font-bold text-zinc-900">{m.label}</div>
+                  </button>
+                ))}
+              </div>
+            </div>
 
-                  {attachments.length > 0 ? (
-                    <div className="flex flex-wrap gap-2">
-                      {attachments.map((attachment, index) => (
-                        <div
-                          key={`${attachment.name}-${index}`}
-                          className="inline-flex gap-3 items-center gap-2 rounded-md bg-zinc-100 px-3 py-1.5 text-xs text-zinc-700"
-                        >
-                          <Paperclip className="h-3.5 w-3.5" />
-                          <button
-                            type="button"
-                            onClick={() => openAttachment(attachment)}
-                            className="max-w-40 truncate text-left font-medium hover:text-sky-700"
-                          >
-                            {attachment.name}
-                          </button>
-                          <button
-                            type="button"
-                            onClick={() => removeAttachment(index)}
-                            className="text-zinc-400 hover:text-red-600"
-                          >
-                            ×
-                          </button>
-                        </div>
-                      ))}
-                    </div>
-                  ) : (
-                    <div className="text-xs text-zinc-500">
-                      Aucune pièce jointe.
-                    </div>
-                  )}
+            {method !== "CASH" && (
+              <div className="grid grid-cols-1 gap-4 pt-2 md:grid-cols-2 animate-in fade-in slide-in-from-top-2">
+                <div>
+                  <label className="mb-1.5 block text-sm font-semibold text-zinc-700">Banque</label>
+                  <select
+                    className="h-12 w-full rounded-md border border-zinc-200 px-4 text-sm outline-none focus:border-zinc-900"
+                    value={bankId}
+                    onChange={(e) => {
+                      const id = e.target.value;
+                      setBankId(id);
+                      const bank = banks.find(b => b.id === id);
+                      setBankName(bank ? bank.name : "");
+                    }}
+                  >
+                    <option value="">Choisir une banque</option>
+                    {banks.map((b) => (
+                      <option key={b.id} value={b.id}>{b.name}</option>
+                    ))}
+                  </select>
                 </div>
-              </div>
 
-              <div>
-                <label className="mb-2 block text-sm font-medium text-zinc-700">
-                  Note
-                </label>
-                <textarea
-                  className="min-h-28 w-full rounded-md border border-zinc-200 p-4 text-sm outline-none"
-                  value={note}
-                  onChange={(e) => {
-                    const nextNote = e.target.value;
-                    setNote(nextNote);
-                    if (categoryAuto) {
-                      applySuggestedCategory(supplierId, title, nextNote);
-                    }
-                  }}
-                />
+                {method === "CHECK" && (
+                  <div>
+                    <label className="mb-1.5 block text-sm font-semibold text-zinc-700">Numéro de chèque</label>
+                    <input
+                      className="h-12 w-full rounded-md border border-zinc-200 px-4 text-sm outline-none focus:border-zinc-900"
+                      value={bankRef}
+                      onChange={(e) => setBankRef(e.target.value)}
+                      placeholder="N° du chèque"
+                    />
+                  </div>
+                )}
               </div>
+            )}
 
-              <button type="button"
+            <div>
+              <label className="mb-1.5 block text-sm font-semibold text-zinc-700">Notes / Justification</label>
+              <textarea
+                className="min-h-[100px] w-full rounded-md border border-zinc-200 p-4 text-sm outline-none focus:border-zinc-900 shadow-sm"
+                value={note}
+                placeholder="Détails supplémentaires..."
+                onChange={(e) => {
+                  const nextNote = e.target.value;
+                  setNote(nextNote);
+                  if (categoryAuto) {
+                    applySuggestedCategory(supplierId, title, nextNote);
+                  }
+                }}
+              />
+            </div>
+
+            <div className="flex justify-center border-t border-zinc-100 pt-6">
+              <button
+                type="button"
                 onClick={editingPayment ? updatePayment : createPayment}
                 disabled={submitting}
-                className="flex items-center gap-2 btn-brand h-12 w-full rounded-md text-sm font-semibold disabled:opacity-50"
+                className="btn-brand h-12 w-full px-12 text-sm font-bold shadow-md transition-all hover:scale-[1.02] active:scale-[0.98] disabled:opacity-50 sm:w-auto min-w-[240px]"
               >
-                {editingPayment
-                  ? "Enregistrer les modifications"
-                  : "Ajouter la dépense"}
+                {editingPayment ? "Enregistrer les modifications" : "Ajouter la dépense"}
               </button>
             </div>
           </div>
-        </div>
-      ) : null}
+        </Modal>
+      )}
 
       {selectedPayment ? (
         <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/30 p-4" onClick={() => setSelectedPayment(null)}>
