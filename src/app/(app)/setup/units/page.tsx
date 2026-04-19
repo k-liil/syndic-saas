@@ -126,27 +126,22 @@ export default function LotsPage() {
   const [loading, setLoading] = useState(false);
   const [fetchError, setFetchError] = useState<any>(null);
 
-  const lotNumberValue = useMemo(() => {
-    const raw = lotNumber.trim();
-    if (!raw) return NaN;
-    const n = Number(raw);
-    if (!Number.isInteger(n) || n <= 0) return NaN;
-    return n;
-  }, [lotNumber]);
+  const lotNumberTrimmed = useMemo(() => lotNumber.trim(), [lotNumber]);
 
   const lotNumberInvalid = useMemo(() => {
-    return lotNumber.trim().length > 0 && Number.isNaN(lotNumberValue);
-  }, [lotNumber, lotNumberValue]);
+    // Basic validation: must not be empty if we are creating
+    return false; // We allow any non-empty string now
+  }, []);
 
   const canCreate = useMemo(() => {
     if (editMode) {
       if (type === "APARTMENT") return !!buildingId;
       return true;
     }
-    if (Number.isNaN(lotNumberValue)) return false;
+    if (!lotNumberTrimmed) return false;
     if (type === "APARTMENT") return !!buildingId;
     return true;
-  }, [editMode, lotNumberValue, buildingId, type]);
+  }, [editMode, lotNumberTrimmed, buildingId, type]);
 
   async function loadAll() {
     setLoading(true);
@@ -277,8 +272,8 @@ export default function LotsPage() {
           method: "POST",
           headers: { "Content-Type": "application/json" },
           body: JSON.stringify({
-            lotNumber: String(lotNumberValue),
-            reference: reference.trim() || `Lot ${lotNumberValue}`,
+            lotNumber: lotNumberTrimmed,
+            reference: reference.trim() || `Lot ${lotNumberTrimmed}`,
             type: apiType,
             ...(type === "APARTMENT" ? { buildingId } : {}),
             surface: surfaceNum,
@@ -588,11 +583,10 @@ export default function LotsPage() {
                     N° lot {editMode ? "" : "*"}
                   </label>
                   <input
-                    className="h-10 rounded-md border border-zinc-200 px-3"
+                    className="h-10 rounded-md border border-zinc-200 px-3 focus:outline-none focus:ring-2 focus:ring-cyan-500/20 focus:border-cyan-500 transition"
                     value={lotNumber}
                     onChange={(e) => setLotNumber(e.target.value)}
-                    inputMode="numeric"
-                    placeholder="Ex: 12"
+                    placeholder="Ex: G1, 12, A-101"
                     disabled={editMode}
                   />
                   {editMode ? (

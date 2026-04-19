@@ -20,7 +20,16 @@ export async function POST(req: Request) {
 
   try {
     const body = await req.json();
-    const { sourceBankId, destinationBankId, amount, date, note } = body;
+    const { 
+      sourceBankId, 
+      destinationBankId, 
+      amount, 
+      date, 
+      note,
+      supplierId,
+      accountingPostId,
+      destinationReceiptType
+    } = body;
 
     const transferAmount = Number(amount);
     const transferDate = date ? new Date(date) : new Date();
@@ -33,20 +42,25 @@ export async function POST(req: Request) {
       return NextResponse.json({ error: "SAME_SOURCE_DESTINATION" }, { status: 400 });
     }
 
-    // Resolve or create system supplier and accounting post (self-healing)
-    let supplier = await prisma.supplier.findFirst({
-      where: { organizationId: orgId, name: "Virement Interne" }
-    });
-
-    if (!supplier) {
-      supplier = await prisma.supplier.create({
-        data: {
-          organizationId: orgId,
-          name: "Virement Interne",
-        }
+    // Resolve default fallback supplier if not provided
+    let finalSupplierId = supplierId;
+    if (!finalSupplierId) {
+      let supplier = await prisma.supplier.findFirst({
+        where: { organizationId: orgId, name: "Virement Interne" }
       });
+
+      if (!supplier) {
+        supplier = await prisma.supplier.create({
+          data: {
+            organizationId: orgId,
+            name: "Virement Interne",
+          }
+        });
+      }
+      finalSupplierId = supplier.id;
     }
 
+    // Prepare default accounting post and other settings
     const [postResult, settings] = await Promise.all([
       prisma.accountingPost.upsert({
         where: { organizationId_code: { organizationId: orgId, code: "VI" } },
@@ -63,7 +77,8 @@ export async function POST(req: Request) {
       ensureFiscalYear(prisma, orgId, transferDate),
     ]);
 
-    const post = postResult;
+    const finalAccountingPostId = accountingPostId || postResult.id;
+    const finalReceiptType = (destinationReceiptType as ReceiptType) || ReceiptType.TRANSFER;
 
     const result = await prisma.$transaction(async (tx) => {
       // 1. Create Source Payment (Expense)
@@ -78,8 +93,8 @@ export async function POST(req: Request) {
       const payment = await tx.payment.create({
         data: {
           organizationId: orgId,
-          supplierId: supplier.id,
-          accountingPostId: post?.id,
+          supplierId: finalSupplierId,
+          accountingPostId: finalAccountingPostId,
           method: "INTERNAL_TRANSFER" as PaymentMethod,
           amount: transferAmount,
           date: transferDate,
@@ -101,8 +116,8 @@ export async function POST(req: Request) {
         data: {
           organizationId: orgId,
           receiptNumber: nextReceiptNumber,
-          type: ReceiptType.OTHER,
-          description: `Transfert depuis ${sourceBankId ? 'Banque' : 'Caisse'}`,
+          type: finalReceiptType,
+          description: note || `Transfert depuis ${sourceBankId ? 'Banque' : 'Caisse'}`,
           amount: transferAmount,
           method: "INTERNAL_TRANSFER" as PaymentMethod,
           date: transferDate,

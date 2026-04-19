@@ -787,6 +787,8 @@ enum PaymentMethod {
 enum ReceiptType {
   CONTRIBUTION
   RENT
+  TRANSFER
+  PAST_CONTRIBUTION
   OTHER
 }
 
