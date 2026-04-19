@@ -72,6 +72,9 @@ export default function BuildingsPage() {
     setEditingId(null);
     setOpenAdd(false);
     await load();
+  } catch (error) {
+    console.error("Error saving building:", error);
+    alert(getErrorMessage(error));
   } finally {
     setLoading(false);
   }

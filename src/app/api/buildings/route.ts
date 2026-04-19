@@ -36,17 +36,25 @@ export async function POST(req: Request) {
     return NextResponse.json({ error: "No organization" }, { status: 400 });
   }
 
-  const body = await req.json();
+  try {
+    const body = await req.json();
 
-  const created = await prisma.building.create({
-    data: {
-      organizationId: gate.organizationId ?? undefined,
-      name: body.name,
-      address: body.address ?? null,
-    },
-  });
+    const created = await prisma.building.create({
+      data: {
+        organizationId: gate.organizationId,
+        name: body.name,
+        address: body.address ?? null,
+      },
+    });
 
-  return NextResponse.json(created);
+    return NextResponse.json(created);
+  } catch (error) {
+    console.error("[BUILDINGS_API] Error in POST:", error);
+    return NextResponse.json(
+      { error: getErrorMessage(error) },
+      { status: 500 }
+    );
+  }
 }
 
 export async function DELETE(req: Request) {
