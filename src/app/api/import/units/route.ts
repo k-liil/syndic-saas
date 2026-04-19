@@ -69,6 +69,10 @@ export async function POST(req: Request) {
       return NextResponse.json({ error: "Payload batch invalide" }, { status: 400 });
     }
 
+    const job = await prisma.importJob.findUnique({
+      where: { id: jobId },
+    });
+
     if (!job || job.organizationId !== orgId) {
       return NextResponse.json({ error: "Job introuvable" }, { status: 404 });
     }
