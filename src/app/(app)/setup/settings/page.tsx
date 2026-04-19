@@ -238,7 +238,6 @@ export default function SettingsPage() {
       disabled: savingSettings || !settingsDirty,
     };
   }, [
-    newBankName,
     savingBank,
     savingSettings,
     settingsDirty,
