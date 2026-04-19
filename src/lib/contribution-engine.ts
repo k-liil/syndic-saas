@@ -1,4 +1,4 @@
-import { ContributionType } from "@prisma/client";
+import { ContributionFrequency, ContributionType } from "@prisma/client";
 
 /**
  * Moteur unifié de calcul des cotisations.
@@ -16,6 +16,7 @@ export interface UnitForCalculation {
       id: string;
       name: string;
       defaultAmount: any | null;
+      frequency: ContributionFrequency;
       periods: Array<{
         startPeriod: Date;
         endPeriod: Date | null;
@@ -35,6 +36,7 @@ export interface AppSettingsForCalculation {
   startMonth: number;
   contributionType: ContributionType;
   globalFixedAmount: any | null;
+  frequency: ContributionFrequency;
 }
 
 export interface GlobalPeriod {
@@ -55,7 +57,7 @@ export function getApplicableContribution(
   // 1. Vérifier si la date est avant la date de début de cotisation du lot
   const startPeriod = buildContributionStartPeriod(unit, settings);
   if (checkDate < startPeriod) {
-    return { amount: 0, method: "Avant date de début", isActive: false };
+    return { amount: 0, frequency: settings.frequency, method: "Avant date de début", isActive: false };
   }
 
   const normalizedCheckDate = new Date(Date.UTC(checkDate.getUTCFullYear(), checkDate.getUTCMonth(), 15));
@@ -68,11 +70,12 @@ export function getApplicableContribution(
       const total = Number(unit.surface) * unitSpecificAmount;
       return { 
         amount: total, 
+        frequency: settings.frequency,
         method: `${Number(unit.surface)} m² × ${unitSpecificAmount} (Exception lot)`, 
         isActive: true 
       };
     }
-    return { amount: unitSpecificAmount, method: "Exception lot", isActive: true };
+    return { amount: unitSpecificAmount, frequency: settings.frequency, method: "Exception lot", isActive: true };
   }
 
   // 3. Logique par Groupe
@@ -81,12 +84,12 @@ export function getApplicableContribution(
        // A. Exception : Période spécifique pour le groupe
        const groupPeriodAmount = findInPeriods(gu.group.periods, normalizedCheckDate);
        if (groupPeriodAmount !== null) {
-         return { amount: groupPeriodAmount, method: `Exception groupe: ${gu.group.name}`, isActive: true };
+         return { amount: groupPeriodAmount, frequency: gu.group.frequency, method: `Exception groupe: ${gu.group.name}`, isActive: true };
        }
 
        // B. Montant par défaut du groupe (La Nouveauté)
        if (gu.group.defaultAmount !== null && Number(gu.group.defaultAmount) > 0) {
-         return { amount: Number(gu.group.defaultAmount), method: `Défaut groupe: ${gu.group.name}`, isActive: true };
+         return { amount: Number(gu.group.defaultAmount), frequency: gu.group.frequency, method: `Défaut groupe: ${gu.group.name}`, isActive: true };
        }
     }
   }
@@ -94,15 +97,15 @@ export function getApplicableContribution(
   // 4. Exception : Période spécifique globale
   const globalPeriodAmount = findInPeriods(globalPeriods, normalizedCheckDate);
   if (globalPeriodAmount !== null) {
-    return { amount: globalPeriodAmount, method: "Exception globale", isActive: true };
+    return { amount: globalPeriodAmount, frequency: settings.frequency, method: "Exception globale", isActive: true };
   }
 
   // 5. Paramètre global par défaut (Global Fixed)
   if (settings.globalFixedAmount !== null && Number(settings.globalFixedAmount) > 0) {
-    return { amount: Number(settings.globalFixedAmount), method: "Paramètre global", isActive: true };
+    return { amount: Number(settings.globalFixedAmount), frequency: settings.frequency, method: "Paramètre global", isActive: true };
   }
 
-  return { amount: 0, method: "Non configuré", isActive: false };
+  return { amount: 0, frequency: settings.frequency, method: "Non configuré", isActive: false };
 }
 
 /**

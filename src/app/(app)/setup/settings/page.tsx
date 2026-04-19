@@ -33,6 +33,7 @@ type Settings = {
   openingBankBalance: number;
   contributionType: ContributionType;
   globalFixedAmount: number | null;
+  frequency: ContributionFrequency;
 };
 
 type InternalBank = {
@@ -62,11 +63,13 @@ type StatusState = {
 };
 
 type ContributionType = "GLOBAL_FIXED" | "GROUP_FIXED" | "SURFACE";
+type ContributionFrequency = "MONTHLY" | "ANNUAL";
 
 type Group = {
   id: string;
   name: string;
   defaultAmount: number | null;
+  frequency: ContributionFrequency;
   units: Array<{
     id: string;
     unit: {
@@ -176,7 +179,9 @@ export default function SettingsPage() {
   const [simLoading, setSimLoading] = useState(false);
   const [contributionType, setContributionType] = useState<ContributionType>("GLOBAL_FIXED");
   const [globalFixedAmount, setGlobalFixedAmount] = useState<number | null>(null);
+  const [globalFrequency, setGlobalFrequency] = useState<ContributionFrequency>("MONTHLY");
   const [groupAmount, setGroupAmount] = useState("");
+  const [groupFrequency, setGroupFrequency] = useState<ContributionFrequency>("MONTHLY");
 
   const [deleteTarget, setDeleteTarget] = useState<{ id: string, name: string, type: "bank" | "sector" } | null>(null);
   const [isDeleting, setIsDeleting] = useState(false);
@@ -229,7 +234,8 @@ export default function SettingsPage() {
         label: savingSettings ? "Enregistrement..." : "Enregistrer les réglages",
         disabled: savingSettings || 
           (contributionType === (s?.contributionType ?? "GLOBAL_FIXED") && 
-           globalFixedAmount === (s?.globalFixedAmount ?? null)),
+           globalFixedAmount === (s?.globalFixedAmount ?? null) &&
+           globalFrequency === (s?.frequency ?? "MONTHLY")),
       };
     }
 
@@ -289,6 +295,7 @@ export default function SettingsPage() {
     setOpeningBankBalance(Number(json.openingBankBalance ?? 0));
     setContributionType(json.contributionType ?? "GLOBAL_FIXED");
     setGlobalFixedAmount(json.globalFixedAmount ?? null);
+    setGlobalFrequency(json.frequency ?? "MONTHLY");
   }
 
   async function loadBanks() {
@@ -319,6 +326,7 @@ export default function SettingsPage() {
         body: JSON.stringify({
           contributionType,
           globalFixedAmount,
+          frequency: globalFrequency,
         }),
       });
       if (!res.ok) throw new Error();
@@ -348,6 +356,7 @@ export default function SettingsPage() {
           name: groupName.trim(),
           unitIds: selectedUnitIds,
           defaultAmount: Number(groupAmount) || null,
+          frequency: groupFrequency,
         }),
       });
       if (!res.ok) throw new Error();
@@ -369,6 +378,7 @@ export default function SettingsPage() {
     setEditingGroupId(group.id);
     setGroupName(group.name);
     setGroupAmount(group.defaultAmount?.toString() ?? "");
+    setGroupFrequency(group.frequency ?? "MONTHLY");
     setSelectedUnitIds(group.units.map(u => u.unit.id));
     setShowGroupModal(true);
   }
@@ -1182,18 +1192,29 @@ export default function SettingsPage() {
                   </label>
                 </div>
 
-                {contributionType === "GLOBAL_FIXED" && (
-                  <div className="pt-2 max-w-xs">
-                    <label className="block text-sm font-medium text-zinc-700 mb-2">Montant annuel par lot (DH)</label>
-                    <input
-                      type="number"
-                      value={globalFixedAmount || ""}
-                      onChange={(e) => setGlobalFixedAmount(e.target.value ? Number(e.target.value) : null)}
-                      className="h-10 w-full rounded-md border border-zinc-200 bg-white px-3 text-sm"
-                      placeholder="Ex: 1200"
-                    />
+                  <div className="pt-2 flex flex-col gap-4 max-w-sm">
+                    <div>
+                      <label className="block text-sm font-medium text-zinc-700 mb-2">Montant par lot (DH)</label>
+                      <input
+                        type="number"
+                        value={globalFixedAmount || ""}
+                        onChange={(e) => setGlobalFixedAmount(e.target.value ? Number(e.target.value) : null)}
+                        className="h-10 w-full rounded-md border border-zinc-200 bg-white px-3 text-sm"
+                        placeholder="Ex: 1200"
+                      />
+                    </div>
+                    <div>
+                      <label className="block text-sm font-medium text-zinc-700 mb-2">Périodicité</label>
+                      <select
+                        value={globalFrequency}
+                        onChange={(e) => setGlobalFrequency(e.target.value as ContributionFrequency)}
+                        className="h-10 w-full rounded-md border border-zinc-200 bg-white px-3 text-sm outline-none focus:ring-2 focus:ring-indigo-500"
+                      >
+                        <option value="MONTHLY">Mensuelle</option>
+                        <option value="ANNUAL">Annuelle</option>
+                      </select>
+                    </div>
                   </div>
-                )}
                 
                 <p className="text-xs text-zinc-500 italic">
                   Note: Les réglages spécifiques (périodes) priment sur ce réglage par défaut.
@@ -1228,7 +1249,7 @@ export default function SettingsPage() {
                         <h3 className="font-semibold text-zinc-900">{group.name}</h3>
                         {group.defaultAmount && (
                           <div className="text-[11px] font-bold text-indigo-600 mt-0.5">
-                            {group.defaultAmount} DH / Mois
+                            {group.defaultAmount} DH / {group.frequency === "ANNUAL" ? "An" : "Mois"}
                           </div>
                         )}
                       </div>
@@ -1420,6 +1441,7 @@ export default function SettingsPage() {
           setEditingGroupId(null);
           setGroupName("");
           setGroupAmount("");
+          setGroupFrequency("MONTHLY");
           setSelectedUnitIds([]);
         }}
         title={editingGroupId ? "Modifier le groupe de lots" : "Nouveau groupe de lots"}
@@ -1436,14 +1458,15 @@ export default function SettingsPage() {
               />
             </div>
             <div>
-              <label className="block text-sm font-medium text-zinc-700 mb-1">Montant par défaut (DH)</label>
-              <input
-                type="number"
-                className="h-10 w-full rounded-md border border-zinc-200 px-3 text-sm focus:ring-2 focus:ring-indigo-500 outline-none"
-                value={groupAmount}
-                onChange={(e) => setGroupAmount(e.target.value)}
-                placeholder="Ex: 1200"
-              />
+              <label className="block text-sm font-medium text-zinc-700 mb-1">Périodicité</label>
+              <select
+                className="h-10 w-full rounded-md border border-zinc-200 px-3 text-sm focus:ring-2 focus:ring-indigo-500 outline-none bg-white"
+                value={groupFrequency}
+                onChange={(e) => setGroupFrequency(e.target.value as ContributionFrequency)}
+              >
+                <option value="MONTHLY">Mensuelle</option>
+                <option value="ANNUAL">Annuelle</option>
+              </select>
             </div>
           </div>
           <div>

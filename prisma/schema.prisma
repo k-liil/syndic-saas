@@ -135,6 +135,7 @@ model ContributionGroup {
   organization   Organization            @relation(fields: [organizationId], references: [id], onDelete: Cascade)
   units          ContributionGroupUnit[]
   periods        ContributionPeriod[]
+  frequency      ContributionFrequency   @default(MONTHLY)
 
   @@index([organizationId])
 }
@@ -377,6 +378,7 @@ model AppSettings {
   openingBankBalance Decimal          @default(0) @db.Decimal(12, 2)
   contributionType   ContributionType @default(GLOBAL_FIXED)
   globalFixedAmount  Decimal?         @db.Decimal(10, 2)
+  frequency          ContributionFrequency @default(MONTHLY)
   createdAt          DateTime         @default(now())
   updatedAt          DateTime         @updatedAt
   organization       Organization     @relation(fields: [organizationId], references: [id], onDelete: Cascade)
@@ -849,4 +851,8 @@ enum MeetingDocumentType {
 enum MeetingDocumentSourceType {
   UPLOAD
   VAULT
+}
+enum ContributionFrequency {
+  MONTHLY
+  ANNUAL
 }

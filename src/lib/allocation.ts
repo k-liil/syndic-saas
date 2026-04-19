@@ -120,14 +120,18 @@ export async function reallocateUnitContributions(
   const duesToUpdate: { id: string; amountDue: number }[] = [];
 
   while (cursor <= targetPeriod) {
-    const { amount } = getApplicableContribution(
+    const { amount, frequency } = getApplicableContribution(
       unit as any,
       cursor,
       settings as any,
       globalPeriods,
     );
 
-    if (amount > 0) {
+    const isDueMonth = 
+      frequency === "MONTHLY" || 
+      cursor.getUTCMonth() === startPeriod.getUTCMonth();
+
+    if (amount > 0 && isDueMonth) {
       const existing = existingDues.find((d: any) => {
         const dDate = new Date(d.period);
         return (

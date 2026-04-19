@@ -12,11 +12,12 @@ export async function PATCH(req: Request, { params }: Params) {
 
   const { id } = await params;
   const body = await req.json();
-  const { name, unitIds, defaultAmount } = body;
+  const { name, unitIds, defaultAmount, frequency } = body;
 
   const updateData: any = {};
   if (name !== undefined) updateData.name = name.trim();
   if (defaultAmount !== undefined) updateData.defaultAmount = defaultAmount !== null ? Number(defaultAmount) : null;
+  if (frequency !== undefined) updateData.frequency = frequency;
 
   const result = await prisma.$transaction(async (tx) => {
     const group = await tx.contributionGroup.update({

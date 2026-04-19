@@ -168,6 +168,10 @@ export async function PUT(req: Request) {
           toDecimalNumber(body.globalFixedAmount, current.globalFixedAmount, {
             nullable: true,
           }),
+        frequency:
+          typeof body.frequency === "string"
+            ? body.frequency
+            : current.frequency,
     };
 
     const updated = await prisma.appSettings.update({
@@ -243,6 +247,7 @@ export async function PATCH(req: Request) {
         { nullable: true }
       );
     }
+    if (body.frequency !== undefined) data.frequency = body.frequency;
 
     const updated = await prisma.appSettings.update({
       where: { id: current.id },

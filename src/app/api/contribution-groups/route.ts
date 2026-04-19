@@ -57,7 +57,7 @@ export async function POST(req: Request) {
   }
 
   const body = await req.json();
-  const { name, unitIds, defaultAmount } = body;
+  const { name, unitIds, defaultAmount, frequency } = body;
 
   if (!name || typeof name !== "string" || !name.trim()) {
     return NextResponse.json({ error: "Nom du groupe requis" }, { status: 400 });
@@ -68,6 +68,7 @@ export async function POST(req: Request) {
       organizationId: orgId!,
       name: name.trim(),
       defaultAmount: defaultAmount ? Number(defaultAmount) : null,
+      frequency: frequency || "MONTHLY",
       units: unitIds?.length
         ? {
             create: unitIds.map((unitId: string) => ({
