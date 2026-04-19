@@ -1,6 +1,7 @@
 import { NextResponse } from "next/server";
 import { prisma } from "@/lib/prisma";
 import { requireManager } from "@/lib/authz";
+import { getOrgIdFromRequest } from "@/lib/org-utils";
 
 type Row = {
   cin: string;
@@ -25,11 +26,16 @@ export async function POST(req: Request) {
   if (!gate.ok) return NextResponse.json({ error: gate.error }, { status: gate.status });
 
   const body = (await req.json()) as Body;
+  const orgId = await getOrgIdFromRequest(req, gate);
+
+  if (!orgId) {
+    return NextResponse.json({ error: "Missing organizationId" }, { status: 400 });
+  }
 
   if (body.action === "start") {
     const job = await prisma.importJob.create({
       data: {
-        organizationId: gate.organizationId ?? "",
+        organizationId: orgId,
         type: "owners",
         totalRows: body.totalRows,
         processed: 0,
@@ -49,7 +55,7 @@ export async function POST(req: Request) {
     where: { id: body.jobId },
   });
 
-  if (!job || job.organizationId !== gate.organizationId) {
+  if (!job || job.organizationId !== orgId) {
     return NextResponse.json({ error: "Job introuvable" }, { status: 404 });
   }
 
@@ -66,7 +72,7 @@ export async function POST(req: Request) {
   const [units, existingOwners] = await Promise.all([
     prisma.unit.findMany({
       where: {
-        organizationId: gate.organizationId ?? "",
+        organizationId: orgId,
         lotNumber: {
           in: lotNumbers,
         },
@@ -78,7 +84,7 @@ export async function POST(req: Request) {
     }),
     prisma.owner.findMany({
       where: {
-        organizationId: gate.organizationId ?? "",
+        organizationId: orgId,
         cin: {
           in: cins,
         },
@@ -119,7 +125,7 @@ export async function POST(req: Request) {
     await prisma.owner.createMany({
       data: Array.from(newOwners.values()).map((owner) => ({
         ...owner,
-        organizationId: gate.organizationId ?? "",
+        organizationId: orgId,
       })),
       skipDuplicates: true,
     });
@@ -127,7 +133,7 @@ export async function POST(req: Request) {
 
   const owners = await prisma.owner.findMany({
     where: {
-      organizationId: gate.organizationId ?? "",
+      organizationId: orgId,
       cin: {
         in: cins,
       },
@@ -153,7 +159,7 @@ export async function POST(req: Request) {
       ownerId: {
         in: ownerIds,
       },
-      organizationId: gate.organizationId ?? "",
+      organizationId: orgId,
       unitId: {
         in: unitIds,
       },
@@ -218,7 +224,7 @@ export async function POST(req: Request) {
     if (!existingOwnershipKeys.has(ownershipKey)) {
       existingOwnershipKeys.add(ownershipKey);
       ownershipsToCreate.push({
-        organizationId: gate.organizationId ?? "",
+        organizationId: orgId,
         ownerId: owner.id,
         unitId: unit.id,
       });

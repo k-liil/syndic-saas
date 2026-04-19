@@ -1,6 +1,7 @@
 import { NextResponse } from "next/server";
 import { prisma } from "@/lib/prisma";
 import { requireManager } from "@/lib/authz";
+import { getOrgIdFromRequest } from "@/lib/org-utils";
 
 type Row = { name: string; address?: string | null };
 
@@ -45,6 +46,12 @@ export async function POST(req: Request) {
     return NextResponse.json({ error: gate.error }, { status: gate.status });
   }
 
+  const orgId = await getOrgIdFromRequest(req, gate);
+
+  if (!orgId) {
+    return NextResponse.json({ error: "No organization" }, { status: 400 });
+  }
+
   try {
     const form = await req.formData();
     const file = form.get("file");
@@ -71,17 +78,13 @@ export async function POST(req: Request) {
     const errors: { row: number; error: string }[] = [];
     let imported = 0;
 
-    if (!gate.organizationId) {
-      return NextResponse.json({ error: "No organization" }, { status: 400 });
-    }
-
     await prisma.$transaction(async (tx) => {
       for (let i = 0; i < rows.length; i++) {
         const r = rows[i];
         try {
           await tx.building.create({
             data: {
-              organizationId: gate.organizationId ?? "",
+              organizationId: orgId,
               name: r.name,
               address: r.address ?? undefined,
             },

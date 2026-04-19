@@ -1,6 +1,7 @@
 import { NextResponse } from "next/server";
 import { prisma } from "@/lib/prisma";
 import { requireManager } from "@/lib/authz";
+import { getOrgIdFromRequest } from "@/lib/org-utils";
 
 type Row = {
   type?: string;
@@ -40,11 +41,7 @@ export async function POST(req: Request) {
     }
 
     const body = (await req.json()) as Body;
-    const url = new URL(req.url);
-    const orgIdFromUrl = url.searchParams.get("orgId");
-    
-    // Fallback if gate didn't provide it (Super Admin cases)
-    const organizationId = gate.organizationId || orgIdFromUrl || "";
+    const organizationId = await getOrgIdFromRequest(req, gate);
 
     if (!organizationId) {
       console.error("[Import] Missing organizationId");

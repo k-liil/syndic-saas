@@ -1,0 +1,2 @@
+lotNumber,reference,type,building,monthlyDueAmount
+Imm1.A1,Appart 1,APARTMENT,Immeuble 1,130

@@ -2,6 +2,7 @@ import { NextResponse } from "next/server";
 import { prisma } from "@/lib/prisma";
 import { requireManager } from "@/lib/authz";
 import type { ImportUnitRow, ImportUnitError } from "@/lib/imports/units-csv";
+import { getOrgIdFromRequest } from "@/lib/org-utils";
 
 type StartBody = {
   action: "start";
@@ -26,6 +27,11 @@ export async function POST(req: Request) {
 
   try {
     const body = (await req.json()) as Body;
+    const orgId = await getOrgIdFromRequest(req, gate);
+
+    if (!orgId) {
+      return NextResponse.json({ error: "Missing organizationId" }, { status: 400 });
+    }
 
     if (body.action === "start") {
       const totalRows = Number(body.totalRows ?? 0);
@@ -36,7 +42,7 @@ export async function POST(req: Request) {
 
       const job = await prisma.importJob.create({
         data: {
-          organizationId: gate.organizationId ?? "",
+          organizationId: orgId,
           type: "units",
           totalRows,
           processed: 0,
@@ -63,16 +69,12 @@ export async function POST(req: Request) {
       return NextResponse.json({ error: "Payload batch invalide" }, { status: 400 });
     }
 
-    const job = await prisma.importJob.findUnique({
-      where: { id: jobId },
-    });
-
-    if (!job || job.organizationId !== gate.organizationId) {
+    if (!job || job.organizationId !== orgId) {
       return NextResponse.json({ error: "Job introuvable" }, { status: 404 });
     }
 
     const buildings = await prisma.building.findMany({
-      where: { organizationId: gate.organizationId ?? "" },
+      where: { organizationId: orgId },
       select: { id: true, name: true },
     });
 
@@ -82,7 +84,7 @@ export async function POST(req: Request) {
     }
 
     const existingUnits = await prisma.unit.findMany({
-      where: { organizationId: gate.organizationId ?? "" },
+      where: { organizationId: orgId },
       select: { lotNumber: true },
     });
 
@@ -144,7 +146,7 @@ export async function POST(req: Request) {
 
         await prisma.unit.create({
           data: {
-            organizationId: gate.organizationId ?? "",
+            organizationId: orgId,
             lotNumber: r.lotNumber,
             reference: r.reference?.trim() || `Lot ${r.lotNumber}`,
             type: r.type,

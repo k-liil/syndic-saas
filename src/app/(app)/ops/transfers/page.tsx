@@ -69,12 +69,14 @@ export default function TransferPage() {
           postsRes.json()
         ]);
 
-        setBanks(banksData);
-        setSuppliers(suppliersData);
-        setAccountingPosts(postsData);
+        setBanks(Array.isArray(banksData) ? banksData : []);
+        setSuppliers(Array.isArray(suppliersData) ? suppliersData : []);
+        
+        const postsArray = Array.isArray(postsData) ? postsData : (postsData?.posts || []);
+        setAccountingPosts(postsArray);
         
         // Auto-select "Autres charges" or "VI" if exists
-        const defaultPost = postsData.find((p: any) => p.code === 'VI' || p.name.toLowerCase().includes('charge'));
+        const defaultPost = postsArray.find((p: any) => p.code === 'VI' || p.name.toLowerCase().includes('charge'));
         if (defaultPost) setAccountingPostId(defaultPost.id);
 
       } catch (err) {
@@ -133,6 +135,17 @@ export default function TransferPage() {
     setSuccess(false);
     setError(null);
   };
+  if (loadingData) {
+    return (
+      <div className="min-h-[60vh] flex flex-col items-center justify-center space-y-4 animate-in fade-in duration-500">
+        <div className="relative">
+          <div className="w-16 h-16 border-4 border-sky-500/20 border-t-sky-500 rounded-full animate-spin"></div>
+          <Loader2 className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 text-sky-500 animate-pulse" size={24} />
+        </div>
+        <p className="text-zinc-500 font-medium animate-pulse">Chargement des données...</p>
+      </div>
+    );
+  }
 
   if (success) {
     return (
