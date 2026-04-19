@@ -43,6 +43,7 @@ type RowData = {
   dec: MonthData;
   resteAPayer: number;
   isFullyPaid: boolean;
+  frequency: "MONTHLY" | "ANNUAL";
 };
 
 function StatusBadge({
@@ -238,6 +239,29 @@ const columns: ColumnDef<RowData>[] = [
   },
 ];
 
+function getAnnualStatus(row: RowData): MonthData {
+  const months: (keyof RowData)[] = ["jan", "feb", "mar", "apr", "may", "jun", "jul", "aug", "sep", "oct", "nov", "dec"];
+  // Check if any month has a status other than UNPAID (or just take the one that is configured)
+  const nonUnpaid = months.map(m => row[m] as MonthData).find(d => d.status !== "UNPAID" && d.status !== null);
+  return nonUnpaid || (row.jan as MonthData);
+}
+
+const cellClass = (index: number) => [
+  "h-10 align-middle border-b border-zinc-100 py-1",
+  index === 0 ? "sticky left-0 z-20 bg-inherit pl-4" : "",
+  index === 1 ? "sticky left-[120px] z-20 bg-inherit pl-4 border-r border-zinc-100" : "",
+  index >= 2 && index <= 13 ? "p-0 text-center" : "",
+  index === 14 ? "bg-zinc-50/30 font-bold" : "",
+].join(" ");
+
+const cellStyle = (index: number): React.CSSProperties => {
+  if (index === 0) return { width: 120, minWidth: 120, maxWidth: 120 };
+  if (index === 1) return { width: 210, minWidth: 210, maxWidth: 210 };
+  if (index === 14) return { width: 90, minWidth: 90, maxWidth: 90 };
+  if (index === 15) return { width: 60, minWidth: 60, maxWidth: 60 };
+  return { width: 64, minWidth: 64, maxWidth: 64 };
+};
+
 export function ContributionsYearTable({ data }: { data: RowData[] }) {
   const searchParams = useSearchParams();
   const year = Number(searchParams.get("year"));
@@ -332,36 +356,45 @@ export function ContributionsYearTable({ data }: { data: RowData[] }) {
                         : "bg-zinc-50/40 hover:bg-zinc-50"
                   }
                 >
-                  {row.getVisibleCells().map((cell, index) => (
-                    <TableCell
-                      key={cell.id}
-                      className={[
-                        "h-10 align-middle border-b border-zinc-100 py-1",
-                        index === 0 ? "sticky left-0 z-20 bg-inherit pl-4" : "",
-                        index === 1
-                          ? "sticky left-[120px] z-20 bg-inherit pl-4 border-r border-zinc-100"
-                          : "",
-                        index >= 2 ? "p-0 text-center" : "",
-                        index === 14 ? "bg-zinc-50/30 font-bold" : "",
-                      ].join(" ")}
-                      style={
-                        index === 0
-                          ? { width: 120, minWidth: 120, maxWidth: 120 }
-                          : index === 1
-                            ? { width: 210, minWidth: 210, maxWidth: 210 }
-                            : index === 14
-                              ? { width: 90, minWidth: 90, maxWidth: 90 }
-                              : index === 15
-                                ? { width: 60, minWidth: 60, maxWidth: 60 }
-                                : { width: 64, minWidth: 64, maxWidth: 64 }
-                      }
-                    >
-                      {flexRender(
-                        cell.column.columnDef.cell,
-                        cell.getContext(),
-                      )}
-                    </TableCell>
-                  ))}
+                  {(() => {
+                    const cells = row.getVisibleCells();
+                    // Indices: 0: Lot, 1: Owner, 2-13: Months, 14: Balance, 15: Actions
+                    if (row.original.frequency === "ANNUAL") {
+                      return (
+                        <>
+                          {/* Lot & Owner cells */}
+                          {cells.slice(0, 2).map((cell, index) => (
+                            <TableCell key={cell.id} className={cellClass(index)} style={cellStyle(index)}>
+                              {flexRender(cell.column.columnDef.cell, cell.getContext())}
+                            </TableCell>
+                          ))}
+                          
+                          {/* Merged Annual Status cell */}
+                          <TableCell colSpan={12} className="h-10 align-middle border-b border-zinc-100 p-0 text-center bg-amber-50/10">
+                            <div className="flex items-center justify-center gap-3">
+                               <span className="text-[10px] font-bold text-zinc-400 uppercase tracking-widest">Cotisation Annuelle:</span>
+                               <div className="min-w-[120px]">
+                                 <StatusBadge monthIndex={0} value={getAnnualStatus(row.original)} />
+                               </div>
+                            </div>
+                          </TableCell>
+                          
+                          {/* Balance & Actions cells */}
+                          {cells.slice(14).map((cell, index) => (
+                            <TableCell key={cell.id} className={cellClass(index + 14)} style={cellStyle(index + 14)}>
+                              {flexRender(cell.column.columnDef.cell, cell.getContext())}
+                            </TableCell>
+                          ))}
+                        </>
+                      );
+                    }
+                    
+                    return cells.map((cell, index) => (
+                      <TableCell key={cell.id} className={cellClass(index)} style={cellStyle(index)}>
+                        {flexRender(cell.column.columnDef.cell, cell.getContext())}
+                      </TableCell>
+                    ));
+                  })()}
                 </TableRow>
               ))
             ) : (

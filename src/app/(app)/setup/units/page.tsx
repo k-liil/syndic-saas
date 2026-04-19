@@ -241,7 +241,7 @@ export default function LotsPage() {
             lotNumber: lotNumber.trim() || null,
             reference: reference.trim() || null,
             type: apiType,
-            ...(type === "APARTMENT" ? { buildingId } : { buildingId: null }),
+            buildingId: buildingId || null,
             surface: surfaceNum,
             overrideStart,
             startYear: startYear.trim() ? Number(startYear) : null,
@@ -275,7 +275,7 @@ export default function LotsPage() {
             lotNumber: lotNumberTrimmed,
             reference: reference.trim() || `Lot ${lotNumberTrimmed}`,
             type: apiType,
-            ...(type === "APARTMENT" ? { buildingId } : {}),
+            buildingId: buildingId || null,
             surface: surfaceNum,
             overrideStart,
             startYear: startYear.trim() ? Number(startYear) : null,
@@ -636,9 +636,7 @@ export default function LotsPage() {
                   onChange={(e) => {
                     const next = e.target.value as LotType;
                     setType(next);
-                    if (next !== "APARTMENT") setBuildingId("");
                     if (
-                      next === "APARTMENT" &&
                       !buildingId &&
                       buildings.length > 0
                     )
@@ -651,14 +649,14 @@ export default function LotsPage() {
                 </select>
               </div>
 
-              {type === "APARTMENT" ? (
                 <div className="grid gap-2">
-                  <label className="text-sm font-medium">Bâtiment *</label>
+                  <label className="text-sm font-medium">Bâtiment</label>
                   <select
                     className="h-10 rounded-md border border-zinc-200 bg-white px-3"
                     value={buildingId}
                     onChange={(e) => setBuildingId(e.target.value)}
                   >
+                    <option value="">(Aucun bâtiment)</option>
                     {buildings.map((b) => (
                       <option key={b.id} value={b.id}>
                         {b.name}
@@ -666,12 +664,6 @@ export default function LotsPage() {
                     ))}
                   </select>
                 </div>
-              ) : (
-                <div className="rounded-md border border-zinc-200 bg-zinc-50 p-3 text-sm text-zinc-600">
-                  Pour un <b>{type === "GARAGE" ? "garage" : "autre lot"}</b>,
-                  aucun bâtiment n&apos;est requis.
-                </div>
-              )}
 
               <div className="grid gap-2">
                 <label className="text-sm font-medium">Propriétaire</label>

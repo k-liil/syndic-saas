@@ -26,13 +26,10 @@ export async function PATCH(req: Request, { params }: Params) {
     ? (existing.reference || (existing.lotNumber ? `Lot ${existing.lotNumber}` : ""))
     : (body.reference || (existing.lotNumber ? `Lot ${existing.lotNumber}` : ""));
   const type = body.type ?? existing.type;
-  const buildingId = type === "APARTMENT" ? (body.buildingId || existing.buildingId) : null;
+  const buildingId = body.buildingId !== undefined ? (body.buildingId || null) : existing.buildingId;
   const floor = body.floor === undefined ? existing.floor : (body.floor === null ? null : Number(body.floor));
   const surface = body.surface === undefined ? existing.surface : (body.surface === null ? null : Number(body.surface));
 
-  if (type === "APARTMENT" && !buildingId) {
-    return NextResponse.json({ error: "buildingId required for APARTMENT" }, { status: 400 });
-  }
 
   const surfaceNum = surface !== null ? Number(surface) : null;
   if (surfaceNum !== null && (Number.isNaN(surfaceNum) || surfaceNum < 0)) {
@@ -46,7 +43,7 @@ export async function PATCH(req: Request, { params }: Params) {
       reference,
       type,
       buildingId,
-      floor: type === "APARTMENT" ? floor : null,
+      floor,
       surface,
       overrideStart: body.overrideStart !== undefined ? !!body.overrideStart : existing.overrideStart,
       startYear: body.startYear !== undefined ? (body.startYear ? Number(body.startYear) : null) : existing.startYear,

@@ -56,6 +56,7 @@ type RowData = {
   dec: MonthData;
   resteAPayer: number;
   isFullyPaid: boolean;
+  frequency: "MONTHLY" | "ANNUAL";
 };
 
 function ContributionsYearPageContent() {
@@ -147,6 +148,7 @@ function ContributionsYearPageContent() {
         dec: get(11),
         resteAPayer: (u as any).totalBalance || 0,
         isFullyPaid,
+        frequency: (u as any).frequency || "MONTHLY",
       };
     });
   }

@@ -54,6 +54,14 @@ export async function GET(req: Request) {
             id: true,
             lotNumber: true,
             reference: true,
+            type: true,
+            groupUnits: {
+              select: {
+                group: {
+                  select: { frequency: true }
+                }
+              }
+            },
             ownerships: {
               where: { endDate: null, organizationId: orgId },
               select: {
@@ -124,6 +132,7 @@ export async function GET(req: Request) {
         return {
           ...unit,
           fullYear,
+          frequency: unit.groupUnits?.[0]?.group?.frequency || "MONTHLY",
           totalBalance: balanceMap.get(unit.id) || 0,
         };
       }),
