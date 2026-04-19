@@ -316,7 +316,7 @@ async function migrate() {
         note: p.note,
         bankName: p.bankName,
         bankRef: p.bankRef,
-        attachments: p.attachments
+        attachments: p.attachments as any
       }
     });
     console.log(`Payment #${p.paymentNumber} created.`);
