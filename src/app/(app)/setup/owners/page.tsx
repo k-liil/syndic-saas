@@ -4,7 +4,7 @@ import { useEffect, useMemo, useState } from "react";
 import { useSession } from "next-auth/react";
 import { Modal } from "@/components/ui/Modal";
 import { Table, THead, TR, TH, TD } from "@/components/ui/Table";
-import { Pencil, Trash2, Upload, PlusCircle, Loader2 } from "lucide-react";
+import { Pencil, Trash2, Upload, PlusCircle, Loader2, Search } from "lucide-react";
 import { canManage } from "@/lib/roles";
 import { useApiUrl } from "@/lib/org-context";
 
@@ -66,6 +66,7 @@ export default function OwnersPage() {
   const [units, setUnits] = useState<Unit[]>([]);
   const [unitIds, setUnitIds] = useState<string[]>([]);
   const [lotSearch, setLotSearch] = useState("");
+  const [searchQuery, setSearchQuery] = useState("");
 
   const [openImport, setOpenImport] = useState(false);
   const [importFile, setImportFile] = useState<File | null>(null);
@@ -214,9 +215,34 @@ export default function OwnersPage() {
   }, [buildingSelected]);
 
   const filteredItems = useMemo(() => {
-    if (activeBuildingCount === 0) return items;
-    return items.filter((o) => o.primaryBuildingName && buildingSelected[o.primaryBuildingName]);
-  }, [items, buildingSelected, activeBuildingCount]);
+    let result = items;
+
+    // Filter by building
+    if (activeBuildingCount > 0) {
+      result = result.filter((o) => o.primaryBuildingName && buildingSelected[o.primaryBuildingName]);
+    }
+
+    // Filter by search query
+    if (searchQuery.trim()) {
+      const q = searchQuery.toLowerCase().trim();
+      result = result.filter((o) => {
+        const matchName = o.name?.toLowerCase().includes(q);
+        const matchFirstName = o.firstName?.toLowerCase().includes(q);
+        const matchCIN = o.cin?.toLowerCase().includes(q);
+        const matchNote = o.notes?.toLowerCase().includes(q);
+        
+        const matchLots = o.units?.some(u => 
+          u.lotNumber?.toLowerCase().includes(q) || 
+          u.reference?.toLowerCase().includes(q) ||
+          u.buildingName?.toLowerCase().includes(q)
+        );
+
+        return matchName || matchFirstName || matchCIN || matchLots || matchNote;
+      });
+    }
+
+    return result;
+  }, [items, buildingSelected, activeBuildingCount, searchQuery]);
 
   const selectedIds = useMemo(
     () =>
@@ -267,9 +293,32 @@ export default function OwnersPage() {
     <div className="flex flex-col h-full">
       <div className="sticky top-0 z-20 -mx-4 -mt-6 mb-6 bg-[#FCFCFB]/90 px-4 py-4 backdrop-blur-md sm:-mx-6 sm:-mt-8 sm:px-6 lg:-mx-8 lg:px-8 border-b border-slate-200/50">
         <div className="flex items-start justify-between gap-4">
-          <div>
+          <div className="flex-1 max-w-md">
             <h1 className="text-2xl font-bold text-slate-900">Gestion des Copropriétaires</h1>
             <p className="mt-1 text-sm text-slate-500">Gérez les copropriétaires et leurs lots.</p>
+          </div>
+
+          <div className="flex-1 flex justify-center">
+            <div className="relative w-full max-w-sm group">
+              <div className="absolute inset-y-0 left-3 flex items-center pointer-events-none group-focus-within:text-blue-500 transition-colors">
+                <Search className="h-4 w-4 text-slate-400 group-focus-within:text-blue-500" />
+              </div>
+              <input 
+                type="text"
+                placeholder="Rechercher (Nom, Lot, CIN...)"
+                className="w-full h-10 pl-10 pr-4 bg-white border border-slate-200 rounded-xl text-sm focus:ring-4 focus:ring-blue-500/10 focus:border-blue-500 outline-none transition-all shadow-sm"
+                value={searchQuery}
+                onChange={(e) => setSearchQuery(e.target.value)}
+              />
+              {searchQuery && (
+                <button 
+                  onClick={() => setSearchQuery("")}
+                  className="absolute inset-y-0 right-3 flex items-center text-slate-400 hover:text-slate-600"
+                >
+                  <span className="text-lg">×</span>
+                </button>
+              )}
+            </div>
           </div>
 
           {canEdit ? (
