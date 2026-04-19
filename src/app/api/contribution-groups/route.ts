@@ -86,5 +86,8 @@ export async function POST(req: Request) {
     },
   });
 
-  return NextResponse.json(group, { status: 201 });
+  // Ensure Decimal serialization
+  return NextResponse.json(JSON.parse(JSON.stringify(group, (key, value) => 
+    (typeof value === 'object' && value && value.constructor?.name === 'Decimal') ? Number(value) : value
+  )));
 }

@@ -1248,8 +1248,17 @@ export default function SettingsPage() {
                       <div>
                         <h3 className="font-semibold text-zinc-900">{group.name}</h3>
                         {group.defaultAmount && (
-                          <div className="text-[11px] font-bold text-indigo-600 mt-0.5">
-                            {group.defaultAmount} DH / {group.frequency === "ANNUAL" ? "An" : "Mois"}
+                          <div className="flex flex-col gap-0.5 mt-0.5">
+                            <div className="text-[11px] font-bold text-indigo-600">
+                              {group.defaultAmount} DH
+                            </div>
+                            <div className="inline-flex items-center gap-1">
+                               <span className={`px-1.5 py-0.5 rounded text-[9px] font-bold uppercase tracking-wider ${
+                                 group.frequency === "ANNUAL" ? "bg-amber-100 text-amber-700" : "bg-blue-100 text-blue-700"
+                               }`}>
+                                 {group.frequency === "ANNUAL" ? "Annuel" : "Mensuel"}
+                               </span>
+                            </div>
                           </div>
                         )}
                       </div>
@@ -1374,6 +1383,7 @@ export default function SettingsPage() {
                           <tr>
                             <th className="px-4 py-2 font-medium border-b border-zinc-200 text-[11px]">N° Lot</th>
                             <th className="px-4 py-2 font-medium border-b border-zinc-200 text-[11px]">Méthode appliquée</th>
+                            <th className="px-4 py-2 font-medium border-b border-zinc-200 text-[11px]">Fréquence</th>
                             <th className="px-4 py-2 font-medium border-b border-zinc-200 text-[11px] text-right">Montant</th>
                           </tr>
                         </thead>
@@ -1381,10 +1391,18 @@ export default function SettingsPage() {
                           {simulationResult.configured.map((item) => (
                             <tr key={item.unitId} className="hover:bg-zinc-50/50">
                               <td className="px-4 py-2 font-medium text-zinc-900 font-mono text-xs">Lot {item.lotNumber || item.reference}</td>
-                              <td className="px-4 py-2 text-zinc-500 text-[11px]">
-                                {item.method === "PERIOD" ? <span className="text-indigo-600 font-medium">Règle spécifique</span> : "Réglage par défaut"}
-                              </td>
-                              <td className="px-4 py-2 text-right font-bold text-zinc-900">{item.calculatedAmount?.toLocaleString()} DH</td>
+                                <td className="px-4 py-2 text-zinc-500 text-[11px]">
+                                  {item.method === "PERIOD" ? <span className="text-indigo-600 font-medium">Règle spécifique</span> : "Réglage par défaut"}
+                                </td>
+                                <td className="px-4 py-2">
+                                   <span className={`px-1.5 py-0.5 rounded text-[9px] font-bold uppercase ${
+                                     item.method === "UNCONFIGURED" ? "text-zinc-400" :
+                                     (item.method === "PERIOD" ? "bg-indigo-50 text-indigo-600" : "bg-zinc-100 text-zinc-600")
+                                   }`}>
+                                     {item.method === "UNCONFIGURED" ? "-" : "MOIS"}
+                                   </span>
+                                </td>
+                                <td className="px-4 py-2 text-right font-bold text-zinc-900">{item.calculatedAmount?.toLocaleString()} DH</td>
                             </tr>
                           ))}
                           {simulationResult.unconfigured.map((item) => (
