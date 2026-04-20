@@ -158,15 +158,15 @@ export default function AuditContent() {
                           <UserIcon className="h-4 w-4" />
                         </div>
                         <div className="flex flex-col">
-                          <span className="font-medium text-slate-700">{log.user.name}</span>
-                          <span className="text-xs text-slate-500">{log.user.email}</span>
+                          <span className="font-medium text-slate-700">{log.user?.name || "Système"}</span>
+                          <span className="text-xs text-slate-500">{log.user?.email || "system@syndicly.ma"}</span>
                         </div>
                       </div>
                     </td>
                     <td className="px-6 py-4 whitespace-nowrap">
                       <div className="flex items-center gap-1.5 text-slate-600">
                         <Building2 className="h-3.5 w-3.5 opacity-60" />
-                        <span>{log.organization.name}</span>
+                        <span>{log.organization?.name || "Global"}</span>
                       </div>
                     </td>
                     <td className="px-6 py-4 whitespace-nowrap">
