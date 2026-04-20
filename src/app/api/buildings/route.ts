@@ -32,7 +32,8 @@ export async function POST(req: Request) {
   if (!gate.ok) {
     return NextResponse.json({ error: "Unauthorized" }, { status: gate.status });
   }
-  if (!gate.organizationId) {
+  const orgId = await getOrgIdFromRequest(req, gate);
+  if (!orgId) {
     return NextResponse.json({ error: "No organization" }, { status: 400 });
   }
 
@@ -41,7 +42,7 @@ export async function POST(req: Request) {
 
     const created = await prisma.building.create({
       data: {
-        organizationId: gate.organizationId,
+        organizationId: orgId,
         name: body.name,
         address: body.address ?? null,
       },
@@ -63,7 +64,8 @@ export async function DELETE(req: Request) {
     return NextResponse.json({ error: gate.error }, { status: gate.status });
   }
 
-  if (!gate.organizationId) {
+  const orgId = await getOrgIdFromRequest(req, gate);
+  if (!orgId) {
     return NextResponse.json({ error: "No organization" }, { status: 400 });
   }
 
@@ -76,7 +78,7 @@ export async function DELETE(req: Request) {
     }
 
     const existing = await prisma.building.findFirst({
-      where: { id, organizationId: gate.organizationId ?? undefined },
+      where: { id, organizationId: orgId },
       select: { id: true },
     });
     if (!existing) {
@@ -99,7 +101,8 @@ export async function PATCH(req: Request) {
     return NextResponse.json({ error: gate.error }, { status: gate.status });
   }
 
-  if (!gate.organizationId) {
+  const orgId = await getOrgIdFromRequest(req, gate);
+  if (!orgId) {
     return NextResponse.json({ error: "No organization" }, { status: 400 });
   }
 
@@ -118,7 +121,7 @@ export async function PATCH(req: Request) {
     if (!name) return NextResponse.json({ error: "Missing name" }, { status: 400 });
 
     const existing = await prisma.building.findFirst({
-      where: { id, organizationId: gate.organizationId ?? undefined },
+      where: { id, organizationId: orgId },
       select: { id: true },
     });
 
