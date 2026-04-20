@@ -138,129 +138,12 @@ function StatusBadge({
   );
 }
 
-const columns: ColumnDef<RowData>[] = [
-  {
-    accessorKey: "lot",
-    header: "Lot",
-    cell: ({ row }) => (
-      <div
-        className={`font-semibold text-sm ${row.original.isFullyPaid ? "text-emerald-700" : "text-zinc-900"}`}
-      >
-        {row.original.lot}
-      </div>
-    ),
-  },
-  {
-    accessorKey: "owner",
-    header: "Coproprietaire",
-    cell: ({ row }) => (
-      <div
-        className={`min-w-[210px] text-xs ${row.original.isFullyPaid ? "text-emerald-600 font-medium" : "text-zinc-800"}`}
-      >
-        {row.original.owner}
-      </div>
-    ),
-  },
-  {
-    accessorKey: "jan",
-    header: "Jan",
-    cell: ({ row }) => <StatusBadge monthIndex={0} value={row.original.jan} />,
-  },
-  {
-    accessorKey: "feb",
-    header: "Fev",
-    cell: ({ row }) => <StatusBadge monthIndex={1} value={row.original.feb} />,
-  },
-  {
-    accessorKey: "mar",
-    header: "Mar",
-    cell: ({ row }) => <StatusBadge monthIndex={2} value={row.original.mar} />,
-  },
-  {
-    accessorKey: "apr",
-    header: "Avr",
-    cell: ({ row }) => <StatusBadge monthIndex={3} value={row.original.apr} />,
-  },
-  {
-    accessorKey: "may",
-    header: "Mai",
-    cell: ({ row }) => <StatusBadge monthIndex={4} value={row.original.may} />,
-  },
-  {
-    accessorKey: "jun",
-    header: "Jun",
-    cell: ({ row }) => <StatusBadge monthIndex={5} value={row.original.jun} />,
-  },
-  {
-    accessorKey: "jul",
-    header: "Jul",
-    cell: ({ row }) => <StatusBadge monthIndex={6} value={row.original.jul} />,
-  },
-  {
-    accessorKey: "aug",
-    header: "Aou",
-    cell: ({ row }) => <StatusBadge monthIndex={7} value={row.original.aug} />,
-  },
-  {
-    accessorKey: "sep",
-    header: "Sep",
-    cell: ({ row }) => <StatusBadge monthIndex={8} value={row.original.sep} />,
-  },
-  {
-    accessorKey: "oct",
-    header: "Oct",
-    cell: ({ row }) => <StatusBadge monthIndex={9} value={row.original.oct} />,
-  },
-  {
-    accessorKey: "nov",
-    header: "Nov",
-    cell: ({ row }) => <StatusBadge monthIndex={10} value={row.original.nov} />,
-  },
-  {
-    accessorKey: "dec",
-    header: "Dec",
-    cell: ({ row }) => <StatusBadge monthIndex={11} value={row.original.dec} />,
-  },
-  {
-    accessorKey: "resteAPayer",
-    header: "Reste à payer",
-    cell: ({ row }) => (
-      <div className="flex h-10 w-full items-center justify-center">
-        <div className="flex flex-col items-center">
-          <span
-            className={`text-[11px] font-bold ${row.original.resteAPayer > 0 ? "text-rose-600" : "text-emerald-600"}`}
-          >
-            {row.original.resteAPayer.toLocaleString()}
-            <span className="ml-[1px] text-[8px] opacity-70 uppercase">DH</span>
-          </span>
-        </div>
-      </div>
-    ),
-  },
-];
-
 function getAnnualStatus(row: RowData): MonthData {
   const months: (keyof RowData)[] = ["jan", "feb", "mar", "apr", "may", "jun", "jul", "aug", "sep", "oct", "nov", "dec"];
   // Check if any month has a status other than UNPAID (or just take the one that is configured)
   const nonUnpaid = months.map(m => row[m] as MonthData).find(d => d.status !== "UNPAID" && d.status !== null);
   return nonUnpaid || (row.jan as MonthData);
 }
-
-const cellClass = (index: number) => [
-  "h-10 align-middle border-b border-zinc-100 py-1",
-  index === 0 ? "sticky left-0 z-20 bg-inherit pl-4" : "",
-  index === 1 ? "sticky left-[120px] z-20 bg-inherit pl-4 border-r border-zinc-100" : "",
-  index >= 2 && index <= 13 ? "p-0 text-center" : "",
-  index === 14 ? "bg-zinc-50/30 font-bold" : "",
-].join(" ");
-
-const cellStyle = (index: number): React.CSSProperties => {
-  if (index === 0) return { width: 120, minWidth: 120, maxWidth: 120 };
-  if (index === 1) return { width: 210, minWidth: 210, maxWidth: 210 };
-  if (index === 14) return { width: 90, minWidth: 90, maxWidth: 90 };
-  if (index === 15) return { width: 60, minWidth: 60, maxWidth: 60 };
-  return { width: 64, minWidth: 64, maxWidth: 64 };
-};
 
 export function ContributionsYearTable({ data }: { data: RowData[] }) {
   const searchParams = useSearchParams();
@@ -271,29 +154,108 @@ export function ContributionsYearTable({ data }: { data: RowData[] }) {
     name: string;
   } | null>(null);
 
-  const tableColumns = React.useMemo<ColumnDef<RowData>[]>(
-    () => [
-      ...columns,
+  const isPurelyAnnual = React.useMemo(() => 
+    data.length > 0 && data.every((r) => r.frequency === "ANNUAL"),
+  [data]);
+
+  const tableColumns = React.useMemo<ColumnDef<RowData>[]>(() => {
+    const baseColumns: ColumnDef<RowData>[] = [
       {
-        id: "actions",
-        header: "",
+        accessorKey: "lot",
+        header: "Lot",
         cell: ({ row }) => (
-          <div className="flex justify-center px-2">
-            <button
-              onClick={() =>
-                setDetailUnit({ id: row.original.id, name: row.original.lot })
-              }
-              className="flex h-8 w-8 items-center justify-center rounded-lg text-zinc-400 hover:bg-sky-50 hover:text-sky-600 transition-all border border-transparent hover:border-sky-100"
-              title="Détail des reçus"
-            >
-              <ReceiptIcon className="h-4.5 w-4.5" />
-            </button>
+          <div
+            className={`font-semibold text-sm ${row.original.isFullyPaid ? "text-emerald-700" : "text-zinc-900"}`}
+          >
+            {row.original.lot}
           </div>
         ),
       },
-    ],
-    [],
-  );
+      {
+        accessorKey: "owner",
+        header: "Coproprietaire",
+        cell: ({ row }) => (
+          <div
+            className={`min-w-[210px] text-xs ${row.original.isFullyPaid ? "text-emerald-600 font-medium" : "text-zinc-800"}`}
+          >
+            {row.original.owner}
+          </div>
+        ),
+      },
+    ];
+
+    if (isPurelyAnnual) {
+      baseColumns.push({
+        id: "annualStatus",
+        header: `Cotisation ${year || ""}`,
+        cell: ({ row }) => (
+          <div className="flex justify-center">
+            <StatusBadge monthIndex={0} value={getAnnualStatus(row.original)} />
+          </div>
+        )
+      });
+    } else {
+      const months = [
+        { key: "jan", label: "Jan" },
+        { key: "feb", label: "Fev" },
+        { key: "mar", label: "Mar" },
+        { key: "apr", label: "Avr" },
+        { key: "may", label: "Mai" },
+        { key: "jun", label: "Jun" },
+        { key: "jul", label: "Jul" },
+        { key: "aug", label: "Aou" },
+        { key: "sep", label: "Sep" },
+        { key: "oct", label: "Oct" },
+        { key: "nov", label: "Nov" },
+        { key: "dec", label: "Dec" },
+      ];
+
+      months.forEach((m, i) => {
+        baseColumns.push({
+          accessorKey: m.key,
+          header: m.label,
+          cell: ({ row }) => <StatusBadge monthIndex={i} value={(row.original as any)[m.key]} />,
+        });
+      });
+    }
+
+    baseColumns.push({
+      accessorKey: "resteAPayer",
+      header: "Reste à payer",
+      cell: ({ row }) => (
+        <div className="flex h-10 w-full items-center justify-center">
+          <div className="flex flex-col items-center">
+            <span
+              className={`text-[11px] font-bold ${row.original.resteAPayer > 0 ? "text-rose-600" : "text-emerald-600"}`}
+            >
+              {row.original.resteAPayer.toLocaleString()}
+              <span className="ml-[1px] text-[8px] opacity-70 uppercase">DH</span>
+            </span>
+          </div>
+        </div>
+      ),
+    });
+
+    baseColumns.push({
+      id: "actions",
+      header: "",
+      cell: ({ row }) => (
+        <div className="flex justify-center px-2">
+          <button
+            onClick={() =>
+              setDetailUnit({ id: row.original.id, name: row.original.lot })
+            }
+            className="flex h-8 w-8 items-center justify-center rounded-lg text-zinc-400 hover:bg-sky-50 hover:text-sky-600 transition-all border border-transparent hover:border-sky-100"
+            title="Détail des reçus"
+          >
+            <ReceiptIcon className="h-4.5 w-4.5" />
+          </button>
+        </div>
+      ),
+    });
+
+    return baseColumns;
+  }, [isPurelyAnnual, year]);
 
   const table = useReactTable({
     data,
@@ -301,10 +263,50 @@ export function ContributionsYearTable({ data }: { data: RowData[] }) {
     getCoreRowModel: getCoreRowModel(),
   });
 
+  const getCellClass = (index: number, total: number) => {
+    const isLastAction = index === total - 1;
+    const isBalance = index === total - 2;
+
+    return [
+      "h-10 align-middle border-b border-zinc-100 py-1",
+      index === 0 ? "sticky left-0 z-20 bg-inherit pl-4" : "",
+      index === 1 ? "sticky left-[120px] z-20 bg-inherit pl-4 border-r border-zinc-100" : "",
+      index >= 2 && !isBalance && !isLastAction ? "p-0 text-center" : "",
+      isBalance ? "bg-zinc-50/30 font-bold" : "",
+    ].join(" ");
+  };
+
+  const getHeaderClass = (index: number, total: number) => {
+    const isLastAction = index === total - 1;
+    const isBalance = index === total - 2;
+
+    return [
+      "h-10 whitespace-nowrap border-b border-zinc-200 text-[10px] font-bold uppercase tracking-[0.12em] text-zinc-500",
+      index === 0 ? "sticky left-0 z-30 bg-zinc-50" : "",
+      index === 1 ? "sticky left-[120px] z-30 bg-zinc-50 border-r border-zinc-100" : "",
+      index >= 2 && !isBalance && !isLastAction ? "px-0 text-center" : "",
+      isBalance ? "bg-zinc-100/50" : "",
+    ].join(" ");
+  };
+
+  const getStyle = (index: number, total: number): React.CSSProperties => {
+    const isLastAction = index === total - 1;
+    const isBalance = index === total - 2;
+
+    if (index === 0) return { width: 120, minWidth: 120, maxWidth: 120 };
+    if (index === 1) return { width: 210, minWidth: 210, maxWidth: 210 };
+    if (isBalance) return { width: 90, minWidth: 90, maxWidth: 90 };
+    if (isLastAction) return { width: 60, minWidth: 60, maxWidth: 60 };
+
+    if (isPurelyAnnual && index === 2) return { width: 250, minWidth: 250 };
+
+    return { width: 64, minWidth: 64, maxWidth: 64 };
+  };
+
   return (
     <div className="overflow-hidden rounded-[28px] border border-zinc-200 bg-white shadow-[0_10px_30px_rgba(15,23,42,0.06)]">
       <div className="overflow-x-auto">
-        <Table className="mx-auto min-w-[1260px] max-w-[85vw]">
+        <Table className={`mx-auto max-w-[85vw] ${isPurelyAnnual ? "min-w-[800px]" : "min-w-[1260px]"}`}>
           <TableHeader className="bg-zinc-50">
             {table.getHeaderGroups().map((headerGroup) => (
               <TableRow
@@ -314,22 +316,8 @@ export function ContributionsYearTable({ data }: { data: RowData[] }) {
                 {headerGroup.headers.map((header, index) => (
                   <TableHead
                     key={header.id}
-                    className={[
-                      "h-10 whitespace-nowrap border-b border-zinc-200 text-[10px] font-bold uppercase tracking-[0.12em] text-zinc-500",
-                      index === 0 ? "sticky left-0 z-30 bg-zinc-50" : "",
-                      index === 1 ? "sticky left-[120px] z-30 bg-zinc-50 border-r border-zinc-100" : "",
-                      index >= 2 ? "px-0 text-center" : "",
-                      index === 14 ? "bg-zinc-100/50" : "",
-                    ].join(" ")}
-                    style={
-                      index === 0
-                        ? { width: 120, minWidth: 120, maxWidth: 120 }
-                        : index === 1
-                          ? { width: 210, minWidth: 210, maxWidth: 210 }
-                          : index === 14
-                            ? { width: 90, minWidth: 90, maxWidth: 90 }
-                            : { width: 64, minWidth: 64, maxWidth: 64 }
-                    }
+                    className={getHeaderClass(index, headerGroup.headers.length)}
+                    style={getStyle(index, headerGroup.headers.length)}
                   >
                     {header.isPlaceholder
                       ? null
@@ -358,18 +346,19 @@ export function ContributionsYearTable({ data }: { data: RowData[] }) {
                 >
                   {(() => {
                     const cells = row.getVisibleCells();
-                    // Indices: 0: Lot, 1: Owner, 2-13: Months, 14: Balance, 15: Actions
-                    if (row.original.frequency === "ANNUAL") {
+                    
+                    // Specific handling for mixed Annual rows in a Monthly table
+                    if (!isPurelyAnnual && row.original.frequency === "ANNUAL") {
                       return (
                         <>
                           {/* Lot & Owner cells */}
                           {cells.slice(0, 2).map((cell, index) => (
-                            <TableCell key={cell.id} className={cellClass(index)} style={cellStyle(index)}>
+                            <TableCell key={cell.id} className={getCellClass(index, cells.length)} style={getStyle(index, cells.length)}>
                               {flexRender(cell.column.columnDef.cell, cell.getContext())}
                             </TableCell>
                           ))}
                           
-                          {/* Merged Annual Status cell */}
+                          {/* Merged Annual Status cell (spanning 12 month columns) */}
                           <TableCell colSpan={12} className="h-10 align-middle border-b border-zinc-100 p-0 text-center bg-amber-50/10">
                             <div className="flex items-center justify-center gap-3">
                                <span className="text-[10px] font-bold text-zinc-400 uppercase tracking-widest">Cotisation Annuelle:</span>
@@ -380,8 +369,8 @@ export function ContributionsYearTable({ data }: { data: RowData[] }) {
                           </TableCell>
                           
                           {/* Balance & Actions cells */}
-                          {cells.slice(14).map((cell, index) => (
-                            <TableCell key={cell.id} className={cellClass(index + 14)} style={cellStyle(index + 14)}>
+                          {cells.slice(cells.length - 2).map((cell, index) => (
+                            <TableCell key={cell.id} className={getCellClass(index + cells.length - 2, cells.length)} style={getStyle(index + cells.length - 2, cells.length)}>
                               {flexRender(cell.column.columnDef.cell, cell.getContext())}
                             </TableCell>
                           ))}
@@ -390,7 +379,7 @@ export function ContributionsYearTable({ data }: { data: RowData[] }) {
                     }
                     
                     return cells.map((cell, index) => (
-                      <TableCell key={cell.id} className={cellClass(index)} style={cellStyle(index)}>
+                      <TableCell key={cell.id} className={getCellClass(index, cells.length)} style={getStyle(index, cells.length)}>
                         {flexRender(cell.column.columnDef.cell, cell.getContext())}
                       </TableCell>
                     ));
@@ -400,7 +389,7 @@ export function ContributionsYearTable({ data }: { data: RowData[] }) {
             ) : (
               <TableRow>
                 <TableCell
-                  colSpan={15}
+                  colSpan={isPurelyAnnual ? 5 : 15}
                   className="h-28 text-center text-zinc-500"
                 >
                   Aucune donnee
