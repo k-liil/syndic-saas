@@ -1,9 +1,8 @@
 "use client";
 
-import { Suspense, useEffect, useMemo, useState } from "react";
+import { useEffect, useMemo, useState } from "react";
 import Image from "next/image";
 import { signIn } from "next-auth/react";
-import { useSearchParams } from "next/navigation";
 import { ArrowRight, LockKeyhole, Mail, ShieldCheck } from "lucide-react";
 import { addDiagnosticLog } from "@/components/debug/DiagnosticOverlay";
 
@@ -13,13 +12,13 @@ interface LoginFormProps {
 }
 
 function LoginForm({ next, errorMsg }: LoginFormProps) {
-  useEffect(() => {
-    addDiagnosticLog("LoginForm: Mounted on client");
-  }, []);
-
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
   const [msg, setMsg] = useState("");
+
+  useEffect(() => {
+    addDiagnosticLog("LoginForm: Mounted on client");
+  }, []);
 
   async function onSubmit(e: React.FormEvent) {
     e.preventDefault();
@@ -151,16 +150,16 @@ function LoginForm({ next, errorMsg }: LoginFormProps) {
   );
 }
 
-function LoginPageContent() {
-  const sp = useSearchParams();
-  const [params, setParams] = useState({ next: "/dashboard", errorMsg: "" });
+export default function LoginPage() {
+  const [params, setParams] = useState({ next: "/dashboard", errorMsg: "", ready: false });
 
   useEffect(() => {
-    addDiagnosticLog("LoginPageContent: useEffect triggered to read search params");
-    // Decouple from initial hydration to prevent hangs
+    addDiagnosticLog("LoginPage: Mounted on client (Nuclear version)");
+    
+    // Use window.location directly instead of useSearchParams to avoid React 19 suspension
+    const sp = new URLSearchParams(window.location.search);
     const next = sp.get("next") || sp.get("callbackUrl") || "/dashboard";
     const error = sp.get("error");
-    addDiagnosticLog(`LoginPageContent: Params read - next=${next}, error=${error}`);
     
     let errorMsg = "";
     if (error) {
@@ -170,37 +169,11 @@ function LoginPageContent() {
       errorMsg = messages[error] ?? "Une erreur de connexion est survenue.";
     }
 
-    setParams({ next, errorMsg });
-    addDiagnosticLog("LoginPageContent: State updated with params");
-  }, [sp]);
-
-  return <LoginForm next={params.next} errorMsg={params.errorMsg} />;
-}
-
-export default function LoginPage() {
-  useEffect(() => {
-    addDiagnosticLog("LoginPage (Root): Mounted on client");
+    addDiagnosticLog(`LoginPage: Params extracted manually - next=${next}`);
+    setParams({ next, errorMsg, ready: true });
   }, []);
 
-  return (
-    <Suspense
-      fallback={
-        <div className="ambient-grid min-h-screen">
-          <div className="mx-auto flex min-h-screen w-full max-w-7xl items-center justify-center px-6 py-8">
-            <div className="glass-panel w-full max-w-md rounded-[36px] p-8 text-center text-slate-600">
-              <div className="mb-4">Chargement...</div>
-              <a 
-                href="/login"
-                className="text-xs text-sky-600 underline hover:text-sky-700"
-              >
-                Si la page reste bloquée, cliquez ici pour actualiser
-              </a>
-            </div>
-          </div>
-        </div>
-      }
-    >
-      <LoginPageContent />
-    </Suspense>
-  );
+  // Initial render (SSR and hydration) shows the form with default values 
+  // to avoid suspension hangs entirely.
+  return <LoginForm next={params.next} errorMsg={params.errorMsg} />;
 }
