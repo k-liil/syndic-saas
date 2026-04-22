@@ -6,24 +6,15 @@ import { signIn } from "next-auth/react";
 import { useSearchParams } from "next/navigation";
 import { ArrowRight, LockKeyhole, Mail, ShieldCheck } from "lucide-react";
 
-function LoginPageContent() {
-  const sp = useSearchParams();
-  const next = sp.get("next") || "/dashboard";
-  const error = sp.get("error");
+interface LoginFormProps {
+  next: string;
+  errorMsg: string;
+}
 
+function LoginForm({ next, errorMsg }: LoginFormProps) {
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
   const [msg, setMsg] = useState("");
-
-  const errorMessage = useMemo(() => {
-    if (!error) return "";
-    const messages: Record<string, string> = {
-      Configuration:
-        "La configuration de connexion n'est pas encore correcte.",
-    };
-
-    return messages[error] ?? "Une erreur de connexion est survenue.";
-  }, [error]);
 
   async function onSubmit(e: React.FormEvent) {
     e.preventDefault();
@@ -143,9 +134,9 @@ function LoginPageContent() {
               </button>
             </form>
 
-            {msg || errorMessage ? (
+            {msg || errorMsg ? (
               <div className="mt-4 rounded-2xl border border-slate-200 bg-slate-50 px-4 py-3 text-sm leading-6 text-slate-600">
-                {msg || errorMessage}
+                {msg || errorMsg}
               </div>
             ) : null}
           </div>
@@ -153,6 +144,24 @@ function LoginPageContent() {
       </div>
     </div>
   );
+}
+
+function LoginPageContent() {
+  const sp = useSearchParams();
+  const next = sp.get("next") || "/dashboard";
+  const error = sp.get("error");
+
+  const errorMsg = useMemo(() => {
+    if (!error) return "";
+    const messages: Record<string, string> = {
+      Configuration:
+        "La configuration de connexion n'est pas encore correcte.",
+    };
+
+    return messages[error] ?? "Une erreur de connexion est survenue.";
+  }, [error]);
+
+  return <LoginForm next={next} errorMsg={errorMsg} />;
 }
 
 export default function LoginPage() {
