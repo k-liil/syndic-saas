@@ -1,6 +1,6 @@
 "use client";
 
-import { Suspense, useMemo, useState } from "react";
+import { Suspense, useEffect, useMemo, useState } from "react";
 import Image from "next/image";
 import { signIn } from "next-auth/react";
 import { useSearchParams } from "next/navigation";
@@ -148,20 +148,25 @@ function LoginForm({ next, errorMsg }: LoginFormProps) {
 
 function LoginPageContent() {
   const sp = useSearchParams();
-  const next = sp.get("next") || "/dashboard";
-  const error = sp.get("error");
+  const [params, setParams] = useState({ next: "/dashboard", errorMsg: "" });
 
-  const errorMsg = useMemo(() => {
-    if (!error) return "";
-    const messages: Record<string, string> = {
-      Configuration:
-        "La configuration de connexion n'est pas encore correcte.",
-    };
+  useEffect(() => {
+    // Decouple from initial hydration to prevent hangs
+    const next = sp.get("next") || sp.get("callbackUrl") || "/dashboard";
+    const error = sp.get("error");
+    
+    let errorMsg = "";
+    if (error) {
+      const messages: Record<string, string> = {
+        Configuration: "La configuration de connexion n'est pas encore correcte.",
+      };
+      errorMsg = messages[error] ?? "Une erreur de connexion est survenue.";
+    }
 
-    return messages[error] ?? "Une erreur de connexion est survenue.";
-  }, [error]);
+    setParams({ next, errorMsg });
+  }, [sp]);
 
-  return <LoginForm next={next} errorMsg={errorMsg} />;
+  return <LoginForm next={params.next} errorMsg={params.errorMsg} />;
 }
 
 export default function LoginPage() {
@@ -172,12 +177,12 @@ export default function LoginPage() {
           <div className="mx-auto flex min-h-screen w-full max-w-7xl items-center justify-center px-6 py-8">
             <div className="glass-panel w-full max-w-md rounded-[36px] p-8 text-center text-slate-600">
               <div className="mb-4">Chargement...</div>
-              <button 
-                onClick={() => window.location.reload()}
+              <a 
+                href="/login"
                 className="text-xs text-sky-600 underline hover:text-sky-700"
               >
                 Si la page reste bloquée, cliquez ici pour actualiser
-              </button>
+              </a>
             </div>
           </div>
         </div>
