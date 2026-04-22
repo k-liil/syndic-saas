@@ -1,8 +1,5 @@
 /** @type {import("next").NextConfig} */
 const nextConfig = {
-  // Removing standalone output to troubleshoot static file serving
-  // output: "standalone", 
-  
   async redirects() {
     return [
       {
@@ -29,13 +26,28 @@ const nextConfig = {
       },
     ];
   },
-  
-  // Temporarily removing all custom headers to rule out MIME or security-policy blocking
-  /*
+
   async headers() {
-    return [ ... ]
-  }
-  */
+    return [
+      {
+        source: "/:path*",
+        headers: [
+          {
+            key: "X-Content-Type-Options",
+            value: "nosniff",
+          },
+          {
+            key: "X-Frame-Options",
+            value: "DENY",
+          },
+          {
+            key: "Referrer-Policy",
+            value: "strict-origin-when-cross-origin",
+          },
+        ],
+      },
+    ];
+  },
 };
 
 module.exports = nextConfig;

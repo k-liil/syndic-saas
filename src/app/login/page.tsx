@@ -1,10 +1,9 @@
 "use client";
 
-import { useEffect, useMemo, useState } from "react";
+import { useEffect, useState } from "react";
 import Image from "next/image";
 import { signIn } from "next-auth/react";
 import { ArrowRight, LockKeyhole, Mail, ShieldCheck } from "lucide-react";
-import { addDiagnosticLog } from "@/components/debug/DiagnosticOverlay";
 
 interface LoginFormProps {
   next: string;
@@ -15,10 +14,6 @@ function LoginForm({ next, errorMsg }: LoginFormProps) {
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
   const [msg, setMsg] = useState("");
-
-  useEffect(() => {
-    addDiagnosticLog("LoginForm: Mounted on client");
-  }, []);
 
   async function onSubmit(e: React.FormEvent) {
     e.preventDefault();
@@ -151,11 +146,9 @@ function LoginForm({ next, errorMsg }: LoginFormProps) {
 }
 
 export default function LoginPage() {
-  const [params, setParams] = useState({ next: "/dashboard", errorMsg: "", ready: false });
+  const [params, setParams] = useState({ next: "/dashboard", errorMsg: "" });
 
   useEffect(() => {
-    addDiagnosticLog("LoginPage: Mounted on client (Nuclear version)");
-    
     // Use window.location directly instead of useSearchParams to avoid React 19 suspension
     const sp = new URLSearchParams(window.location.search);
     const next = sp.get("next") || sp.get("callbackUrl") || "/dashboard";
@@ -169,8 +162,7 @@ export default function LoginPage() {
       errorMsg = messages[error] ?? "Une erreur de connexion est survenue.";
     }
 
-    addDiagnosticLog(`LoginPage: Params extracted manually - next=${next}`);
-    setParams({ next, errorMsg, ready: true });
+    setParams({ next, errorMsg });
   }, []);
 
   // Initial render (SSR and hydration) shows the form with default values 
