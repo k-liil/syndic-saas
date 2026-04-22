@@ -5,6 +5,7 @@ import Image from "next/image";
 import { signIn } from "next-auth/react";
 import { useSearchParams } from "next/navigation";
 import { ArrowRight, LockKeyhole, Mail, ShieldCheck } from "lucide-react";
+import { addDiagnosticLog } from "@/components/debug/DiagnosticOverlay";
 
 interface LoginFormProps {
   next: string;
@@ -12,6 +13,10 @@ interface LoginFormProps {
 }
 
 function LoginForm({ next, errorMsg }: LoginFormProps) {
+  useEffect(() => {
+    addDiagnosticLog("LoginForm: Mounted on client");
+  }, []);
+
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
   const [msg, setMsg] = useState("");
@@ -151,9 +156,11 @@ function LoginPageContent() {
   const [params, setParams] = useState({ next: "/dashboard", errorMsg: "" });
 
   useEffect(() => {
+    addDiagnosticLog("LoginPageContent: useEffect triggered to read search params");
     // Decouple from initial hydration to prevent hangs
     const next = sp.get("next") || sp.get("callbackUrl") || "/dashboard";
     const error = sp.get("error");
+    addDiagnosticLog(`LoginPageContent: Params read - next=${next}, error=${error}`);
     
     let errorMsg = "";
     if (error) {
@@ -164,12 +171,17 @@ function LoginPageContent() {
     }
 
     setParams({ next, errorMsg });
+    addDiagnosticLog("LoginPageContent: State updated with params");
   }, [sp]);
 
   return <LoginForm next={params.next} errorMsg={params.errorMsg} />;
 }
 
 export default function LoginPage() {
+  useEffect(() => {
+    addDiagnosticLog("LoginPage (Root): Mounted on client");
+  }, []);
+
   return (
     <Suspense
       fallback={
