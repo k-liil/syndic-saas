@@ -32,7 +32,13 @@ if (typeof window !== "undefined") {
   window.addEventListener("unhandledrejection", (event) => {
     addDiagnosticLog(`Unhandled Promise Rejection: ${event.reason}`, "error");
   });
-  addDiagnosticLog("Client window listeners attached.");
+  addDiagnosticLog("DiagnosticOverlay Script Module: Listeners attached.");
+  
+  if ((window as any).__DIAGNOSTIC_INLINE_SCRIPT) {
+    addDiagnosticLog("DiagnosticOverlay: Detected that inline script in Layout ran successfully.");
+  } else {
+    addDiagnosticLog("DiagnosticOverlay: Inline script in Layout NOT detected yet.", "warn");
+  }
 }
 
 export default function DiagnosticOverlay() {
@@ -40,6 +46,7 @@ export default function DiagnosticOverlay() {
   const [visible, setVisible] = useState(false);
 
   useEffect(() => {
+    addDiagnosticLog("DiagnosticOverlay: Component mounted (Hydration complete)");
     setLogs([...globalLogs]);
     const listener = (entry: LogEntry) => setLogs(prev => [...prev, entry]);
     logListeners.push(listener);

@@ -1,6 +1,5 @@
 import "./globals.css";
-import SessionProviderClient from "@/components/providers/SessionProviderClient";
-import DiagnosticOverlay, { addDiagnosticLog } from "@/components/debug/DiagnosticOverlay";
+import DiagnosticOverlay from "@/components/debug/DiagnosticOverlay";
 
 export const metadata = {
   title: "Syndicly SaaS",
@@ -8,17 +7,18 @@ export const metadata = {
 };
 
 export default function RootLayout({ children }: { children: React.ReactNode }) {
-  if (typeof window !== "undefined") {
-    addDiagnosticLog("Layout initial render (typeof window !== undefined)");
-  }
-
   return (
     <html lang="fr">
+      <head>
+        <script 
+          dangerouslySetInnerHTML={{ 
+            __html: `console.log("INLINE: Manual script execution test"); window.__DIAGNOSTIC_INLINE_SCRIPT = true;` 
+          }} 
+        />
+      </head>
       <body className="min-h-screen text-zinc-900 antialiased app-bg">
-        <SessionProviderClient>
-          {children}
-          <DiagnosticOverlay />
-        </SessionProviderClient>
+        {children}
+        <DiagnosticOverlay />
       </body>
     </html>
   );

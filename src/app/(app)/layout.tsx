@@ -5,6 +5,7 @@ import { prisma } from "@/lib/prisma";
 import { requireAuth } from "@/lib/authz";
 
 import { redirect } from "next/navigation";
+import SessionProviderClient from "@/components/providers/SessionProviderClient";
 
 export default async function AppLayout({
   children,
@@ -42,10 +43,12 @@ export default async function AppLayout({
   }
 
   return (
-    <OrgProvider initialOrgs={initialOrgs} initialOrgId={initialOrgId}>
-      <AppShell brandName={settings?.brandName ?? "Syndicly"}>
-        {children}
-      </AppShell>
-    </OrgProvider>
+    <SessionProviderClient>
+      <OrgProvider initialOrgs={initialOrgs} initialOrgId={initialOrgId}>
+        <AppShell brandName={settings?.brandName ?? "Syndicly"}>
+          {children}
+        </AppShell>
+      </OrgProvider>
+    </SessionProviderClient>
   );
 }
