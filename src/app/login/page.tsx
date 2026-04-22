@@ -171,7 +171,13 @@ export default function LoginPage() {
         <div className="ambient-grid min-h-screen">
           <div className="mx-auto flex min-h-screen w-full max-w-7xl items-center justify-center px-6 py-8">
             <div className="glass-panel w-full max-w-md rounded-[36px] p-8 text-center text-slate-600">
-              Chargement...
+              <div className="mb-4">Chargement...</div>
+              <button 
+                onClick={() => window.location.reload()}
+                className="text-xs text-sky-600 underline hover:text-sky-700"
+              >
+                Si la page reste bloquée, cliquez ici pour actualiser
+              </button>
             </div>
           </div>
         </div>
