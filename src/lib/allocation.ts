@@ -113,13 +113,31 @@ export async function reallocateUnitContributions(
     Date.UTC(lastTargetDate!.getUTCFullYear(), lastTargetDate!.getUTCMonth(), 1),
   );
 
+  // New logic: Check if we should project further into the future to allow for "Advances"
+  const totalMoneyAvailable = receipts.reduce((sum, r) => sum + Number(r.amount), 0);
+  // We'll extend targetPeriod if we have more money than current target coverage
+  // but we set a safety limit (e.g. 24 months from now)
+  const maxSafeFuture = new Date();
+  maxSafeFuture.setUTCFullYear(maxSafeFuture.getUTCFullYear() + 2);
+
   let cursor = new Date(startPeriod);
   let createdCount = 0;
   let updatedCount = 0;
   const duesToCreate: any[] = [];
   const duesToUpdate: { id: string; amountDue: number }[] = [];
 
-  while (cursor <= targetPeriod) {
+  // We keep tracking total dues generated to see if we've covered the available money
+  let totalDuesAmount = 0;
+  // Initialize with what we already have for past months (outside the loop range)
+  const pastDuesAmount = existingDues
+    .filter(d => new Date(d.period) < startPeriod)
+    .reduce((sum, d) => sum + Number(d.amountDue), 0);
+  totalDuesAmount = pastDuesAmount;
+
+  while (
+    cursor <= targetPeriod || 
+    (totalDuesAmount < totalMoneyAvailable && cursor <= maxSafeFuture)
+  ) {
     const { amount, frequency } = getApplicableContribution(
       unit as any,
       cursor,
@@ -132,6 +150,7 @@ export async function reallocateUnitContributions(
       cursor.getUTCMonth() === startPeriod.getUTCMonth();
 
     if (amount > 0 && isDueMonth) {
+      totalDuesAmount += amount;
       const existing = existingDues.find((d: any) => {
         const dDate = new Date(d.period);
         return (
