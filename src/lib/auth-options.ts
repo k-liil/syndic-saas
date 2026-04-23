@@ -64,7 +64,7 @@ export const authOptions: NextAuthOptions = {
             return null;
           }
 
-          console.log("[AUTH_LOG] Login authorize success for:", email);
+          console.log("[AUTH_LOG] Login authorize success for:", email, "Role:", user.role);
           return {
             id: user.id,
             email: user.email,
@@ -89,19 +89,22 @@ export const authOptions: NextAuthOptions = {
         if (user) {
           token.id = (user as any).id;
           token.role = normalizeRole((user as any).role);
+          console.log("[AUTH_LOG] JWT Callback: Initializing for user", token.id, "Role", token.role);
+          
           // Optimization: Pre-fetch organization during login
-          const org = await ensureOrganizationForUser(String(token.id));
-          token.organizationId = org.id;
-          token.organizationName = org.name;
-        } else if (token.id && !token.organizationId) {
-          // Fallback for existing sessions without orgId
-          const org = await ensureOrganizationForUser(String(token.id));
-          token.organizationId = org.id;
-          token.organizationName = org.name;
+          try {
+            const org = await ensureOrganizationForUser(String(token.id));
+            token.organizationId = org.id;
+            token.organizationName = org.name;
+            console.log("[AUTH_LOG] JWT Callback: Org identified:", org.id);
+          } catch (orgError) {
+            console.error("[AUTH_LOG] JWT Callback: Failed to ensure organization:", orgError);
+            // Don't crash the whole login if org pre-fetch fails, let requireAuth handle it
+          }
         }
         return token;
       } catch (error) {
-        console.error("[AUTH_LOG] jwt callback failed:", error);
+        console.error("[AUTH_LOG] jwt callback fatal error:", error);
         throw error;
       }
     },
@@ -112,6 +115,7 @@ export const authOptions: NextAuthOptions = {
         (session.user as any).role = token.role;
         (session.user as any).organizationId = token.organizationId;
         (session.user as any).organizationName = token.organizationName;
+        console.log("[AUTH_LOG] Session Callback: Session ready for", (session.user as any).id);
       }
       return session;
     },
