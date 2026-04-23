@@ -1,24 +1,10 @@
 /** @type {import("next").NextConfig} */
 const nextConfig = {
-  // Use standalone output for better compatibility with Railway
   output: "standalone",
 
-  // Temporarily disabling redirects to allow access via the Railway domain (bypass Zscaler block)
   async redirects() {
     return [
-      /* REDIRECTS DISABLED FOR BYPASS 
-      {
-        source: "/:path*",
-        has: [
-          {
-            type: "host",
-            value: "syndicly-production.up.railway.app",
-          },
-        ],
-        destination: "https://www.syndicly.ma/:path*",
-        permanent: true,
-      },
-      */
+      // Redirects disabled for Zscaler bypass via railway domain
     ];
   },
 
@@ -44,12 +30,12 @@ const nextConfig = {
             value: "strict-origin-when-cross-origin",
           },
           {
-            key: "Permissions-Policy",
-            value: "camera=(), microphone=(), geolocation=()",
-          },
-          {
             key: "Strict-Transport-Security",
             value: "max-age=31536000; includeSubDomains; preload",
+          },
+          {
+            key: "Content-Security-Policy",
+            value: "default-src 'self'; script-src 'self' 'unsafe-inline' 'unsafe-eval'; style-src 'self' 'unsafe-inline'; img-src 'self' blob: data:; font-src 'self' data:; connect-src 'self' https://*.up.railway.app; frame-ancestors 'none'; upgrade-insecure-requests;",
           },
         ],
       },

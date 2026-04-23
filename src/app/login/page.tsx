@@ -102,7 +102,7 @@ function LoginForm({ next, errorMsg }: LoginFormProps) {
             </div>
 
             <h2 className="display-title mt-4 text-5xl font-semibold leading-none text-slate-950">
-              Connexion <span className="text-xs opacity-20">v2</span>
+              Connexion
             </h2>
             <p className="mt-2 text-sm leading-6 text-slate-500">
               Connectez-vous pour acceder au tableau de bord et a vos operations.
