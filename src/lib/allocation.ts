@@ -86,20 +86,27 @@ export async function reallocateUnitContributions(
     log(`Supprimé ${deleteRes.count} dettes hors-période (avant la date de début).`);
   }
 
-  // 1.4 Generate missing dues or update existing ones if amount changed
-  const [existingDues, lastReceipt] = await Promise.all([
+  // 1.4 Fetch essential data for target period calculation
+  const [existingDues, receipts] = await Promise.all([
     tx.monthlyDue.findMany({
       where: { unitId, organizationId },
       select: { id: true, period: true, amountDue: true },
     }),
-    tx.receipt.findFirst({
+    tx.receipt.findMany({
       where: { unitId, organizationId, type: ReceiptType.CONTRIBUTION },
-      orderBy: { date: "desc" },
-      select: { date: true },
+      orderBy: [{ date: "asc" }, { receiptNumber: "asc" }],
+      select: {
+        id: true,
+        amount: true,
+        unallocatedAmount: true,
+        receiptNumber: true,
+        date: true,
+      },
     }),
   ]);
 
   const now = new Date();
+  const lastReceipt = receipts.length > 0 ? receipts[receipts.length - 1] : null;
   const lastDue = existingDues.length > 0 ? existingDues.reduce((prev: any, current: any) => (prev.period > current.period) ? prev : current) : null;
   
   const lastTargetDate = [
@@ -115,8 +122,6 @@ export async function reallocateUnitContributions(
 
   // New logic: Check if we should project further into the future to allow for "Advances"
   const totalMoneyAvailable = receipts.reduce((sum, r) => sum + Number(r.amount), 0);
-  // We'll extend targetPeriod if we have more money than current target coverage
-  // but we set a safety limit (e.g. 24 months from now)
   const maxSafeFuture = new Date();
   maxSafeFuture.setUTCFullYear(maxSafeFuture.getUTCFullYear() + 2);
 
@@ -128,7 +133,6 @@ export async function reallocateUnitContributions(
 
   // We keep tracking total dues generated to see if we've covered the available money
   let totalDuesAmount = 0;
-  // Initialize with what we already have for past months (outside the loop range)
   const pastDuesAmount = existingDues
     .filter(d => new Date(d.period) < startPeriod)
     .reduce((sum, d) => sum + Number(d.amountDue), 0);
@@ -194,13 +198,10 @@ export async function reallocateUnitContributions(
     }
   }
 
-  log(
-    `Bilan des dettes : ${createdCount} créées, ${updatedCount} mises à jour (tarifs modifiés).`,
-  );
+  log(`Bilan des dettes : ${createdCount} créées, ${updatedCount} mises à jour (tarifs modifiés).`);
 
-  // 1.5 Fetch current dues and receipts for reallocation
-
-  const [dues, receipts] = await Promise.all([
+  // 1.5 Fetch current dues and receipts for reallocation (with all fields needed)
+  const [completeDues, completeReceipts] = await Promise.all([
     tx.monthlyDue.findMany({
       where: { unitId, organizationId },
       orderBy: { period: "asc" },
@@ -218,13 +219,11 @@ export async function reallocateUnitContributions(
     }),
   ]);
 
-  log(`Trouvé ${dues.length} dettes et ${receipts.length} reçus pour ce lot.`);
+  log(`Trouvé ${completeDues.length} dettes et ${completeReceipts.length} reçus pour ce lot.`);
 
-  const allocations: { receiptId: string; dueId: string; amount: number }[] =
-    [];
+  const allocations: { receiptId: string; dueId: string; amount: number }[] = [];
 
-  // Create a mutable working copy of due statuses starting from 0 (re-allocating everything)
-  const workingDues = dues.map((d: any) => ({
+  const workingDues = completeDues.map((d: any) => ({
     id: d.id,
     amountDue: Number(d.amountDue),
     paidAmount: 0,
@@ -232,7 +231,7 @@ export async function reallocateUnitContributions(
     initialStatus: d.status,
   }));
 
-  const workingReceipts = receipts.map((r: any) => ({
+  const workingReceipts = completeReceipts.map((r: any) => ({
     id: r.id,
     amount: Number(r.amount),
     unallocatedAmount: 0,
@@ -240,13 +239,11 @@ export async function reallocateUnitContributions(
     receiptNumber: r.receiptNumber,
   }));
 
-  // 3. FIFO Logic: apply each receipt to the earliest unpaid dues
   for (const wr of workingReceipts) {
     let remaining = wr.amount;
 
     for (const d of workingDues) {
       if (remaining <= 0) break;
-
       const deficit = d.amountDue - d.paidAmount;
       if (deficit <= 0) continue;
 
@@ -259,79 +256,33 @@ export async function reallocateUnitContributions(
         dueId: d.id,
         amount: allocationAmount,
       });
-      log(
-        `Reçu #${wr.receiptNumber} alloue ${allocationAmount} DH à la dette de ${d.amountDue} DH (ID: ${d.id.slice(-6)}...). Restant dû: ${deficit - allocationAmount} DH.`,
-      );
+      log(`Reçu #${wr.receiptNumber} alloue ${allocationAmount} DH à la dette de ${d.amountDue} DH (ID: ${d.id.slice(-6)}...).`);
     }
     wr.unallocatedAmount = remaining;
     if (remaining > 0) {
-      log(
-        `Reçu #${wr.receiptNumber} a un solde non alloué (AVANCE) de ${remaining} DH.`,
-      );
+      log(`Reçu #${wr.receiptNumber} a un solde non alloué (AVANCE) de ${remaining} DH.`);
     }
   }
 
-  // 4. Batch Updates for Dues (Only on changes)
   const dueUpdatesNeeded = workingDues.filter((d: any) => {
-    const currentStatus =
-      d.paidAmount >= d.amountDue
-        ? DueStatus.PAID
-        : d.paidAmount > 0
-          ? DueStatus.PARTIAL
-          : DueStatus.UNPAID;
-    return (
-      d.paidAmount !== d.initialPaidAmount || currentStatus !== d.initialStatus
-    );
+    const currentStatus = d.paidAmount >= d.amountDue ? DueStatus.PAID : d.paidAmount > 0 ? DueStatus.PARTIAL : DueStatus.UNPAID;
+    return d.paidAmount !== d.initialPaidAmount || currentStatus !== d.initialStatus;
   });
 
-  // 5. Batch Updates for Receipts (Only on changes)
-  const receiptUpdatesNeeded = workingReceipts.filter(
-    (r: any) => r.unallocatedAmount !== r.initialUnallocatedAmount,
-  );
+  const receiptUpdatesNeeded = workingReceipts.filter((r: any) => r.unallocatedAmount !== r.initialUnallocatedAmount);
 
-  console.time(`[ALLOCATION] DB Updates for ${unitId}`);
-  log(
-    `Préparation des mises à jour: ${dueUpdatesNeeded.length} dettes modifiées, ${receiptUpdatesNeeded.length} reçus modifiés, ${allocations.length} nouvelles allocations à insérer.`,
-  );
-
-  // 6. Execute all updates and create allocations
   const dbOps: Promise<any>[] = [];
+  if (allocations.length > 0) dbOps.push(tx.receiptAllocation.createMany({ data: allocations }));
 
-  if (allocations.length > 0) {
-    dbOps.push(tx.receiptAllocation.createMany({ data: allocations }));
-  }
-
-  // Collect Dues updates in parallel
   dueUpdatesNeeded.forEach((d: any) => {
-    const status =
-      d.paidAmount >= d.amountDue
-        ? DueStatus.PAID
-        : d.paidAmount > 0
-          ? DueStatus.PARTIAL
-          : DueStatus.UNPAID;
-    dbOps.push(
-      tx.monthlyDue.update({
-        where: { id: d.id },
-        data: { paidAmount: d.paidAmount, status },
-      }),
-    );
+    const status = d.paidAmount >= d.amountDue ? DueStatus.PAID : d.paidAmount > 0 ? DueStatus.PARTIAL : DueStatus.UNPAID;
+    dbOps.push(tx.monthlyDue.update({ where: { id: d.id }, data: { paidAmount: d.paidAmount, status } }));
   });
 
-  // Collect Receipts updates in parallel
   receiptUpdatesNeeded.forEach((r: any) => {
-    dbOps.push(
-      tx.receipt.update({
-        where: { id: r.id },
-        data: { unallocatedAmount: r.unallocatedAmount },
-      }),
-    );
+    dbOps.push(tx.receipt.update({ where: { id: r.id }, data: { unallocatedAmount: r.unallocatedAmount } }));
   });
 
-  // Run all DB operations in parallel within the same transaction
-  if (dbOps.length > 0) {
-    await Promise.all(dbOps);
-  }
-
-  console.timeEnd(`[ALLOCATION] DB Updates for ${unitId}`);
+  if (dbOps.length > 0) await Promise.all(dbOps);
   log(`--- Fin du recalcul FIFO avec succès ---`);
 }
