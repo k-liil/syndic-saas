@@ -142,6 +142,9 @@ export async function reallocateUnitContributions(
     cursor <= targetPeriod || 
     (totalDuesAmount < totalMoneyAvailable && cursor <= maxSafeFuture)
   ) {
+    if (cursor > targetPeriod) {
+      log(`PROJECTION: Génération d'une avance pour ${cursor.toISOString().slice(0, 7)} (Cumul: ${totalDuesAmount} / Total: ${totalMoneyAvailable})`);
+    }
     const { amount, frequency } = getApplicableContribution(
       unit as any,
       cursor,

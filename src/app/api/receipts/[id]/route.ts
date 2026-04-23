@@ -218,10 +218,9 @@ export async function PUT(
     if (
       existing.unitId &&
       existing.type === "CONTRIBUTION" &&
-      (hasDateChanged || hasAmountChanged) &&
       existing.organizationId
     ) {
-      // Re-allocate if date or amount changed because FIFO order and distribution changed
+      // Re-allocate to apply any logic changes or data corrections
       await reallocateUnitContributions(
         prisma,
         existing.unitId,
