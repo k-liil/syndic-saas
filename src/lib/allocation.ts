@@ -113,7 +113,7 @@ export async function reallocateUnitContributions(
     lastReceipt?.date,
     lastDue?.period,
     now
-  ].filter(Boolean).reduce((prev, current) => (prev! > current!) ? prev : current);
+  ].filter(Boolean).reduce((prev: any, current: any) => (prev! > current!) ? prev : current);
 
   // Ensure we go to the first of the month
   const targetPeriod = new Date(
@@ -121,7 +121,7 @@ export async function reallocateUnitContributions(
   );
 
   // New logic: Check if we should project further into the future to allow for "Advances"
-  const totalMoneyAvailable = receipts.reduce((sum, r) => sum + Number(r.amount), 0);
+  const totalMoneyAvailable = receipts.reduce((sum: number, r: any) => sum + Number(r.amount), 0);
   const maxSafeFuture = new Date();
   maxSafeFuture.setUTCFullYear(maxSafeFuture.getUTCFullYear() + 2);
 
@@ -135,7 +135,7 @@ export async function reallocateUnitContributions(
   let totalDuesAmount = 0;
   const pastDuesAmount = existingDues
     .filter(d => new Date(d.period) < startPeriod)
-    .reduce((sum, d) => sum + Number(d.amountDue), 0);
+    .reduce((sum: number, d: any) => sum + Number(d.amountDue), 0);
   totalDuesAmount = pastDuesAmount;
 
   while (
