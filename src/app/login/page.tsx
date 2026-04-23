@@ -4,6 +4,7 @@ import { useEffect, useState } from "react";
 import Image from "next/image";
 import { signIn } from "next-auth/react";
 import { ArrowRight, LockKeyhole, Mail, ShieldCheck } from "lucide-react";
+import SessionProviderClient from "@/components/providers/SessionProviderClient";
 
 interface LoginFormProps {
   next: string;
@@ -17,19 +18,28 @@ function LoginForm({ next, errorMsg }: LoginFormProps) {
 
   async function onSubmit(e: React.FormEvent) {
     e.preventDefault();
+    console.log("[LOGIN_DEBUG] Form submission started for:", email);
     setMsg("Connexion en cours...");
-    const res = await signIn("credentials", {
-      email,
-      password,
-      redirect: false,
-    });
+    
+    try {
+      const res = await signIn("credentials", {
+        email,
+        password,
+        redirect: false,
+      });
 
-    if (res?.error) {
-      setMsg(`Connexion refusée (${res.error}).`);
-      return;
+      console.log("[LOGIN_DEBUG] signIn result:", res);
+
+      if (res?.error) {
+        setMsg(`Connexion refusée (${res.error}).`);
+        return;
+      }
+
+      window.location.href = next;
+    } catch (err) {
+      console.error("[LOGIN_DEBUG] signIn exception:", err);
+      setMsg("Une erreur technique est survenue.");
     }
-
-    window.location.href = next;
   }
 
   return (
@@ -92,7 +102,7 @@ function LoginForm({ next, errorMsg }: LoginFormProps) {
             </div>
 
             <h2 className="display-title mt-4 text-5xl font-semibold leading-none text-slate-950">
-              Connexion
+              Connexion <span className="text-xs opacity-20">v2</span>
             </h2>
             <p className="mt-2 text-sm leading-6 text-slate-500">
               Connectez-vous pour acceder au tableau de bord et a vos operations.
@@ -127,7 +137,10 @@ function LoginForm({ next, errorMsg }: LoginFormProps) {
                 />
               </label>
 
-              <button className="btn-primary inline-flex w-full items-center justify-center gap-2 text-sm font-semibold">
+              <button 
+                type="submit"
+                className="btn-primary inline-flex w-full items-center justify-center gap-2 text-sm font-semibold"
+              >
                 Se connecter
                 <ArrowRight size={16} />
               </button>
@@ -167,5 +180,9 @@ export default function LoginPage() {
 
   // Initial render (SSR and hydration) shows the form with default values 
   // to avoid suspension hangs entirely.
-  return <LoginForm next={params.next} errorMsg={params.errorMsg} />;
+  return (
+    <SessionProviderClient>
+      <LoginForm next={params.next} errorMsg={params.errorMsg} />
+    </SessionProviderClient>
+  );
 }
