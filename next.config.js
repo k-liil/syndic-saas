@@ -1,7 +1,12 @@
 /** @type {import("next").NextConfig} */
 const nextConfig = {
+  // Use standalone output for better compatibility with Railway
+  output: "standalone",
+
+  // Temporarily disabling redirects to allow access via the Railway domain (bypass Zscaler block)
   async redirects() {
     return [
+      /* REDIRECTS DISABLED FOR BYPASS 
       {
         source: "/:path*",
         has: [
@@ -13,17 +18,7 @@ const nextConfig = {
         destination: "https://www.syndicly.ma/:path*",
         permanent: true,
       },
-      {
-        source: "/:path*",
-        has: [
-          {
-            type: "host",
-            value: "syndicly.ma",
-          },
-        ],
-        destination: "https://www.syndicly.ma/:path*",
-        permanent: true,
-      },
+      */
     ];
   },
 
@@ -41,8 +36,20 @@ const nextConfig = {
             value: "DENY",
           },
           {
+            key: "X-XSS-Protection",
+            value: "1; mode=block",
+          },
+          {
             key: "Referrer-Policy",
             value: "strict-origin-when-cross-origin",
+          },
+          {
+            key: "Permissions-Policy",
+            value: "camera=(), microphone=(), geolocation=()",
+          },
+          {
+            key: "Strict-Transport-Security",
+            value: "max-age=31536000; includeSubDomains; preload",
           },
         ],
       },
