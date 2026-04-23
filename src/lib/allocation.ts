@@ -134,7 +134,7 @@ export async function reallocateUnitContributions(
   // We keep tracking total dues generated to see if we've covered the available money
   let totalDuesAmount = 0;
   const pastDuesAmount = existingDues
-    .filter(d => new Date(d.period) < startPeriod)
+    .filter((d: any) => new Date(d.period) < startPeriod)
     .reduce((sum: number, d: any) => sum + Number(d.amountDue), 0);
   totalDuesAmount = pastDuesAmount;
 
