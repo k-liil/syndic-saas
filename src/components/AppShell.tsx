@@ -3,8 +3,9 @@
 import { Sidebar } from "@/components/Sidebar";
 import { PropertyYearSwitcher } from "@/components/PropertyYearSwitcher";
 import { useSession, signOut } from "next-auth/react";
-import { Bell, LogIn, LogOut, User } from "lucide-react";
+import { Bell, LogIn, LogOut, Menu, User, X } from "lucide-react";
 import Link from "next/link";
+import { usePathname } from "next/navigation";
 import { Suspense, useEffect, useRef, useState } from "react";
 import { canManage, getRoleLabel } from "@/lib/roles";
 import { useApiUrl, useOrganization } from "@/lib/org-context";
@@ -31,7 +32,9 @@ export function AppShell({
   brandName: string;
 }) {
   const { data: session } = useSession();
+  const pathname = usePathname();
   const [open, setOpen] = useState(false);
+  const [mobileNavOpen, setMobileNavOpen] = useState(false);
   const [notificationsOpen, setNotificationsOpen] = useState(false);
   const [notifications, setNotifications] = useState<NotificationItem[]>([]);
   const [unreadCount, setUnreadCount] = useState(0);
@@ -44,6 +47,19 @@ export function AppShell({
   const menuBgClass = "bg-transparent !bg-none border-slate-200/70 shadow-none";
   const pageBgClass = "bg-transparent shadow-none";
   const headerBgClass = "bg-white/40 border-slate-200/50";
+
+  useEffect(() => {
+    setMobileNavOpen(false);
+  }, [pathname]);
+
+  useEffect(() => {
+    if (mobileNavOpen) {
+      document.body.style.overflow = "hidden";
+    } else {
+      document.body.style.overflow = "";
+    }
+    return () => { document.body.style.overflow = ""; };
+  }, [mobileNavOpen]);
 
   useEffect(() => {
     function onDown(e: MouseEvent) {
@@ -143,6 +159,39 @@ export function AppShell({
 
   return (
     <div className={`${outerWrapperClass} min-h-screen`}>
+      {/* Mobile nav drawer */}
+      {mobileNavOpen ? (
+        <div className="fixed inset-0 z-50 md:hidden">
+          <div
+            className="absolute inset-0 bg-slate-900/50 backdrop-blur-sm"
+            onClick={() => setMobileNavOpen(false)}
+            aria-hidden="true"
+          />
+          <div className="absolute left-0 top-0 flex h-full w-72 flex-col bg-white shadow-2xl">
+            <div className="flex h-16 shrink-0 items-center justify-between border-b border-slate-200 px-5">
+              <div className="flex items-center gap-3">
+                {/* eslint-disable-next-line @next/next/no-img-element */}
+                <img src="/logo.png" alt="Syndicly Logo" className="h-10 w-10 object-contain drop-shadow-sm" />
+                <div className="text-base font-semibold text-slate-900">Syndicly</div>
+              </div>
+              <button
+                onClick={() => setMobileNavOpen(false)}
+                className="flex h-8 w-8 items-center justify-center rounded-md text-slate-500 hover:bg-slate-100 hover:text-slate-900"
+                aria-label="Fermer le menu"
+              >
+                <X size={18} />
+              </button>
+            </div>
+            <div className="min-h-0 flex-1 overflow-y-auto px-2 py-3">
+              <Sidebar onNavigate={() => setMobileNavOpen(false)} />
+            </div>
+            <div className="border-t border-slate-200 px-5 py-3 text-[11px] leading-5 text-slate-500">
+              Recettes = encaissements. Depenses = paiements fournisseurs.
+            </div>
+          </div>
+        </div>
+      ) : null}
+
       <div className={`grid min-h-screen md:grid-cols-[282px_minmax(0,1fr)] ${parentBgClass}`}>
         <aside className={`sticky top-0 hidden h-screen border-r text-slate-900 md:flex md:flex-col ${menuBgClass}`}>
           <div className="flex h-16 shrink-0 items-center gap-3 border-b border-slate-200 px-5">
@@ -170,6 +219,13 @@ export function AppShell({
           <header className={`sticky top-0 z-30 flex h-16 shrink-0 items-center border-b backdrop-blur-xl ${headerBgClass}`}>
             <div className="flex w-full items-center justify-between gap-4 px-4 sm:px-6 lg:px-8">
               <div className="flex min-w-0 items-center gap-3">
+                <button
+                  onClick={() => setMobileNavOpen(true)}
+                  className="flex h-9 w-9 items-center justify-center rounded-md text-slate-600 hover:bg-slate-100 md:hidden"
+                  aria-label="Ouvrir le menu"
+                >
+                  <Menu size={20} />
+                </button>
                 <Suspense
                   fallback={
                     <div className="rounded-md border border-slate-200 bg-white px-4 py-2 text-sm text-slate-500 shadow-sm">
@@ -198,7 +254,7 @@ export function AppShell({
                     </button>
 
                     {notificationsOpen ? (
-                      <div className="absolute right-13 mt-[-40px] w-96 z-50 rounded-[24px] border border-slate-200 bg-white p-4 shadow-[0_20px_60px_rgba(15,23,42,0.12)]">
+                      <div className="absolute right-0 mt-2 w-[calc(100vw-2rem)] max-w-sm z-50 rounded-[24px] border border-slate-200 bg-white p-4 shadow-[0_20px_60px_rgba(15,23,42,0.12)] sm:right-0 sm:w-96">
                         <div className="flex items-center justify-between">
                           <div>
                             <div className="text-sm font-semibold text-slate-900">Notifications</div>
