@@ -1,4 +1,6 @@
 import { getServerSession } from "next-auth";
+import { decode } from "next-auth/jwt";
+import { headers } from "next/headers";
 import { authOptions } from "@/lib/auth-options";
 import { prisma } from "@/lib/prisma";
 import { AppRole, hasMinRole, isSuperAdmin, normalizeRole } from "@/lib/roles";
@@ -26,8 +28,74 @@ export type AuthGateFailure = {
 export type AuthGateResult = AuthGateSuccess | AuthGateFailure;
 
 export async function requireAuth() {
+  // ── Bearer token check (mobile clients) ─────────────────────────────────
+  try {
+    const headersList = await headers();
+    const authHeader = headersList.get("authorization");
+    if (authHeader?.startsWith("Bearer ")) {
+      const bearerToken = authHeader.slice(7);
+      const secret = process.env.NEXTAUTH_SECRET ?? process.env.AUTH_SECRET ?? "";
+      const decoded = await decode({ token: bearerToken, secret });
+      if (decoded?.id) {
+        const userId = String(decoded.id);
+        const role = normalizeRole(decoded.role as string);
+        const sessionOrgId = (decoded.organizationId as string | null) ?? null;
+
+        // Build a minimal session-like object so existing route code keeps working
+        const fakeSession = {
+          user: {
+            id: userId,
+            email: decoded.email as string ?? "",
+            name: decoded.name as string ?? "",
+            role,
+            organizationId: sessionOrgId,
+            organizationName: (decoded.organizationName as string | null) ?? "",
+          },
+          expires: new Date(Date.now() + 30 * 24 * 60 * 60 * 1000).toISOString(),
+        } as any;
+
+        if (isSuperAdmin(role)) {
+          return {
+            ok: true as const,
+            session: fakeSession,
+            userId,
+            isSuperAdmin: true,
+            organizationId: sessionOrgId,
+          };
+        }
+
+        const userOrgsRaw = await prisma.userOrganization.findMany({
+          where: { userId },
+          select: { organizationId: true, role: true },
+        });
+        const userOrgs = userOrgsRaw.map((item) => ({
+          organizationId: item.organizationId,
+          role: normalizeRole(item.role),
+        }));
+
+        if (userOrgs.length === 0) {
+          return { ok: false as const, status: 403, error: "NO_ORGANIZATION" };
+        }
+
+        const effectiveOrgId = sessionOrgId ?? userOrgs[0]?.organizationId ?? null;
+        fakeSession.user.organizationId = effectiveOrgId;
+
+        return {
+          ok: true as const,
+          session: fakeSession,
+          userId,
+          isSuperAdmin: false,
+          organizationId: effectiveOrgId,
+          userOrganizations: userOrgs,
+        };
+      }
+    }
+  } catch {
+    // Invalid bearer token — fall through to session check
+  }
+
+  // ── NextAuth session (web clients) ──────────────────────────────────────
   const session = await getServerSession(authOptions);
-  
 
   if (!session?.user || !(session.user as any)?.id) {
     return { ok: false as const, status: 401, error: "UNAUTHENTICATED" };
@@ -38,15 +106,15 @@ export async function requireAuth() {
   const sessionOrgId = (session.user as any).organizationId;
 
   if (isSuperAdmin(role)) {
-    return { 
-      ok: true as const, 
-      session, 
+    return {
+      ok: true as const,
+      session,
       userId,
       isSuperAdmin: true,
       organizationId: sessionOrgId || null,
     };
   }
-  
+
   // Always fetch full list of organizations from DB to support SPA switcher
   const userOrgsRaw = await prisma.userOrganization.findMany({
     where: { userId },
@@ -56,16 +124,16 @@ export async function requireAuth() {
     organizationId: item.organizationId,
     role: normalizeRole(item.role),
   }));
-  
+
   if (userOrgs.length === 0) {
     return { ok: false as const, status: 403, error: "NO_ORGANIZATION" };
   }
 
   const effectiveOrgId = sessionOrgId || (userOrgs.length > 0 ? userOrgs[0].organizationId : null);
-  
-  return { 
-    ok: true as const, 
-    session, 
+
+  return {
+    ok: true as const,
+    session,
     userId,
     isSuperAdmin: false,
     organizationId: effectiveOrgId,

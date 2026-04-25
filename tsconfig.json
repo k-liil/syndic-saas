@@ -31,5 +31,5 @@
     ".next/dev/types/**/*.ts",
     "**/*.mts"
   ],
-  "exclude": ["node_modules", "prisma/seed.ts", "scripts/**/*.ts", "tmp"]
+  "exclude": ["node_modules", "prisma/seed.ts", "scripts/**/*.ts", "tmp", "syndic-mobile"]
 }

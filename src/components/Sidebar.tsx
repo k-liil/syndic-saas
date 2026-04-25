@@ -65,15 +65,18 @@ function NavItem({
   title,
   Icon,
   active,
+  onClick,
 }: {
   href: string;
   title: string;
   Icon: ElementType;
   active: boolean;
+  onClick?: () => void;
 }) {
   return (
     <Link
       href={href}
+      onClick={onClick}
       className={[
         "group relative flex items-center gap-2 px-3 py-1.5 text-[13px] transition",
         active
@@ -121,7 +124,7 @@ const sectionLabels: Record<(typeof sectionOrder)[number], string> = {
   administration: "Administration",
 };
 
-export function Sidebar() {
+export function Sidebar({ onNavigate }: { onNavigate?: () => void } = {}) {
   const pathname = usePathname();
   const { data: session, status } = useSession();
   const role = normalizeRole(session?.user?.role);
@@ -176,6 +179,7 @@ export function Sidebar() {
                       title={item.title}
                       Icon={Icon}
                       active={isActivePath(pathname, item.href)}
+                      onClick={onNavigate}
                     />
                   );
                 })}
