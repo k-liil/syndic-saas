@@ -24,7 +24,8 @@ type ApiBuilding = {
       period: string;
       status: DueStatus;
     }[];
-    totalBalance: number;
+    resteAPayerAnterieur: number;
+    resteAPayerEnCours: number;
   }[];
 };
 
@@ -54,7 +55,8 @@ type RowData = {
   oct: MonthData;
   nov: MonthData;
   dec: MonthData;
-  resteAPayer: number;
+  resteAPayerAnterieur: number;
+  resteAPayerEnCours: number;
   isFullyPaid: boolean;
   frequency: "MONTHLY" | "ANNUAL";
 };
@@ -146,7 +148,8 @@ function ContributionsYearPageContent() {
         oct: get(9),
         nov: get(10),
         dec: get(11),
-        resteAPayer: (u as any).totalBalance || 0,
+        resteAPayerAnterieur: (u as any).resteAPayerAnterieur || 0,
+        resteAPayerEnCours: (u as any).resteAPayerEnCours || 0,
         isFullyPaid,
         frequency: (u as any).frequency || "MONTHLY",
       };

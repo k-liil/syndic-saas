@@ -41,7 +41,8 @@ type RowData = {
   oct: MonthData;
   nov: MonthData;
   dec: MonthData;
-  resteAPayer: number;
+  resteAPayerAnterieur: number;
+  resteAPayerEnCours: number;
   isFullyPaid: boolean;
   frequency: "MONTHLY" | "ANNUAL";
 };
@@ -220,15 +221,32 @@ export function ContributionsYearTable({ data }: { data: RowData[] }) {
     }
 
     baseColumns.push({
-      accessorKey: "resteAPayer",
-      header: "Reste à payer",
+      accessorKey: "resteAPayerAnterieur",
+      header: "Reste à payer ant.",
       cell: ({ row }) => (
         <div className="flex h-10 w-full items-center justify-center">
           <div className="flex flex-col items-center">
             <span
-              className={`text-[11px] font-bold ${row.original.resteAPayer > 0 ? "text-rose-600" : "text-emerald-600"}`}
+              className={`text-[11px] font-bold ${row.original.isFullyPaid ? "text-emerald-600" : row.original.resteAPayerAnterieur > 0 ? "text-rose-600" : "text-zinc-600"}`}
             >
-              {row.original.resteAPayer.toLocaleString()}
+              {row.original.resteAPayerAnterieur.toLocaleString()}
+              <span className="ml-[1px] text-[8px] opacity-70 uppercase">DH</span>
+            </span>
+          </div>
+        </div>
+      ),
+    });
+
+    baseColumns.push({
+      accessorKey: "resteAPayerEnCours",
+      header: "Reste à payer (Année)",
+      cell: ({ row }) => (
+        <div className="flex h-10 w-full items-center justify-center">
+          <div className="flex flex-col items-center">
+            <span
+              className={`text-[11px] font-bold ${row.original.isFullyPaid ? "text-emerald-600" : row.original.resteAPayerEnCours > 0 ? "text-rose-600" : "text-zinc-600"}`}
+            >
+              {row.original.resteAPayerEnCours.toLocaleString()}
               <span className="ml-[1px] text-[8px] opacity-70 uppercase">DH</span>
             </span>
           </div>
@@ -265,7 +283,7 @@ export function ContributionsYearTable({ data }: { data: RowData[] }) {
 
   const getCellClass = (index: number, total: number) => {
     const isLastAction = index === total - 1;
-    const isBalance = index === total - 2;
+    const isBalance = index === total - 2 || index === total - 3;
 
     return [
       "h-10 align-middle border-b border-zinc-100 py-1",
@@ -278,7 +296,7 @@ export function ContributionsYearTable({ data }: { data: RowData[] }) {
 
   const getHeaderClass = (index: number, total: number) => {
     const isLastAction = index === total - 1;
-    const isBalance = index === total - 2;
+    const isBalance = index === total - 2 || index === total - 3;
 
     return [
       "h-10 whitespace-nowrap border-b border-zinc-200 text-[10px] font-bold uppercase tracking-[0.12em] text-zinc-500",
@@ -291,7 +309,7 @@ export function ContributionsYearTable({ data }: { data: RowData[] }) {
 
   const getStyle = (index: number, total: number): React.CSSProperties => {
     const isLastAction = index === total - 1;
-    const isBalance = index === total - 2;
+    const isBalance = index === total - 2 || index === total - 3;
 
     if (index === 0) return { width: 120, minWidth: 120, maxWidth: 120 };
     if (index === 1) return { width: 210, minWidth: 210, maxWidth: 210 };
@@ -369,8 +387,8 @@ export function ContributionsYearTable({ data }: { data: RowData[] }) {
                           </TableCell>
                           
                           {/* Balance & Actions cells */}
-                          {cells.slice(cells.length - 2).map((cell, index) => (
-                            <TableCell key={cell.id} className={getCellClass(index + cells.length - 2, cells.length)} style={getStyle(index + cells.length - 2, cells.length)}>
+                          {cells.slice(cells.length - 3).map((cell, index) => (
+                            <TableCell key={cell.id} className={getCellClass(index + cells.length - 3, cells.length)} style={getStyle(index + cells.length - 3, cells.length)}>
                               {flexRender(cell.column.columnDef.cell, cell.getContext())}
                             </TableCell>
                           ))}
@@ -389,7 +407,7 @@ export function ContributionsYearTable({ data }: { data: RowData[] }) {
             ) : (
               <TableRow>
                 <TableCell
-                  colSpan={isPurelyAnnual ? 5 : 15}
+                  colSpan={isPurelyAnnual ? 6 : 16}
                   className="h-28 text-center text-zinc-500"
                 >
                   Aucune donnee

@@ -45,7 +45,7 @@ export async function GET(req: Request) {
   const currentMonthDate = new Date(Date.UTC(now.getUTCFullYear(), now.getUTCMonth(), 1));
   const amountDueLimitDate = currentMonthDate < end ? currentMonthDate : new Date(end.getTime() + 1);
 
-  const [buildings, totalPaidAmount, totalAmountDue] = await Promise.all([
+  const [buildings, totalPaidAmount, totalAmountDue, pastPaidAmount, pastAmountDue] = await Promise.all([
     prisma.building.findMany({
       where: buildingId
         ? { id: buildingId, organizationId: orgId }
@@ -110,6 +110,26 @@ export async function GET(req: Request) {
         amountDue: true,
       },
     }),
+    prisma.monthlyDue.groupBy({
+      by: ["unitId"],
+      where: {
+        organizationId: orgId,
+        period: { lt: start },
+      },
+      _sum: {
+        paidAmount: true,
+      },
+    }),
+    prisma.monthlyDue.groupBy({
+      by: ["unitId"],
+      where: {
+        organizationId: orgId,
+        period: { lt: start },
+      },
+      _sum: {
+        amountDue: true,
+      },
+    }),
   ]);
 
   const paidMap = new Map(
@@ -118,13 +138,28 @@ export async function GET(req: Request) {
   const dueMap = new Map(
     totalAmountDue.map((b) => [b.unitId, Number(b._sum.amountDue || 0)])
   );
+  const pastPaidMap = new Map(
+    pastPaidAmount.map((b) => [b.unitId, Number(b._sum.paidAmount || 0)])
+  );
+  const pastDueMap = new Map(
+    pastAmountDue.map((b) => [b.unitId, Number(b._sum.amountDue || 0)])
+  );
 
-  const balanceMap = new Map<string, number>();
+  const balanceAnterieurMap = new Map<string, number>();
+  const balanceEnCoursMap = new Map<string, number>();
   for (const b of buildings) {
     for (const u of b.units) {
       const p = paidMap.get(u.id) || 0;
       const d = dueMap.get(u.id) || 0;
-      balanceMap.set(u.id, d - p);
+      const pp = pastPaidMap.get(u.id) || 0;
+      const pd = pastDueMap.get(u.id) || 0;
+
+      const pastBalance = pd - pp;
+      const totalBalance = d - p;
+      const currBalance = totalBalance - pastBalance;
+
+      balanceAnterieurMap.set(u.id, Math.max(0, pastBalance));
+      balanceEnCoursMap.set(u.id, Math.max(0, currBalance));
     }
   }
 
@@ -155,7 +190,8 @@ export async function GET(req: Request) {
           ...unit,
           fullYear,
           frequency: unit.groupUnits?.[0]?.group?.frequency || "MONTHLY",
-          totalBalance: balanceMap.get(unit.id) || 0,
+          resteAPayerAnterieur: balanceAnterieurMap.get(unit.id) || 0,
+          resteAPayerEnCours: balanceEnCoursMap.get(unit.id) || 0,
         };
       }),
   }));
