@@ -41,7 +41,11 @@ export async function GET(req: Request) {
   const start = new Date(Date.UTC(year, 0, 1));
   const end = new Date(Date.UTC(year, 11, 31));
 
-  const [buildings, totalBalances] = await Promise.all([
+  const now = new Date();
+  const currentMonthDate = new Date(Date.UTC(now.getUTCFullYear(), now.getUTCMonth(), 1));
+  const amountDueLimitDate = currentMonthDate < end ? currentMonthDate : new Date(end.getTime() + 1);
+
+  const [buildings, totalPaidAmount, totalAmountDue] = await Promise.all([
     prisma.building.findMany({
       where: buildingId
         ? { id: buildingId, organizationId: orgId }
@@ -93,18 +97,36 @@ export async function GET(req: Request) {
         period: { lte: end },
       },
       _sum: {
-        amountDue: true,
         paidAmount: true,
+      },
+    }),
+    prisma.monthlyDue.groupBy({
+      by: ["unitId"],
+      where: {
+        organizationId: orgId,
+        period: { lt: amountDueLimitDate },
+      },
+      _sum: {
+        amountDue: true,
       },
     }),
   ]);
 
-  const balanceMap = new Map(
-    totalBalances.map((b) => [
-      b.unitId,
-      Number(b._sum.amountDue || 0) - Number(b._sum.paidAmount || 0),
-    ]),
+  const paidMap = new Map(
+    totalPaidAmount.map((b) => [b.unitId, Number(b._sum.paidAmount || 0)])
   );
+  const dueMap = new Map(
+    totalAmountDue.map((b) => [b.unitId, Number(b._sum.amountDue || 0)])
+  );
+
+  const balanceMap = new Map<string, number>();
+  for (const b of buildings) {
+    for (const u of b.units) {
+      const p = paidMap.get(u.id) || 0;
+      const d = dueMap.get(u.id) || 0;
+      balanceMap.set(u.id, d - p);
+    }
+  }
 
   const months = Array.from({ length: 12 }, (_, i) => i);
 
