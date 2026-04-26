@@ -1,6 +1,7 @@
 import { NextResponse } from "next/server";
 import { prisma } from "@/lib/prisma";
 import { requireAuth } from "@/lib/authz";
+import { getOrgIdFromRequest } from "@/lib/org-utils";
 import { canManage } from "@/lib/roles";
 import { DueStatus } from "@prisma/client";
 
@@ -8,7 +9,7 @@ function firstDayOfMonth(d: Date) {
   return new Date(Date.UTC(d.getUTCFullYear(), d.getUTCMonth(), 1));
 }
 
-export async function GET() {
+export async function GET(req: Request) {
   try {
     const gate = await requireAuth();
     if (!gate.ok) return NextResponse.json({ error: gate.error }, { status: gate.status });
@@ -16,7 +17,7 @@ export async function GET() {
       return NextResponse.json({ error: "FORBIDDEN" }, { status: 403 });
     }
 
-    const orgId = gate.organizationId;
+    const orgId = await getOrgIdFromRequest(req, gate);
     if (!orgId) return NextResponse.json([]);
 
     const [owners, ownerships, dues] = await Promise.all([
