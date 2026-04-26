@@ -51,6 +51,7 @@ export async function GET() {
     role: user.role,
     organizationId: gate.organizationId,
     organizationName: org?.name ?? null,
+    orgLogoUrl: org?.logoUrl ?? null,
     ownerId: owner?.id ?? null,
     unitId: owner?.ownerships?.[0]?.unit?.id ?? null,
     unitRef:
