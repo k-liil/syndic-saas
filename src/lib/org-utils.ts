@@ -62,7 +62,7 @@ export async function getOrgIdFromRequest(
         where: { id: cookieOrgId },
         select: { id: true },
       });
-      console.log("[getOrgIdFromRequest] Cookie org found (superadmin):', !!organization);
+      console.log("[getOrgIdFromRequest] Cookie org found (superadmin):", !!organization);
       if (organization) return organization.id;
     } else {
       // Check if regular user has access to this org
