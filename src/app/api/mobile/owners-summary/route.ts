@@ -18,7 +18,13 @@ export async function GET(req: Request) {
     }
 
     const orgId = await getOrgIdFromRequest(req, gate);
-    if (!orgId) return NextResponse.json([]);
+    if (!orgId) {
+      console.error("[owners-summary] ERROR: No orgId determined. User may not have access to any organizations.");
+      return NextResponse.json(
+        { error: "No accessible organization found" },
+        { status: 403 }
+      );
+    }
 
     const [owners, ownerships, dues] = await Promise.all([
       prisma.owner.findMany({

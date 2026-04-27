@@ -55,19 +55,28 @@ export async function getOrgIdFromRequest(
 
   console.log("[getOrgIdFromRequest] cookieOrgId:", cookieOrgId);
 
-  if (cookieOrgId && gate.isSuperAdmin) {
-    // Basic verification for superadmin
-    const organization = await prisma.organization.findUnique({
-      where: { id: cookieOrgId },
-      select: { id: true },
-    });
-    console.log("[getOrgIdFromRequest] Cookie org found:', !!organization);
-    return organization?.id;
+  if (cookieOrgId) {
+    if (gate.isSuperAdmin) {
+      // Basic verification for superadmin
+      const organization = await prisma.organization.findUnique({
+        where: { id: cookieOrgId },
+        select: { id: true },
+      });
+      console.log("[getOrgIdFromRequest] Cookie org found (superadmin):', !!organization);
+      if (organization) return organization.id;
+    } else {
+      // Check if regular user has access to this org
+      const accessibleOrgIds = await getOrganizationIdsForRole(gate, "MANAGER");
+      if (accessibleOrgIds.includes(cookieOrgId)) {
+        console.log("[getOrgIdFromRequest] Cookie org accessible (regular user):", cookieOrgId);
+        return cookieOrgId;
+      }
+    }
   }
 
-  // 3. Last resort
-  console.log("[getOrgIdFromRequest] Using getOrgId fallback");
-  const fallbackOrgId = await getOrgId(gate);
-  console.log("[getOrgIdFromRequest] Fallback orgId:', fallbackOrgId);
-  return fallbackOrgId;
+  // 3. Last resort - NO fallback to random org!
+  // If user didn't specify orgId and it's not in cookie, return undefined
+  // This forces the client to explicitly choose an org
+  console.log("[getOrgIdFromRequest] No valid orgId found. Client must specify which org to use.");
+  return undefined;
 }
