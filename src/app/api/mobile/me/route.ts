@@ -40,7 +40,7 @@ export async function GET() {
   const org = gate.organizationId
     ? await prisma.organization.findUnique({
         where: { id: gate.organizationId },
-        select: { id: true, name: true },
+        select: { id: true, name: true, logoUrl: true },
       })
     : null;
 
