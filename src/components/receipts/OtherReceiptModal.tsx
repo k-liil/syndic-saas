@@ -6,7 +6,7 @@ import { useApiUrl } from "@/lib/org-context";
 import { DateInput } from "@/components/ui/DateInput";
 import { getTodayInputVal, toDisplayDate } from "@/lib/date-utils";
 
-type Method = "CASH" | "TRANSFER" | "CHECK" | "BANK_DEPOSIT";
+type Method = "CASH" | "TRANSFER" | "CHECK" | "BANK_DEPOSIT" | "DEBIT";
 type OtherReceiptType = "RENT" | "OTHER";
 
 type OtherReceipt = {
@@ -99,7 +99,7 @@ export function OtherReceiptModal({
     if (busy) return;
     if (!description.trim()) return;
     if (Number(amount) <= 0) return;
-    if (((method === "TRANSFER" || method === "CHECK" || method === "BANK_DEPOSIT") && !bankName.trim()) ||
+    if (((method === "TRANSFER" || method === "CHECK" || method === "BANK_DEPOSIT" || method === "DEBIT") && !bankName.trim()) ||
         (method === "CHECK" && !bankRef.trim())) return;
 
     setBusy(true);
@@ -232,10 +232,11 @@ export function OtherReceiptModal({
                 <option value="TRANSFER">Virement</option>
                 <option value="CHECK">Chèque</option>
                 <option value="BANK_DEPOSIT">Versement</option>
+                <option value="DEBIT">Prélèvement</option>
               </select>
             </div>
 
-            {(method === "TRANSFER" || method === "CHECK" || method === "BANK_DEPOSIT") && (
+            {(method === "TRANSFER" || method === "CHECK" || method === "BANK_DEPOSIT" || method === "DEBIT") && (
               <div className="animate-in fade-in slide-in-from-top-2">
                 <label className="mb-1.5 block text-sm font-semibold text-zinc-700">Banque de destination</label>
                 <select
@@ -258,7 +259,7 @@ export function OtherReceiptModal({
           </div>
         </div>
 
-        {(method === "CHECK" || method === "TRANSFER") && (
+        {(method === "CHECK" || method === "TRANSFER" || method === "DEBIT") && (
           <div className="animate-in fade-in slide-in-from-top-2">
             <label className="mb-1.5 block text-sm font-semibold text-zinc-700">
               {method === "CHECK" ? "Numéro de chèque" : "Référence du virement"}
@@ -267,7 +268,7 @@ export function OtherReceiptModal({
               className="h-12 w-full rounded-md border border-zinc-200 px-4 text-sm outline-none focus:border-zinc-900"
               value={bankRef}
               onChange={(e) => setBankRef(e.target.value)}
-              placeholder={method === "CHECK" ? "Ex: 1234567" : "Ex: VIR-987654"}
+              placeholder={method === "CHECK" ? "Ex: 1234567" : method === "DEBIT" ? "Ex: PREL-1234" : "Ex: VIR-987654"}
             />
           </div>
         )}
@@ -288,7 +289,7 @@ export function OtherReceiptModal({
               busy ||
               !description.trim() ||
               Number(amount) <= 0 ||
-              ((method === "TRANSFER" || method === "CHECK" || method === "BANK_DEPOSIT") && !bankName.trim()) ||
+              ((method === "TRANSFER" || method === "CHECK" || method === "BANK_DEPOSIT" || method === "DEBIT") && !bankName.trim()) ||
               (method === "CHECK" && !bankRef.trim())
             }
             className="btn-brand h-12 w-full px-12 text-sm font-bold shadow-md transition-all hover:scale-[1.02] active:scale-[0.98] disabled:opacity-40 sm:w-auto min-w-[220px]"

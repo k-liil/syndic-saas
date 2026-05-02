@@ -101,7 +101,7 @@ export function ReceiptsDetailModal({
                       <div className="flex items-center gap-2">
                         <Wallet className="h-3.5 w-3.5 text-zinc-400" />
                         <span className="text-zinc-600">
-                          {r.method === "CASH" ? "Espèces" : r.method === "TRANSFER" ? "Virement" : r.method === "CHECK" ? "Chèque" : r.method === "BANK_DEPOSIT" ? "Versement" : r.method}
+                          {r.method === "CASH" ? "Espèces" : r.method === "TRANSFER" ? "Virement" : r.method === "CHECK" ? "Chèque" : r.method === "BANK_DEPOSIT" ? "Versement" : r.method === "DEBIT" ? "Prélèvement" : r.method}
                         </span>
                       </div>
                     </td>

@@ -11,7 +11,7 @@ import { Upload, PlusCircle } from "lucide-react";
 import { formatDate, formatMonth, getTodayInputVal, toDisplayDate } from "@/lib/date-utils";
 import { DateInput } from "@/components/ui/DateInput";
 
-type Method = "CASH" | "TRANSFER" | "CHECK" | "BANK_DEPOSIT";
+type Method = "CASH" | "TRANSFER" | "CHECK" | "BANK_DEPOSIT" | "DEBIT";
 
 type UnitSearch = {
   id: string;
@@ -115,7 +115,7 @@ export function ContributionReceiptsTab({
   const [busy, setBusy] = useState(false);
 
   const [methodFilter, setMethodFilter] = useState<
-    "ALL" | "CASH" | "TRANSFER" | "CHECK" | "BANK_DEPOSIT"
+    "ALL" | "CASH" | "TRANSFER" | "CHECK" | "BANK_DEPOSIT" | "DEBIT"
   >("ALL");
 
   const [search, setSearch] = useState("");
@@ -736,7 +736,7 @@ export function ContributionReceiptsTab({
   async function submit(stayOpen = false) {
     if (busy) return;
     if (!editingReceiptId && (!unitId || Number(amount) <= 0)) return;
-    if ((method === "TRANSFER" || method === "CHECK" || method === "BANK_DEPOSIT") && !bankName.trim())
+    if ((method === "TRANSFER" || method === "CHECK" || method === "BANK_DEPOSIT" || method === "DEBIT") && !bankName.trim())
       return;
     if (method === "CHECK" && !checkNumber.trim()) return;
 
@@ -1240,6 +1240,11 @@ export function ContributionReceiptsTab({
                         🏦 Versement
                       </span>
                     )}
+                    {r.method === "DEBIT" && (
+                      <span className="inline-flex gap-3 items-center rounded-md bg-cyan-100 px-2.5 py-1 text-xs font-medium text-cyan-700">
+                        🔄 Prélèvement
+                      </span>
+                    )}
                   </TD>
                   <TD className="text-right">
                     <div className="font-semibold text-zinc-900">
@@ -1523,6 +1528,7 @@ export function ContributionReceiptsTab({
                 { id: "TRANSFER", label: "Virement", sub: "Banque", icon: "🏦", color: "blue", ring: "ring-blue-100", border: "border-blue-500", bg: "bg-blue-50" },
                 { id: "CHECK", label: "Chèque", sub: "Banque + n°", icon: "🧾", color: "amber", ring: "ring-amber-100", border: "border-amber-500", bg: "bg-amber-50" },
                 { id: "BANK_DEPOSIT", label: "Versement", sub: "Dépôt", icon: "💰", color: "purple", ring: "ring-purple-100", border: "border-purple-500", bg: "bg-purple-50" },
+                { id: "DEBIT", label: "Prélèvement", sub: "Auto", icon: "🔄", color: "cyan", ring: "ring-cyan-100", border: "border-cyan-500", bg: "bg-cyan-50" },
               ].map((m) => (
                 <button
                   key={m.id}
@@ -1567,7 +1573,7 @@ export function ContributionReceiptsTab({
             </div>
           </div>
 
-          {(method === "TRANSFER" || method === "CHECK" || method === "BANK_DEPOSIT") && (
+          {(method === "TRANSFER" || method === "CHECK" || method === "BANK_DEPOSIT" || method === "DEBIT") && (
             <div className={`grid gap-4 md:grid-cols-${method === "CHECK" ? "2" : "1"} pt-2 animate-in fade-in slide-in-from-top-2`}>
               <div className="space-y-1.5">
                 <label className="text-sm font-semibold text-zinc-700">

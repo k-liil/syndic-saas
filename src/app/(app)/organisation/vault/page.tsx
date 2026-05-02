@@ -118,6 +118,8 @@ export default function DigitalVaultPage() {
   const [openCreate, setOpenCreate] = useState(false);
   const [submitting, setSubmitting] = useState(false);
   const [toast, setToast] = useState("");
+  const [deleteOpen, setDeleteOpen] = useState(false);
+  const [documentToDelete, setDocumentToDelete] = useState<string | null>(null);
 
   const [selectedFile, setSelectedFile] = useState<null | {
     fileUrl: string;
@@ -274,6 +276,11 @@ export default function DigitalVaultPage() {
     setSubmitting(false);
     setToast("Document ajoute");
     await loadDocuments();
+  }
+
+  function askDelete(id: string) {
+    setDocumentToDelete(id);
+    setDeleteOpen(true);
   }
 
   async function handleDeleteDocument(id: string) {
@@ -500,7 +507,7 @@ export default function DigitalVaultPage() {
                             {canEdit ? (
                               <button
                                 type="button"
-                                onClick={() =>void handleDeleteDocument(document.id)} className="inline-flex gap-3 h-8 w-8 items-center justify-center rounded-md border border-red-200 bg-red-50 text-red-700 hover:bg-red-100" title="Supprimer" > <Trash2 className="h-3.5 w-3.5" /></button>
+                                onClick={() => askDelete(document.id)} className="inline-flex gap-3 h-8 w-8 items-center justify-center rounded-md border border-red-200 bg-red-50 text-red-700 hover:bg-red-100" title="Supprimer" > <Trash2 className="h-3.5 w-3.5" /></button>
                             ) : null}
                           </div>
                         </div>
@@ -634,7 +641,7 @@ export default function DigitalVaultPage() {
                         {canEdit ? (
                           <button
                             type="button"
-                            onClick={() =>void handleDeleteDocument(document.id)} className="inline-flex gap-3 h-8 w-8 items-center justify-center rounded-md border border-red-200 bg-red-50 text-red-700 hover:bg-red-100" > <Trash2 className="h-3.5 w-3.5" /></button>
+                            onClick={() => askDelete(document.id)} className="inline-flex gap-3 h-8 w-8 items-center justify-center rounded-md border border-red-200 bg-red-50 text-red-700 hover:bg-red-100" > <Trash2 className="h-3.5 w-3.5" /></button>
                         ) : null}
                       </div>
                     </div>
@@ -796,8 +803,57 @@ export default function DigitalVaultPage() {
                   <span className="mt-1 block text-[11px] text-slate-500">
                     Cochez pour permettre aux coproprietaires de voir ce document
                   </span>
-                </span>
               </label>
+
+              <button
+                onClick={handleCreateDocument}
+                disabled={submitting}
+                className="mt-4 flex h-11 w-full items-center justify-center rounded-md bg-slate-900 text-sm font-semibold text-white shadow-sm transition hover:bg-slate-800 focus:outline-none focus:ring-2 focus:ring-slate-900 focus:ring-offset-2 disabled:opacity-50"
+              >
+                {submitting ? "Ajout en cours..." : "Ajouter le document"}
+              </button>
+            </div>
+          </div>
+        </div>
+      ) : null}
+
+      {canEdit && deleteOpen ? (
+        <Modal
+          open={deleteOpen}
+          onClose={() => setDeleteOpen(false)}
+          title="Supprimer le document"
+          containerClassName="max-w-md"
+        >
+          <div className="space-y-4">
+            <p className="text-sm text-slate-600">
+              Êtes-vous sûr de vouloir supprimer ce document ? Cette action est irréversible.
+            </p>
+            <div className="flex justify-end gap-3 pt-4">
+              <button
+                onClick={() => setDeleteOpen(false)}
+                className="rounded-md border border-slate-200 bg-white px-4 py-2 text-sm font-medium text-slate-700 hover:bg-slate-50 transition-colors"
+              >
+                Annuler
+              </button>
+              <button
+                onClick={() => {
+                  if (documentToDelete) {
+                    void handleDeleteDocument(documentToDelete);
+                  }
+                  setDeleteOpen(false);
+                  setDocumentToDelete(null);
+                }}
+                className="rounded-md bg-red-600 px-4 py-2 text-sm font-medium text-white hover:bg-red-700 transition-colors"
+              >
+                Supprimer
+              </button>
+            </div>
+          </div>
+        </Modal>
+      ) : null}
+    </div>
+  );
+}
 
               <div className="border-t border-slate-200 pt-4">
                 <button

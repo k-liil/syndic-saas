@@ -3,6 +3,7 @@
 import { useEffect, useMemo, useState } from "react";
 import { useSession } from "next-auth/react";
 import { Modal } from "@/components/ui/Modal";
+import { ConfirmModal } from "@/components/ui/ConfirmModal";
 import { Table, THead, TR, TH, TD } from "@/components/ui/Table";
 import {
   parseUnitsCsv,
@@ -107,6 +108,10 @@ export default function LotsPage() {
   const [open, setOpen] = useState(false);
   const [selected, setSelected] = useState<Record<string, boolean>>({});
   const [bulkBusy, setBulkBusy] = useState(false);
+
+  const [deleteModalOpen, setDeleteModalOpen] = useState(false);
+  const [itemToDelete, setItemToDelete] = useState<string | null>(null);
+  const [isBulkDelete, setIsBulkDelete] = useState(false);
 
   const [editMode, setEditMode] = useState(false);
   const [editingId, setEditingId] = useState<string | null>(null);
@@ -296,8 +301,15 @@ export default function LotsPage() {
     }
   }
 
-  async function deleteLot(id: string, lotNumber: string | null) {
-    if (!confirm(`Supprimer le lot ${lotNumber ?? ""} ?`)) return;
+  function confirmDeleteLot(id: string) {
+    setItemToDelete(id);
+    setIsBulkDelete(false);
+    setDeleteModalOpen(true);
+  }
+
+  async function executeDeleteLot() {
+    if (!itemToDelete) return;
+    const id = itemToDelete;
 
     try {
       const res = await fetch(apiUrl(`/api/units/${id}`), {
@@ -310,6 +322,8 @@ export default function LotsPage() {
       }
 
       await loadAll();
+      setDeleteModalOpen(false);
+      setItemToDelete(null);
     } catch (error: unknown) {
       alert(getErrorMessage(error, "Erreur lors de la suppression"));
     }
@@ -338,9 +352,14 @@ export default function LotsPage() {
     setSelected(next);
   }
 
-  async function removeSelected() {
+  function confirmRemoveSelected() {
     if (!canEdit || selectedIds.length === 0 || bulkBusy) return;
-    if (!confirm(`Supprimer ${selectedIds.length} lot(s) ?`)) return;
+    setIsBulkDelete(true);
+    setDeleteModalOpen(true);
+  }
+
+  async function executeRemoveSelected() {
+    if (!canEdit || selectedIds.length === 0 || bulkBusy) return;
 
     setBulkBusy(true);
     try {
@@ -353,6 +372,7 @@ export default function LotsPage() {
       if (!res.ok) throw new Error(data?.error ?? "Bulk delete failed");
 
       setSelected({});
+      setDeleteModalOpen(false);
       await loadAll();
     } catch (error: unknown) {
       alert(getErrorMessage(error, "Bulk delete failed"));
@@ -435,7 +455,7 @@ export default function LotsPage() {
 
           {canEdit ? (
             <div className="flex gap-2">
-              <button onClick={removeSelected}
+              <button onClick={confirmRemoveSelected}
                 disabled={selectedIds.length === 0 || bulkBusy}
                 className="flex items-center gap-2 rounded-md border border-zinc-200 bg-white px-4 py-2 text-sm font-medium hover:bg-zinc-50 disabled:opacity-40"
               >
@@ -549,7 +569,7 @@ export default function LotsPage() {
                           <Pencil size={14} />
                         </button>
                         <button
-                          onClick={() =>deleteLot(l.id, l.lotNumber)} className="flex h-8 w-8 items-center justify-center rounded-lg border border-zinc-200 text-zinc-500 hover:bg-red-50 hover:text-red-600 transition-colors" title="Supprimer" > <Trash2 size={14} /></button>
+                          onClick={() =>confirmDeleteLot(l.id)} className="flex h-8 w-8 items-center justify-center rounded-lg border border-zinc-200 text-zinc-500 hover:bg-red-50 hover:text-red-600 transition-colors" title="Supprimer" > <Trash2 size={14} /></button>
                       </div>
                     ) : (
                       <div className="text-right text-xs text-zinc-500">
@@ -937,6 +957,17 @@ export default function LotsPage() {
           </div>
         </div>
       )}
+
+      {deleteModalOpen ? (
+        <ConfirmModal
+          open={deleteModalOpen}
+          title={isBulkDelete ? "Supprimer les lots" : "Supprimer le lot"}
+          message={isBulkDelete ? `Êtes-vous sûr de vouloir supprimer ${selectedIds.length} lot(s) ?` : "Êtes-vous sûr de vouloir supprimer ce lot ?"}
+          onConfirm={isBulkDelete ? executeRemoveSelected : executeDeleteLot}
+          onCancel={() => setDeleteModalOpen(false)}
+          confirmText="Supprimer"
+        />
+      ) : null}
     </div>
   );
 }

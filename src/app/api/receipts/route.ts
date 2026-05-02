@@ -391,7 +391,7 @@ export async function POST(req: Request) {
       });
 
       if (!ownership) {
-        throw new Error("No active owner for this unit");
+        throw new Error("Aucun copropriétaire actif pour ce lot. Veuillez d'abord en assigner un.");
       }
 
       const ownerId = ownership.ownerId;

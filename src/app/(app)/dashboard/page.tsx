@@ -591,13 +591,7 @@ function DashboardPageContent() {
             Ouvrir la vue annuelle
             <ArrowRight size={14} />
           </Link>
-          <Link
-            className="inline-flex gap-3 items-center justify-center gap-2 border border-slate-200 bg-white px-4 py-2.5 text-sm font-medium text-slate-700 transition hover:-translate-y-px hover:border-slate-300 hover:bg-slate-50"
-            href="/ops/dues_generate"
-          >
-            Générer les cotisations
-            <ArrowRight size={14} />
-          </Link>
+
           <Link
             className="inline-flex gap-3 items-center justify-center gap-2 border border-slate-200 bg-white px-4 py-2.5 text-sm font-medium text-slate-700 transition hover:-translate-y-px hover:border-slate-300 hover:bg-slate-50"
             href="/ops/receipts"

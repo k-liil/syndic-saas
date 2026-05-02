@@ -3,6 +3,7 @@
 import { useEffect, useMemo, useState } from "react";
 import { useSession } from "next-auth/react";
 import { Modal } from "@/components/ui/Modal";
+import { ConfirmModal } from "@/components/ui/ConfirmModal";
 import { Table, THead, TR, TH, TD } from "@/components/ui/Table";
 import { Pencil, Trash2, Upload, PlusCircle, Loader2, Search } from "lucide-react";
 import { canManage } from "@/lib/roles";
@@ -63,6 +64,10 @@ export default function OwnersPage() {
 
   const [busy, setBusy] = useState(false);
   const [errorMsg, setErrorMsg] = useState<string>("");
+
+  const [deleteModalOpen, setDeleteModalOpen] = useState(false);
+  const [itemToDelete, setItemToDelete] = useState<string | null>(null);
+  const [isBulkDelete, setIsBulkDelete] = useState(false);
 
   const [units, setUnits] = useState<Unit[]>([]);
   const [unitIds, setUnitIds] = useState<string[]>([]);
@@ -175,9 +180,16 @@ export default function OwnersPage() {
     setUnits(Array.isArray(data) ? data : []);
   }
 
-  async function remove(id: string) {
+  function confirmRemove(id: string) {
     if (busy) return;
-    if (!confirm("Supprimer ce copropriétaire ?")) return;
+    setItemToDelete(id);
+    setIsBulkDelete(false);
+    setDeleteModalOpen(true);
+  }
+
+  async function executeRemove() {
+    if (busy || !itemToDelete) return;
+    const id = itemToDelete;
 
     setBusy(true);
     try {
@@ -191,6 +203,8 @@ export default function OwnersPage() {
       if (!res.ok) throw new Error(data?.error ?? "Delete failed");
 
       await load();
+      setDeleteModalOpen(false);
+      setItemToDelete(null);
     } catch (e: any) {
       alert(e?.message ?? "Delete failed");
     } finally {
@@ -266,9 +280,14 @@ export default function OwnersPage() {
     });
   }
 
-  async function removeSelected() {
+  function confirmRemoveSelected() {
     if (!canEdit || selectedIds.length === 0 || busy) return;
-    if (!confirm(`Supprimer ${selectedIds.length} copropriétaire(s) ?`)) return;
+    setIsBulkDelete(true);
+    setDeleteModalOpen(true);
+  }
+
+  async function executeRemoveSelected() {
+    if (!canEdit || selectedIds.length === 0 || busy) return;
 
     setBusy(true);
     try {
@@ -282,6 +301,7 @@ export default function OwnersPage() {
       if (!res.ok) throw new Error(data?.error ?? "Bulk delete failed");
 
       setSelected({});
+      setDeleteModalOpen(false);
       await load();
     } catch (e: any) {
       alert(e?.message ?? "Bulk delete failed");
@@ -331,7 +351,7 @@ export default function OwnersPage() {
                 <Upload className="h-4 w-4" /> Importer
               </button>
 
-              <button onClick={removeSelected}
+              <button onClick={confirmRemoveSelected}
                 disabled={selectedIds.length === 0 || busy}
                 className="flex items-center gap-2 rounded-md border border-slate-200 bg-white px-4 py-2 text-sm font-medium text-slate-700 hover:bg-red-50 hover:text-red-700 hover:border-red-200 disabled:opacity-40 transition-colors"
               >
@@ -523,7 +543,7 @@ export default function OwnersPage() {
                       </button>
                       <button
                         type="button"
-                        onClick={() =>remove(o.id)} title="Supprimer" className="inline-flex gap-3 h-9 w-9 items-center justify-center rounded-lg border border-zinc-200 bg-white hover:bg-zinc-50" > <Trash2 className="h-4 w-4 text-red-600" /></button>
+                        onClick={() =>confirmRemove(o.id)} title="Supprimer" className="inline-flex gap-3 h-9 w-9 items-center justify-center rounded-lg border border-zinc-200 bg-white hover:bg-zinc-50" > <Trash2 className="h-4 w-4 text-red-600" /></button>
                     </div> : <div className="text-right text-xs text-zinc-500">Lecture seule</div>}
                   </TD>
                 </TR>
