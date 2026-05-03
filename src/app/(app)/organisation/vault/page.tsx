@@ -6,6 +6,7 @@ import { Eye, FileSpreadsheet, FileText, Folder, Grid2X2, ImageIcon, List, Paper
 import { useSession } from "next-auth/react";
 import { useApiUrl, useOrganization } from "@/lib/org-context";
 import { canManage } from "@/lib/roles";
+import { Modal } from "@/components/ui/Modal";
 import {
   DIGITAL_VAULT_CATEGORIES,
   formatBytes,
