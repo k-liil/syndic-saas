@@ -803,6 +803,7 @@ export default function DigitalVaultPage() {
                   <span className="mt-1 block text-[11px] text-slate-500">
                     Cochez pour permettre aux coproprietaires de voir ce document
                   </span>
+                </span>
               </label>
 
               <button
