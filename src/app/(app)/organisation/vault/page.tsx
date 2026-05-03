@@ -855,21 +855,3 @@ export default function DigitalVaultPage() {
     </div>
   );
 }
-
-              <div className="border-t border-slate-200 pt-4">
-                <button
-                  type="button"
-                  onClick={() => void handleCreateDocument()}
-                  disabled={submitting}
-                  className="btn-brand h-11 w-full rounded-md text-xs font-semibold disabled:opacity-50"
-                >
-                  {submitting ? "Televersement..." : "Televerser"}
-                </button>
-              </div>
-            </div>
-          </div>
-        </div>
-      ) : null}
-    </div>
-  );
-}
