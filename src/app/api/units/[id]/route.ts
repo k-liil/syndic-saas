@@ -15,6 +15,11 @@ export async function PATCH(req: Request, { params }: Params) {
 
   const existing = await prisma.unit.findFirst({
     where: { id, organizationId: gate.organizationId ?? undefined },
+    include: {
+      ownerships: {
+        where: { endDate: null },
+      }
+    }
   });
 
   if (!existing) {
@@ -51,6 +56,43 @@ export async function PATCH(req: Request, { params }: Params) {
     },
     include: { building: true },
   });
+
+  const ownerId = body.ownerId;
+  if (ownerId !== undefined && gate.organizationId) {
+    const activeOwnership = existing.ownerships[0];
+    if (ownerId) {
+      if (!activeOwnership) {
+        await prisma.ownership.create({
+          data: {
+            organizationId: gate.organizationId,
+            unitId: id,
+            ownerId: ownerId,
+            startDate: new Date()
+          }
+        });
+      } else if (activeOwnership.ownerId !== ownerId) {
+        await prisma.ownership.update({
+          where: { id: activeOwnership.id },
+          data: { endDate: new Date() }
+        });
+        await prisma.ownership.create({
+          data: {
+            organizationId: gate.organizationId,
+            unitId: id,
+            ownerId: ownerId,
+            startDate: new Date()
+          }
+        });
+      }
+    } else {
+      if (activeOwnership) {
+        await prisma.ownership.update({
+          where: { id: activeOwnership.id },
+          data: { endDate: new Date() }
+        });
+      }
+    }
+  }
 
   return NextResponse.json(updated);
 }

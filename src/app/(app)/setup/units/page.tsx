@@ -214,7 +214,7 @@ export default function LotsPage() {
     setReference(lot.reference ?? "");
     setSurface(lot.surface?.toString() ?? "");
     setType(lot.type === "COMMERCIAL" ? "OTHER" : lot.type as LotType);
-    setOwnerId("");
+    setOwnerId(lot.activeOwnership?.owner?.id ?? "");
     setOwnershipId(lot.activeOwnership?.id ?? "");
     setEntryMonth(lot.activeOwnership?.startDate?.slice(0, 7) ?? "");
     setOverrideStart(lot.overrideStart);
@@ -251,6 +251,7 @@ export default function LotsPage() {
             overrideStart,
             startYear: startYear.trim() ? Number(startYear) : null,
             startMonth: startMonth.trim() ? Number(startMonth) : null,
+            ownerId: ownerId || null,
           }),
         });
 
@@ -285,6 +286,7 @@ export default function LotsPage() {
             overrideStart,
             startYear: startYear.trim() ? Number(startYear) : null,
             startMonth: startMonth.trim() ? Number(startMonth) : null,
+            ownerId: ownerId || null,
           }),
         });
 
@@ -691,10 +693,9 @@ export default function LotsPage() {
                   className="h-10 rounded-md border border-zinc-200 bg-white px-3"
                   value={ownerId}
                   onChange={(e) => setOwnerId(e.target.value)}
-                  disabled
                 >
                   <option value="">
-                    {"Propriétaire défini via \"Copropriétaires\""}
+                    (Aucun propriétaire)
                   </option>
                   {owners.map((o) => (
                     <option key={o.id} value={o.id}>
@@ -703,7 +704,7 @@ export default function LotsPage() {
                   ))}
                 </select>
                 <div className="text-xs text-zinc-500">
-                  {"Géré via la section \"Copropriétaires\"."}
+                  Optionnel. Affecter un propriétaire à ce lot.
                 </div>
               </div>
 
