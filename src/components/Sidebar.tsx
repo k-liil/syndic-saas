@@ -28,6 +28,7 @@ import {
 } from "lucide-react";
 import { normalizeRole } from "@/lib/roles";
 import { PAGE_VISIBILITY_REGISTRY, type PageVisibilityRecord, roleCanSeePage } from "@/lib/page-visibility";
+import packageJson from "../../package.json";
 
 const ICONS: Record<string, ElementType> = {
   AlertCircle,
@@ -187,6 +188,12 @@ export function Sidebar({ onNavigate }: { onNavigate?: () => void } = {}) {
             </div>
           );
         })}
+      </div>
+      
+      <div className="mt-auto border-t border-slate-100 px-4 py-3">
+        <div className="text-[10px] font-medium text-slate-400">
+          Syndicly v{packageJson.version}
+        </div>
       </div>
     </aside>
   );
