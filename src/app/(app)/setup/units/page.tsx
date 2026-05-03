@@ -251,7 +251,6 @@ export default function LotsPage() {
             overrideStart,
             startYear: startYear.trim() ? Number(startYear) : null,
             startMonth: startMonth.trim() ? Number(startMonth) : null,
-            ownerId: ownerId || null,
           }),
         });
 
@@ -286,7 +285,6 @@ export default function LotsPage() {
             overrideStart,
             startYear: startYear.trim() ? Number(startYear) : null,
             startMonth: startMonth.trim() ? Number(startMonth) : null,
-            ownerId: ownerId || null,
           }),
         });
 
@@ -690,12 +688,13 @@ export default function LotsPage() {
               <div className="grid gap-2">
                 <label className="text-sm font-medium">Propriétaire</label>
                 <select
-                  className="h-10 rounded-md border border-zinc-200 bg-white px-3"
+                  className="h-10 rounded-md border border-zinc-200 bg-zinc-50 px-3 text-zinc-500"
                   value={ownerId}
-                  onChange={(e) => setOwnerId(e.target.value)}
+                  disabled
+                  onChange={() => {}}
                 >
                   <option value="">
-                    (Aucun propriétaire)
+                    {ownerId ? "Propriétaire introuvable" : "Non affecté (affectez-le depuis 'Copropriétaires')"}
                   </option>
                   {owners.map((o) => (
                     <option key={o.id} value={o.id}>
@@ -704,7 +703,10 @@ export default function LotsPage() {
                   ))}
                 </select>
                 <div className="text-xs text-zinc-500">
-                  Optionnel. Affecter un propriétaire à ce lot.
+                  {ownerId 
+                    ? "Ce lot est actuellement affecté à ce copropriétaire." 
+                    : "Ce lot n'est affecté à personne pour le moment."} 
+                  {" Géré via la section \"Copropriétaires\"."}
                 </div>
               </div>
 

@@ -250,13 +250,6 @@ if (existingLot) {
       overrideStart: !!body.overrideStart,
       startYear: body.startYear ? Number(body.startYear) : null,
       startMonth: body.startMonth ? Number(body.startMonth) : null,
-      ownerships: body.ownerId ? {
-        create: {
-          organizationId: orgId!,
-          ownerId: body.ownerId,
-          startDate: new Date()
-        }
-      } : undefined
     },
     include: { building: true },
   });
