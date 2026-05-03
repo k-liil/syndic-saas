@@ -1,12 +1,16 @@
 import "./globals.css";
-import type { Metadata } from "next";
+import type { Metadata, Viewport } from "next";
+
+export const viewport: Viewport = {
+  width: "device-width",
+  initialScale: 1,
+};
 
 export const metadata: Metadata = {
   title: "Syndicly | Gestion de Copropriété Moderne",
   description: "Plateforme professionnelle pour la gestion simplifiée de vos résidences et syndics de copropriété au Maroc.",
   keywords: ["syndic", "copropriété", "gestion immobilière", "Maroc"],
   authors: [{ name: "Syndicly Team" }],
-  viewport: "width=device-width, initial-scale=1",
   robots: "index, follow",
   openGraph: {
     title: "Syndicly | Gestion de Copropriété Moderne",

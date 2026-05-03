@@ -1,3 +1,5 @@
+'use client';
+
 const steps = [
   {
     n: "01",
