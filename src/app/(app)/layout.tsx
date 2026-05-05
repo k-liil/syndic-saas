@@ -1,5 +1,5 @@
 import { cookies } from "next/headers";
-import { AppShell } from "@/components/AppShell";
+import { AppShellV2 as AppShell } from "@/components/AppShellV2";
 import { OrgProvider } from "@/lib/org-context";
 import { prisma } from "@/lib/prisma";
 import { requireAuth } from "@/lib/authz";
