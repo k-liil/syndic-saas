@@ -212,8 +212,8 @@ export function SidebarV2({ onNavigate }: { onNavigate?: () => void } = {}) {
 
   return (
     <aside className="flex h-full flex-col bg-[#FCFCFB]">
-      {/* Header — Brand */}
-      <div className="border-b border-slate-200/80 px-3 pt-3 pb-3">
+      {/* Header — Brand (matches topbar h-16 for visual alignment) */}
+      <div className="flex h-16 shrink-0 items-center border-b border-slate-200/50 px-3">
         <SidebarBrand />
       </div>
 
