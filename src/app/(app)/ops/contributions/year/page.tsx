@@ -159,13 +159,23 @@ function ContributionsYearPageContent() {
 
   if (!year) {
     return (
-      <div className="flex h-[40vh] items-center justify-center">
-        <div className="rounded-md border border-zinc-200 bg-white p-8 text-center shadow-sm">
-          <div className="text-lg font-semibold text-zinc-800">
-            Aucun exercice selectionne
+      <div className="mx-auto w-full max-w-[85vw] space-y-8">
+        <div className="flex items-start justify-between gap-4">
+          <div>
+            <h1 className="text-2xl font-semibold">Cotisations annuelles</h1>
+            <p className="mt-1 text-sm text-zinc-500">Suivi des paiements mensuels par lot</p>
           </div>
-          <div className="mt-2 text-sm text-zinc-500">
-            Selectionne un exercice fiscal en haut de la page.
+          <YearSelector />
+        </div>
+
+        <div className="flex h-[40vh] items-center justify-center">
+          <div className="rounded-md border border-zinc-200 bg-white p-8 text-center shadow-sm">
+            <div className="text-lg font-semibold text-zinc-800">
+              Aucun exercice sélectionné
+            </div>
+            <div className="mt-2 text-sm text-zinc-500">
+              Sélectionne un exercice fiscal en haut de cette page.
+            </div>
           </div>
         </div>
       </div>

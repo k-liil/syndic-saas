@@ -234,18 +234,32 @@ function DashboardPageContent() {
 
   if (!displayYear) {
     return (
-      <div className="flex h-[65vh] items-center justify-center">
-        <div className="max-w-lg border border-slate-200 bg-white p-8 text-center shadow-[0_10px_26px_rgba(15,23,42,0.06)]">
-          <div className="mx-auto flex h-14 w-14 items-center justify-center bg-slate-100 text-slate-700">
-            <AlertTriangle size={24} />
+      <div className="space-y-6">
+        <section className="rounded-md border border-slate-200 bg-[linear-gradient(135deg,_rgba(248,250,252,0.98)_0%,_rgba(239,244,250,0.96)_100%)] p-6 text-slate-900 shadow-[0_12px_28px_rgba(15,23,42,0.05)] sm:p-7">
+          <div className="flex flex-col gap-4 sm:flex-row sm:items-start sm:justify-between">
+            <div>
+              <div className="eyebrow text-sky-700">Tableau de bord</div>
+              <h1 className="display-title mt-3 text-4xl font-semibold leading-[0.96] text-slate-950">
+                Sélectionne un exercice
+              </h1>
+            </div>
+            <YearSelector />
           </div>
-          <h1 className="mt-5 text-2xl font-semibold tracking-tight text-slate-900">
-            Aucun exercice sélectionné
-          </h1>
-          <p className="mt-3 text-sm leading-6 text-slate-500">
-            Créez ou sélectionnez un exercice fiscal depuis l'en-tête pour afficher
-            votre tableau de bord.
-          </p>
+        </section>
+
+        <div className="flex h-[40vh] items-center justify-center">
+          <div className="max-w-lg rounded-md border border-slate-200 bg-white p-8 text-center shadow-[0_10px_26px_rgba(15,23,42,0.06)]">
+            <div className="mx-auto flex h-14 w-14 items-center justify-center rounded-md bg-slate-100 text-slate-700">
+              <AlertTriangle size={24} />
+            </div>
+            <h2 className="mt-5 text-xl font-semibold tracking-tight text-slate-900">
+              Aucun exercice sélectionné
+            </h2>
+            <p className="mt-3 text-sm leading-6 text-slate-500">
+              Choisis un exercice fiscal en haut à droite pour afficher ton
+              tableau de bord.
+            </p>
+          </div>
         </div>
       </div>
     );
