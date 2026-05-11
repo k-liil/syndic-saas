@@ -27,14 +27,13 @@ import {
   Users,
   Vault,
 } from "lucide-react";
-import { normalizeRole, getRoleLabel } from "@/lib/roles";
+import { normalizeRole } from "@/lib/roles";
 import {
   PAGE_VISIBILITY_REGISTRY,
   type PageVisibilityRecord,
   roleCanSeePage,
 } from "@/lib/page-visibility";
-import { ResidenceSwitcher } from "@/components/ResidenceSwitcher";
-import { UserCardFooter } from "@/components/UserCardFooter";
+import { SidebarBrand } from "@/components/SidebarBrand";
 
 const ICONS: Record<string, ElementType> = {
   AlertCircle,
@@ -213,9 +212,9 @@ export function SidebarV2({ onNavigate }: { onNavigate?: () => void } = {}) {
 
   return (
     <aside className="flex h-full flex-col bg-[#FCFCFB]">
-      {/* Header — Residence + Year switcher */}
+      {/* Header — Brand */}
       <div className="border-b border-slate-200/80 px-3 pt-3 pb-3">
-        <ResidenceSwitcher />
+        <SidebarBrand />
       </div>
 
       {/* Search */}
@@ -286,15 +285,6 @@ export function SidebarV2({ onNavigate }: { onNavigate?: () => void } = {}) {
         )}
       </div>
 
-      {/* Footer — User card */}
-      {session?.user ? (
-        <div className="border-t border-slate-200/80 p-3">
-          <UserCardFooter
-            email={session.user.email ?? "-"}
-            roleLabel={getRoleLabel(session.user.role)}
-          />
-        </div>
-      ) : null}
     </aside>
   );
 }

@@ -1,8 +1,10 @@
 "use client";
 
 import { SidebarV2 } from "@/components/SidebarV2";
-import { useSession, signOut } from "next-auth/react";
-import { Bell, LogIn, LogOut, Menu, User, X } from "lucide-react";
+import { ResidenceSwitcher } from "@/components/ResidenceSwitcher";
+import { UserCardTopbar } from "@/components/UserCardTopbar";
+import { useSession } from "next-auth/react";
+import { Bell, Menu, X } from "lucide-react";
 import Link from "next/link";
 import { usePathname } from "next/navigation";
 import { useEffect, useRef, useState } from "react";
@@ -23,16 +25,10 @@ type NotificationItem = {
   } | null;
 };
 
-// =============================================================
-// AppShellV2 — drop-in replacement for AppShell that:
-//   1. Uses the new SidebarV2 (which contains its own header / residence
-//      switcher and user-card footer) — so no separate sidebar header here.
-//   2. Hides the old `PropertyYearSwitcher` from the top bar; the residence
-//      and year selectors moved to the sidebar.
-//   3. Keeps the notifications bell + the avatar dropdown on the right (the
-//      sidebar has its own user card, but the top-bar avatar is still useful
-//      on small screens / for the bell).
-// =============================================================
+// AppShellV2 — sidebar shows the Syndicly brand. Topbar holds the residence
+// switcher (left), notifications bell + user card (right). The fiscal-year
+// selector is page-scoped: pages that depend on a year render <YearSelector />
+// themselves.
 export function AppShellV2({
   children,
   brandName: _brandName, // eslint-disable-line @typescript-eslint/no-unused-vars
@@ -42,7 +38,6 @@ export function AppShellV2({
 }) {
   const { data: session } = useSession();
   const pathname = usePathname();
-  const [open, setOpen] = useState(false);
   const [mobileNavOpen, setMobileNavOpen] = useState(false);
   const [notificationsOpen, setNotificationsOpen] = useState(false);
   const [notifications, setNotifications] = useState<NotificationItem[]>([]);
@@ -68,7 +63,6 @@ export function AppShellV2({
   useEffect(() => {
     function onDown(e: MouseEvent) {
       if (ref.current && !ref.current.contains(e.target as Node)) {
-        setOpen(false);
         setNotificationsOpen(false);
       }
     }
@@ -76,7 +70,6 @@ export function AppShellV2({
     return () => document.removeEventListener("mousedown", onDown);
   }, []);
 
-  const username = session?.user?.email?.split("@")[0] ?? "-";
   const role = getRoleLabel(session?.user?.role);
   const roleCode = session?.user?.role;
   const canSeeNotifications = canManage(roleCode);
@@ -192,17 +185,12 @@ export function AppShellV2({
               <div className="flex min-w-0 items-center gap-3">
                 <button
                   onClick={() => setMobileNavOpen(true)}
-                  className="flex h-9 w-9 items-center justify-center rounded-md text-slate-600 hover:bg-slate-100 md:hidden"
+                  className="flex h-9 w-9 cursor-pointer items-center justify-center rounded-md text-slate-600 hover:bg-slate-100 md:hidden"
                   aria-label="Ouvrir le menu"
                 >
                   <Menu size={20} />
                 </button>
-                {/*
-                  PropertyYearSwitcher removed — moved to the sidebar header.
-                  If the page wants to render breadcrumbs or a page title,
-                  it can do so in its own page component (the top bar is now
-                  just chrome).
-                */}
+                <ResidenceSwitcher />
               </div>
 
               <div className="relative flex items-center gap-3" ref={ref}>
@@ -210,19 +198,19 @@ export function AppShellV2({
                   <div className="relative">
                     <button
                       onClick={() => setNotificationsOpen((value) => !value)}
-                      className="glass-panel relative flex h-10 w-10 items-center justify-center rounded-md hover:-translate-y-px"
+                      className="relative flex h-11 w-11 cursor-pointer items-center justify-center rounded-xl border border-slate-200 bg-white text-slate-600 shadow-[0_2px_8px_rgba(15,23,42,0.04)] transition-all duration-200 hover:-translate-y-px hover:border-slate-300 hover:shadow-[0_4px_12px_rgba(15,23,42,0.08)] focus:outline-none focus:ring-2 focus:ring-sky-100"
                       aria-label="Notifications"
                     >
                       <Bell size={18} />
                       {unreadCount > 0 ? (
-                        <span className="absolute -right-0.5 -top-0.5 flex h-5 min-w-5 items-center justify-center rounded-md bg-rose-500 px-1 text-[10px] font-bold text-white">
+                        <span className="absolute -right-1 -top-1 flex h-5 min-w-5 items-center justify-center rounded-md bg-rose-500 px-1 text-[10px] font-bold text-white">
                           {unreadCount > 9 ? "9+" : unreadCount}
                         </span>
                       ) : null}
                     </button>
 
                     {notificationsOpen ? (
-                      <div className="absolute right-0 mt-2 w-[calc(100vw-2rem)] max-w-sm z-50 rounded-[24px] border border-slate-200 bg-white p-4 shadow-[0_20px_60px_rgba(15,23,42,0.12)] sm:right-0 sm:w-96">
+                      <div className="absolute right-0 top-full z-50 mt-1 w-[calc(100vw-2rem)] max-w-sm rounded-xl border border-slate-200 bg-white p-4 shadow-[0_20px_60px_rgba(15,23,42,0.12)] sm:right-0 sm:w-96">
                         <div className="flex items-center justify-between">
                           <div>
                             <div className="text-sm font-semibold text-slate-900">Notifications</div>
@@ -232,7 +220,7 @@ export function AppShellV2({
                             <button
                               type="button"
                               onClick={() => void markAllNotificationsRead()}
-                              className="text-xs font-semibold text-cyan-700 hover:text-cyan-800"
+                              className="cursor-pointer text-xs font-semibold text-cyan-700 hover:text-cyan-800"
                             >
                               Tout lire
                             </button>
@@ -282,57 +270,20 @@ export function AppShellV2({
                   </div>
                 ) : null}
 
-                {/*
-                  Avatar dropdown kept for the top bar — duplicates the sidebar
-                  user card on desktop, but keeps the menu reachable on mobile
-                  when the sidebar is collapsed in a drawer.
-                */}
-                <button
-                  onClick={() => setOpen((v) => !v)}
-                  className="glass-panel flex items-center gap-2 rounded-md px-2.5 py-1.5 text-left hover:-translate-y-px md:hidden"
-                  aria-label="User menu"
-                >
-                  <span className="flex h-9 w-9 items-center justify-center rounded-md bg-slate-950 text-white">
-                    <User size={16} />
-                  </span>
-                  <span className="hidden sm:block">
-                    <span className="block text-xs font-semibold text-slate-900">{username}</span>
-                    <span className="block text-[10px] text-slate-500 leading-none">{role}</span>
-                  </span>
-                </button>
-
-                {open ? (
-                  <div className="absolute right-0 mt-32 w-72 z-50 rounded-[24px] border border-slate-200 bg-white p-4 shadow-[0_20px_60px_rgba(15,23,42,0.12)] md:hidden">
-                    {session?.user ? (
-                      <>
-                        <div className="rounded-md bg-slate-50 p-4">
-                          <div className="text-xs uppercase tracking-[0.18em] text-slate-400">
-                            Compte
-                          </div>
-                          <div className="mt-2 truncate text-sm font-semibold text-slate-900">
-                            {session.user.email}
-                          </div>
-                          <div className="mt-1 text-xs text-slate-500">{role}</div>
-                        </div>
-                        <button
-                          onClick={() => signOut({ callbackUrl: "/login" })}
-                          className="mt-4 flex w-full items-center justify-center gap-2 rounded-md border border-rose-200 bg-rose-50 px-4 py-3 text-sm font-medium text-rose-700 transition hover:-translate-y-px hover:bg-rose-100"
-                        >
-                          <LogOut size={16} />
-                          Se déconnecter
-                        </button>
-                      </>
-                    ) : (
-                      <Link
-                        href="/login"
-                        className="flex items-center justify-center gap-2 rounded-md border border-slate-200 px-4 py-3 text-sm font-medium text-slate-700 transition hover:bg-slate-50"
-                      >
-                        <LogIn size={16} />
-                        Connexion
-                      </Link>
-                    )}
-                  </div>
-                ) : null}
+                {session?.user ? (
+                  <UserCardTopbar
+                    email={session.user.email ?? "-"}
+                    roleLabel={role}
+                    roleCode={roleCode}
+                  />
+                ) : (
+                  <Link
+                    href="/login"
+                    className="inline-flex h-11 cursor-pointer items-center gap-2 rounded-xl border border-slate-200 bg-white px-3 text-sm font-medium text-slate-700 shadow-[0_2px_8px_rgba(15,23,42,0.04)] transition-all duration-200 hover:-translate-y-px hover:border-slate-300 hover:shadow-[0_4px_12px_rgba(15,23,42,0.08)]"
+                  >
+                    Connexion
+                  </Link>
+                )}
               </div>
             </div>
           </header>

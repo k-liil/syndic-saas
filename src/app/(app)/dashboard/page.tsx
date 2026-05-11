@@ -5,6 +5,7 @@ import { Suspense, useEffect, useMemo, useState } from "react";
 import { useSearchParams } from "next/navigation";
 import { useApiUrl } from "@/lib/org-context";
 import { useActiveYear } from "@/lib/use-active-year";
+import { YearSelector } from "@/components/YearSelector";
 import {
   AlertTriangle,
   ArrowDownRight,
@@ -255,8 +256,11 @@ function DashboardPageContent() {
       <section className="rounded-md border border-slate-200 bg-[linear-gradient(135deg,_rgba(248,250,252,0.98)_0%,_rgba(239,244,250,0.96)_100%)] p-6 text-slate-900 shadow-[0_12px_28px_rgba(15,23,42,0.05)] sm:p-7">
         <div className="flex flex-col gap-6 xl:flex-row xl:items-end xl:justify-between">
           <div className="max-w-2xl">
-            <div className="eyebrow text-sky-700">
-              Tableau de bord
+            <div className="flex items-center gap-3">
+              <div className="eyebrow text-sky-700">
+                Tableau de bord
+              </div>
+              <YearSelector size="sm" />
             </div>
             <h1 className="display-title mt-3 text-5xl font-semibold leading-[0.96] text-slate-950 sm:text-6xl">
               Vision globale de l'exercice {data.year}
