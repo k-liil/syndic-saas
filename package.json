@@ -1,6 +1,6 @@
 {
   "name": "syndic-mvp",
-  "version": "0.1.4",
+  "version": "0.1.5",
   "private": true,
   "description": "This is a [Next.js](https://nextjs.org) project bootstrapped with [`create-next-app`](https://nextjs.org/docs/app/api-reference/cli/create-next-app).",
   "license": "ISC",

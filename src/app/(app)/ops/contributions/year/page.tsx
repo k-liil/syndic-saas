@@ -4,6 +4,7 @@ import { Suspense, useCallback, useEffect, useState } from "react";
 import { useSearchParams } from "next/navigation";
 import { ContributionsYearTable } from "@/components/contributions/ContributionsYearTable";
 import { useApiUrl } from "@/lib/org-context";
+import { YearSelector } from "@/components/YearSelector";
 
 type DueStatus = "PAID" | "PARTIAL" | "UNPAID";
 
@@ -176,21 +177,24 @@ function ContributionsYearPageContent() {
       <div className="flex items-start justify-between gap-4">
         <div>
           <h1 className="text-2xl font-semibold">Cotisations annuelles</h1>
-          <p className="mt-1 text-sm text-zinc-500">Exercice {year}</p>
+          <p className="mt-1 text-sm text-zinc-500">Suivi des paiements mensuels par lot</p>
         </div>
 
-        <select
-          value={buildingId}
-          onChange={(e) => setBuildingId(e.target.value)}
-          className="h-10 min-w-[240px] rounded-lg border border-zinc-300 bg-white px-3 text-sm shadow-sm"
-        >
-          <option value="">Tous les bâtiments</option>
-          {buildings.map((b) => (
-            <option key={b.id} value={b.id}>
-              {b.name}
-            </option>
-          ))}
-        </select>
+        <div className="flex items-center gap-3">
+          <YearSelector />
+          <select
+            value={buildingId}
+            onChange={(e) => setBuildingId(e.target.value)}
+            className="h-10 min-w-[240px] rounded-lg border border-zinc-300 bg-white px-3 text-sm shadow-sm"
+          >
+            <option value="">Tous les bâtiments</option>
+            {buildings.map((b) => (
+              <option key={b.id} value={b.id}>
+                {b.name}
+              </option>
+            ))}
+          </select>
+        </div>
       </div>
 
       <div className="flex flex-wrap gap-2">

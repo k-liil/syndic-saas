@@ -73,12 +73,12 @@ export function YearSelector({
     return (
       <div
         className={[
-          "inline-flex items-center gap-2 rounded-xl border border-slate-200 bg-white",
+          "inline-flex items-center gap-2 rounded-xl border border-sky-200 bg-sky-50",
           isSm ? "px-2.5 py-1.5" : "px-3 py-2",
           className,
         ].join(" ")}
       >
-        <span className="h-4 w-20 animate-pulse rounded bg-slate-100" />
+        <span className="h-4 w-20 animate-pulse rounded bg-sky-100" />
       </div>
     );
   }
@@ -89,29 +89,27 @@ export function YearSelector({
         type="button"
         onClick={() => setOpen((v) => !v)}
         className={[
-          "inline-flex cursor-pointer items-center gap-2 rounded-xl border border-slate-200 bg-white text-left shadow-[0_2px_8px_rgba(15,23,42,0.04)] transition-all duration-200 hover:-translate-y-px hover:border-slate-300 hover:shadow-[0_4px_12px_rgba(15,23,42,0.08)] focus:outline-none focus:ring-2 focus:ring-sky-100",
+          "inline-flex cursor-pointer items-center gap-2 rounded-xl border border-sky-300 bg-gradient-to-br from-sky-50 to-sky-100/60 text-left shadow-[0_2px_8px_rgba(2,132,199,0.10)] transition-all duration-200 hover:-translate-y-px hover:border-sky-400 hover:from-sky-100 hover:to-sky-200/60 hover:shadow-[0_4px_14px_rgba(2,132,199,0.18)] focus:outline-none focus:ring-2 focus:ring-sky-200",
           isSm ? "px-2.5 py-1.5" : "px-3 py-2",
         ].join(" ")}
         aria-haspopup="listbox"
         aria-expanded={open}
       >
-        <CalendarRange
-          size={isSm ? 14 : 15}
-          strokeWidth={1.75}
-          className="text-sky-600"
-        />
+        <span className="flex h-6 w-6 shrink-0 items-center justify-center rounded-md bg-sky-600 text-white shadow-sm">
+          <CalendarRange size={13} strokeWidth={2} />
+        </span>
         <span className="flex items-baseline gap-1.5">
-          <span className="text-[10px] font-semibold uppercase tracking-[0.16em] text-slate-400">
+          <span className="text-[10px] font-bold uppercase tracking-[0.16em] text-sky-700">
             Exercice
           </span>
-          <span className="text-[13px] font-semibold text-slate-900">
+          <span className="text-[14px] font-bold text-sky-900">
             {activeYear?.year ?? "—"}
           </span>
         </span>
         <ChevronDown
           size={14}
           className={[
-            "shrink-0 text-slate-400 transition-transform duration-200",
+            "shrink-0 text-sky-600 transition-transform duration-200",
             open ? "rotate-180" : "",
           ].join(" ")}
         />

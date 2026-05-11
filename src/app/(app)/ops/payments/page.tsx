@@ -10,6 +10,7 @@ import { useActiveYear } from "@/lib/use-active-year";
 import { getSuggestedPaymentPostCode } from "@/lib/payment-accounting-posts";
 import { toDisplayDate as toDisplayDateLib } from "@/lib/date-utils";
 import { Modal } from "@/components/ui/Modal";
+import { YearSelector } from "@/components/YearSelector";
 
 type Supplier = {
   id: string;
@@ -630,13 +631,16 @@ function toggleSelect(id: string) {
       ) : null}
 
       <div className="shrink-0 space-y-6">
-      <div>
-        <h1 className="text-3xl font-semibold tracking-tight text-zinc-900">
-          Dépenses
-        </h1>
-        <p className="mt-2 text-sm text-zinc-500">
-          Gérez et suivez les dépenses de la copropriété.
-        </p>
+      <div className="flex items-start justify-between gap-4">
+        <div>
+          <h1 className="text-3xl font-semibold tracking-tight text-zinc-900">
+            Dépenses
+          </h1>
+          <p className="mt-2 text-sm text-zinc-500">
+            Gérez et suivez les dépenses de la copropriété.
+          </p>
+        </div>
+        <YearSelector />
       </div>
 
       <div>

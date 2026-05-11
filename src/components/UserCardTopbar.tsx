@@ -4,7 +4,6 @@ import { useEffect, useRef, useState } from "react";
 import Link from "next/link";
 import { signOut } from "next-auth/react";
 import { ChevronDown, LogOut, User } from "lucide-react";
-import { useOrganization } from "@/lib/org-context";
 
 export function UserCardTopbar({
   email,
@@ -17,7 +16,6 @@ export function UserCardTopbar({
 }) {
   const [open, setOpen] = useState(false);
   const ref = useRef<HTMLDivElement>(null);
-  const { orgs } = useOrganization();
 
   useEffect(() => {
     function onDown(e: MouseEvent) {
@@ -37,12 +35,6 @@ export function UserCardTopbar({
       .slice(0, 2)
       .map((s) => s[0]?.toUpperCase() ?? "")
       .join("") || username.slice(0, 2).toUpperCase();
-
-  const propertyCount = orgs.length;
-  const subline =
-    propertyCount > 0
-      ? `${propertyCount} immeuble${propertyCount > 1 ? "s" : ""}`
-      : roleLabel;
 
   return (
     <div className="relative" ref={ref}>
@@ -65,8 +57,9 @@ export function UserCardTopbar({
               <span className="rounded bg-sky-50 px-1.5 py-px font-bold uppercase tracking-wide text-sky-700">
                 {roleCode}
               </span>
-            ) : null}
-            <span className="truncate text-slate-500">{subline}</span>
+            ) : (
+              <span className="truncate text-slate-500">{roleLabel}</span>
+            )}
           </span>
         </span>
         <ChevronDown

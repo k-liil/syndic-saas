@@ -6,6 +6,7 @@ import { Pencil, Plus, Trash2, TrendingDown, TrendingUp, Wallet, PiggyBank } fro
 import { canManage } from "@/lib/roles";
 import { useApiUrl } from "@/lib/org-context";
 import { useActiveYear } from "@/lib/use-active-year";
+import { YearSelector } from "@/components/YearSelector";
 
 type AccountingPost = {
   id: string;
@@ -403,13 +404,16 @@ function BudgetsPageContent() {
       ) : null}
 
       <div className="page-section-inline">
-        <div>
-          <h1 className="text-2xl font-semibold text-zinc-900">
-            Budget Previsionnel {year}
-          </h1>
-          <p className="mt-1 text-sm text-zinc-500">
-            Cette page n&apos;affiche que les postes comptables actifs. Clique sur une ligne ou sur l&apos;icone pour budgetiser ou modifier le montant.
-          </p>
+        <div className="flex items-start justify-between gap-4">
+          <div>
+            <h1 className="text-2xl font-semibold text-zinc-900">
+              Budget Previsionnel {year}
+            </h1>
+            <p className="mt-1 text-sm text-zinc-500">
+              Cette page n&apos;affiche que les postes comptables actifs. Clique sur une ligne ou sur l&apos;icone pour budgetiser ou modifier le montant.
+            </p>
+          </div>
+          <YearSelector />
         </div>
       </div>
 
