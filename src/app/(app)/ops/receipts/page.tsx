@@ -5,6 +5,7 @@ import { useSearchParams, useRouter, usePathname } from "next/navigation";
 import { ReceiptsTabs } from "@/components/receipts/ReceiptsTabs";
 import { ContributionReceiptsTab } from "@/components/receipts/ContributionReceiptsTab";
 import { OtherReceiptsTab } from "@/components/receipts/OtherReceiptsTab";
+import { YearSelector } from "@/components/YearSelector";
 import {
   usePageLogger,
   PageLoggerToggle,
@@ -42,7 +43,8 @@ export default function ReceiptsPage() {
       <div className="flex flex-col gap-4 xl:flex-row xl:items-center xl:justify-between">
         <h1 className="text-2xl font-semibold">Recettes</h1>
 
-        <div className="flex items-center gap-2">
+        <div className="flex flex-wrap items-center gap-3">
+          <YearSelector />
           <span className="text-xs font-medium text-zinc-500">Mois :</span>
           <select
             value={monthFilter}
