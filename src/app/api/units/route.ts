@@ -31,7 +31,7 @@ function getApplicablePeriod(
 }
 
 export async function GET(req: Request) {
-  let items: any[] = [];
+  let items: Awaited<ReturnType<typeof prisma.unit.findMany>> | undefined;
   try {
     const gate = await requireAuth();
     if (!gate.ok) {
